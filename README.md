@@ -61,6 +61,11 @@ uroflow-mobile analyze-level-series examples/level_series_sample.json \
 - `rgb_level_mm` — опорный уровень из RGB waterline (опционально fallback)
 - `depth_confidence` — confidence глубины (`0..1`, опционально)
 
+В summary и CSV для `analyze-level-series` также экспортируются:
+- `level_uncertainty_mm` (`sigma_h`)
+- `volume_uncertainty_ml` (`sigma_V`)
+- `flow_uncertainty_ml_s` (`sigma_Q`)
+
 Ключевые параметры:
 
 - `--known-volume-ml` — калибрует кривую так, чтобы интеграл дал заданный объём.

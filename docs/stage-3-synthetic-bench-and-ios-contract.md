@@ -24,12 +24,22 @@
 - `uroflow-mobile generate-synthetic-bench`
 - `uroflow-mobile validate-capture-contract`
 
+5. Propagation of uncertainty в fusion baseline:
+- `sigma_h` оценивается из `depth_confidence`;
+- `sigma_V` вычисляется из `sigma_h` и `ml_per_mm`;
+- `sigma_Q` вычисляется из `sigma_V` по finite-difference схеме.
+
+6. Интеграционный тест полного контура:
+- `validate-capture-contract -> analyze-level-series -> fusion_summary.json`.
+
 ## Модули
 
 - `src/uroflow_mobile/synthetic.py`:
   генерация профилей и сценариев синтетических рядов.
 - `src/uroflow_mobile/capture_contract.py`:
   валидация iOS capture JSON и конверсия в payload для fusion.
+- `tests/test_cli_contract_pipeline.py`:
+  end-to-end проверка контрактного pipeline.
 
 ## Контракт iOS capture (минимальные требования)
 

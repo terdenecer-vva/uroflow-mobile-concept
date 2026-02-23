@@ -97,6 +97,8 @@ def _write_fusion_csv(path: Path, estimation: FusionEstimationResult) -> None:
                 "depth_confidence",
                 "used_rgb_fallback",
                 "volume_ml",
+                "level_uncertainty_mm",
+                "volume_uncertainty_ml",
                 "flow_ml_s",
                 "flow_uncertainty_ml_s",
             ]
@@ -109,6 +111,8 @@ def _write_fusion_csv(path: Path, estimation: FusionEstimationResult) -> None:
             confidence,
             used_fallback,
             volume,
+            level_sigma,
+            volume_sigma,
             flow,
             sigma_q,
         ) in enumerate(
@@ -119,6 +123,8 @@ def _write_fusion_csv(path: Path, estimation: FusionEstimationResult) -> None:
                 estimation.depth_confidence,
                 estimation.used_rgb_fallback,
                 estimation.volume_ml,
+                estimation.level_uncertainty_mm,
+                estimation.volume_uncertainty_ml,
                 estimation.flow_ml_s,
                 estimation.flow_uncertainty_ml_s,
                 strict=True,
@@ -136,6 +142,8 @@ def _write_fusion_csv(path: Path, estimation: FusionEstimationResult) -> None:
                     f"{confidence:.6f}",
                     str(used_fallback).lower(),
                     f"{volume:.6f}",
+                    f"{level_sigma:.6f}",
+                    f"{volume_sigma:.6f}",
                     f"{flow:.6f}",
                     f"{sigma_q:.6f}",
                 ]
@@ -451,6 +459,11 @@ def _handle_analyze_level_series(args: argparse.Namespace) -> int:
                 "series_stats": {
                     "samples": len(estimation.timestamps_s),
                     "final_volume_ml": estimation.volume_ml[-1],
+                    "final_volume_uncertainty_ml": estimation.volume_uncertainty_ml[-1],
+                    "mean_level_uncertainty_mm": sum(estimation.level_uncertainty_mm)
+                    / len(estimation.level_uncertainty_mm),
+                    "mean_volume_uncertainty_ml": sum(estimation.volume_uncertainty_ml)
+                    / len(estimation.volume_uncertainty_ml),
                     "mean_flow_uncertainty_ml_s": sum(estimation.flow_uncertainty_ml_s)
                     / len(estimation.flow_uncertainty_ml_s),
                     "used_rgb_fallback_samples": sum(

@@ -32,9 +32,9 @@
 
 - [x] Зафиксировать stage-3 концепт (multimodal strategy + global regulatory/privacy frame)
 - [x] Генератор синтетических потоков и water-bench сценариев
-- [ ] Расширенный набор unit/integration тестов
+- [x] Расширенный набор unit/integration тестов (synthetic + contract-to-fusion pipeline)
 - [ ] Бенчмарки устойчивости к шуму/бликам/наклону
-- [ ] Оценка propagation of uncertainty (`sigma_h -> sigma_V -> sigma_Q`)
+- [x] Оценка propagation of uncertainty (`sigma_h -> sigma_V -> sigma_Q`) для series-level baseline
 
 ## Phase 4: CV Prototype
 

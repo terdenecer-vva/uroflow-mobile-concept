@@ -3,8 +3,11 @@ import math
 from uroflow_mobile.fusion import (
     FusionLevelConfig,
     estimate_flow_uncertainty,
+    estimate_flow_uncertainty_from_volume_sigma,
     estimate_from_level_series,
+    estimate_level_uncertainty_from_confidence,
     estimate_volume_curve,
+    estimate_volume_uncertainty,
     fuse_depth_and_rgb_levels,
 )
 
@@ -37,6 +40,8 @@ def test_fusion_estimation_returns_valid_status_for_clean_signal() -> None:
     assert result.quality.status == "valid"
     assert result.volume_ml[-1] == 200.0
     assert len(result.flow_ml_s) == len(levels)
+    assert len(result.level_uncertainty_mm) == len(levels)
+    assert len(result.volume_uncertainty_ml) == len(levels)
     assert len(result.flow_uncertainty_ml_s) == len(levels)
 
 
@@ -148,3 +153,45 @@ def test_estimate_flow_uncertainty_returns_positive_values() -> None:
 
     assert len(sigma_q) == len(timestamps)
     assert all(value > 0 for value in sigma_q)
+
+
+def test_uncertainty_propagation_increases_for_low_confidence() -> None:
+    confidence = [0.95, 0.95, 0.2, 0.95]
+    sigma_h = estimate_level_uncertainty_from_confidence(
+        depth_confidence=confidence,
+        base_level_sigma_mm=1.0,
+        min_depth_confidence=0.6,
+    )
+    sigma_v = estimate_volume_uncertainty(sigma_h, ml_per_mm=8.0)
+    sigma_q = estimate_flow_uncertainty_from_volume_sigma(
+        timestamps_s=[0.0, 1.0, 2.0, 3.0],
+        volume_uncertainty_ml=sigma_v,
+    )
+
+    assert sigma_h[2] > sigma_h[1]
+    assert sigma_v[2] > sigma_v[1]
+    assert sigma_q[1] > sigma_q[0]
+
+
+def test_flow_uncertainty_series_reflects_confidence_profile() -> None:
+    timestamps = [0.0, 1.0, 2.0, 3.0, 4.0]
+    levels = [0.0, 5.0, 10.0, 15.0, 20.0]
+
+    high_confidence = [0.95, 0.95, 0.95, 0.95, 0.95]
+    low_confidence = [0.95, 0.3, 0.3, 0.3, 0.95]
+
+    result_high = estimate_from_level_series(
+        timestamps_s=timestamps,
+        level_mm=levels,
+        depth_confidence=high_confidence,
+        config=FusionLevelConfig(ml_per_mm=8.0, level_sigma_mm=1.0, min_voided_volume_ml=10.0),
+    )
+    result_low = estimate_from_level_series(
+        timestamps_s=timestamps,
+        level_mm=levels,
+        depth_confidence=low_confidence,
+        config=FusionLevelConfig(ml_per_mm=8.0, level_sigma_mm=1.0, min_voided_volume_ml=10.0),
+    )
+
+    assert result_low.level_uncertainty_mm[2] > result_high.level_uncertainty_mm[2]
+    assert result_low.flow_uncertainty_ml_s[2] > result_high.flow_uncertainty_ml_s[2]

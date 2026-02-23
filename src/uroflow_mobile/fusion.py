@@ -46,6 +46,8 @@ class FusionEstimationResult:
     used_rgb_fallback: list[bool]
     volume_ml: list[float]
     flow_ml_s: list[float]
+    level_uncertainty_mm: list[float]
+    volume_uncertainty_ml: list[float]
     flow_uncertainty_ml_s: list[float]
     quality: FusionQualityFlags
 
@@ -174,6 +176,88 @@ def estimate_flow_curve(
     return _moving_average(flow_raw, smoothing_window)
 
 
+def estimate_level_uncertainty_from_confidence(
+    depth_confidence: Sequence[float],
+    base_level_sigma_mm: float,
+    min_depth_confidence: float = 0.6,
+    low_confidence_multiplier: float = 3.0,
+) -> list[float]:
+    """Map depth confidence to per-sample sigma(h) in millimeters."""
+
+    if base_level_sigma_mm <= 0:
+        raise ValueError("base_level_sigma_mm must be positive")
+    if min_depth_confidence <= 0 or min_depth_confidence > 1:
+        raise ValueError("min_depth_confidence must be in (0, 1]")
+    if low_confidence_multiplier < 1.0:
+        raise ValueError("low_confidence_multiplier must be >= 1")
+
+    _validate_confidence(depth_confidence)
+
+    sigma_h_mm: list[float] = []
+    for confidence in depth_confidence:
+        confidence_scale = 1.0 + (1.0 - confidence)
+        sigma = base_level_sigma_mm * confidence_scale
+
+        if confidence < min_depth_confidence:
+            deficit = (min_depth_confidence - confidence) / min_depth_confidence
+            sigma *= 1.0 + deficit * (low_confidence_multiplier - 1.0)
+
+        sigma_h_mm.append(sigma)
+    return sigma_h_mm
+
+
+def estimate_volume_uncertainty(
+    level_uncertainty_mm: Sequence[float], ml_per_mm: float
+) -> list[float]:
+    """Propagate sigma(h) to sigma(V) for V=(h-h0)*k with k=ml_per_mm."""
+
+    if not level_uncertainty_mm:
+        raise ValueError("level_uncertainty_mm is empty")
+    if ml_per_mm <= 0:
+        raise ValueError("ml_per_mm must be positive")
+
+    baseline_sigma_mm = level_uncertainty_mm[0]
+    if baseline_sigma_mm < 0:
+        raise ValueError("level uncertainty values must be >= 0")
+
+    sigma_v_ml: list[float] = []
+    for sigma_h in level_uncertainty_mm:
+        if sigma_h < 0:
+            raise ValueError("level uncertainty values must be >= 0")
+        sigma_v_ml.append(ml_per_mm * math.sqrt((sigma_h**2) + (baseline_sigma_mm**2)))
+    return sigma_v_ml
+
+
+def estimate_flow_uncertainty_from_volume_sigma(
+    timestamps_s: Sequence[float], volume_uncertainty_ml: Sequence[float]
+) -> list[float]:
+    """Propagate sigma(V) to sigma(Q) using finite differences."""
+
+    if len(timestamps_s) != len(volume_uncertainty_ml):
+        raise ValueError("timestamps_s and volume_uncertainty_ml must have equal length")
+    _validate_timestamps(timestamps_s)
+
+    sigma_q_ml_s: list[float] = []
+    for index in range(len(timestamps_s)):
+        if index == 0:
+            dt = timestamps_s[1] - timestamps_s[0]
+            sigma_q = math.sqrt((volume_uncertainty_ml[0] ** 2) + (volume_uncertainty_ml[1] ** 2))
+        elif index == len(timestamps_s) - 1:
+            dt = timestamps_s[-1] - timestamps_s[-2]
+            sigma_q = math.sqrt(
+                (volume_uncertainty_ml[-1] ** 2) + (volume_uncertainty_ml[-2] ** 2)
+            )
+        else:
+            dt = timestamps_s[index + 1] - timestamps_s[index - 1]
+            sigma_q = math.sqrt(
+                (volume_uncertainty_ml[index + 1] ** 2)
+                + (volume_uncertainty_ml[index - 1] ** 2)
+            )
+
+        sigma_q_ml_s.append(sigma_q / dt)
+    return sigma_q_ml_s
+
+
 def estimate_flow_uncertainty(
     timestamps_s: Sequence[float], ml_per_mm: float, level_sigma_mm: float
 ) -> list[float]:
@@ -185,17 +269,12 @@ def estimate_flow_uncertainty(
         raise ValueError("level_sigma_mm must be positive")
     _validate_timestamps(timestamps_s)
 
-    sigma_v = ml_per_mm * level_sigma_mm
-    sigma_q: list[float] = []
-    for index in range(len(timestamps_s)):
-        if index == 0:
-            dt = timestamps_s[1] - timestamps_s[0]
-        elif index == len(timestamps_s) - 1:
-            dt = timestamps_s[-1] - timestamps_s[-2]
-        else:
-            dt = timestamps_s[index + 1] - timestamps_s[index - 1]
-        sigma_q.append((math.sqrt(2.0) * sigma_v) / dt)
-    return sigma_q
+    level_sigma_series = [level_sigma_mm for _ in timestamps_s]
+    sigma_v = estimate_volume_uncertainty(level_sigma_series, ml_per_mm=ml_per_mm)
+    return estimate_flow_uncertainty_from_volume_sigma(
+        timestamps_s=timestamps_s,
+        volume_uncertainty_ml=sigma_v,
+    )
 
 
 def _estimate_level_noise_mm(level_mm: Sequence[float]) -> float:
@@ -297,10 +376,18 @@ def estimate_from_level_series(
         volume_ml=volume_ml,
         smoothing_window=cfg.flow_smoothing_window,
     )
-    flow_uncertainty_ml_s = estimate_flow_uncertainty(
-        timestamps_s=timestamps_s,
+    level_uncertainty_mm = estimate_level_uncertainty_from_confidence(
+        depth_confidence=confidence,
+        base_level_sigma_mm=cfg.level_sigma_mm,
+        min_depth_confidence=cfg.min_depth_confidence,
+    )
+    volume_uncertainty_ml = estimate_volume_uncertainty(
+        level_uncertainty_mm=level_uncertainty_mm,
         ml_per_mm=cfg.ml_per_mm,
-        level_sigma_mm=cfg.level_sigma_mm,
+    )
+    flow_uncertainty_ml_s = estimate_flow_uncertainty_from_volume_sigma(
+        timestamps_s=timestamps_s,
+        volume_uncertainty_ml=volume_uncertainty_ml,
     )
     quality = evaluate_fusion_quality(
         depth_confidence=confidence,
@@ -320,6 +407,8 @@ def estimate_from_level_series(
         used_rgb_fallback=fallback_mask,
         volume_ml=volume_ml,
         flow_ml_s=flow_ml_s,
+        level_uncertainty_mm=level_uncertainty_mm,
+        volume_uncertainty_ml=volume_uncertainty_ml,
         flow_uncertainty_ml_s=flow_uncertainty_ml_s,
         quality=quality,
     )

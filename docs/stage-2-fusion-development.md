@@ -92,3 +92,5 @@
 - Добавлены тесты baseline-fusion: `tests/test_fusion.py`
 - Добавлен iOS capture contract validator + экспорт в fusion payload:
   `uroflow-mobile validate-capture-contract`
+- Добавлена propagation-оценка uncertainty:
+  `sigma_h(depth_confidence) -> sigma_V -> sigma_Q`
