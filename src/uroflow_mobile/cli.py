@@ -39,7 +39,7 @@ def _write_curve_csv(path: Path, timestamps_s: list[float], flow_ml_s: list[floa
     with path.open("w", newline="", encoding="utf-8") as file:
         writer = csv.writer(file)
         writer.writerow(["timestamp_s", "flow_ml_s"])
-        for timestamp, flow in zip(timestamps_s, flow_ml_s):
+        for timestamp, flow in zip(timestamps_s, flow_ml_s, strict=True):
             writer.writerow([f"{timestamp:.6f}", f"{flow:.6f}"])
 
 

@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from pathlib import Path
 import csv
 import json
+from dataclasses import dataclass
+from pathlib import Path
 
 from .flow_from_video import VideoFlowConfig, estimate_flow_curve_from_video
 from .metrics import UroflowSummary, calculate_uroflow_summary
@@ -59,7 +59,7 @@ class UroflowVideoPipeline:
         with flow_curve_path.open("w", newline="", encoding="utf-8") as csv_file:
             writer = csv.writer(csv_file)
             writer.writerow(["timestamp_s", "flow_ml_s"])
-            for timestamp, flow in zip(timestamps_s, flow_ml_s):
+            for timestamp, flow in zip(timestamps_s, flow_ml_s, strict=True):
                 writer.writerow([f"{timestamp:.6f}", f"{flow:.6f}"])
 
         report_payload = {

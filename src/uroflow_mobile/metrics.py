@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Sequence
 
 
 @dataclass(frozen=True)
@@ -57,7 +57,10 @@ def _compute_flow_time(
 
 
 def _count_interruptions(
-    timestamps_s: Sequence[float], flow_ml_s: Sequence[float], threshold_ml_s: float, min_pause_s: float
+    timestamps_s: Sequence[float],
+    flow_ml_s: Sequence[float],
+    threshold_ml_s: float,
+    min_pause_s: float,
 ) -> int:
     in_pause = False
     pause_start = 0.0

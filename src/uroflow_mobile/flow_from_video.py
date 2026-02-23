@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Sequence
 
 import numpy as np
 
@@ -140,7 +140,11 @@ def estimate_flow_curve_from_video(
         if cfg.resize_width and frame.shape[1] > cfg.resize_width:
             scale = cfg.resize_width / frame.shape[1]
             resized_height = int(frame.shape[0] * scale)
-            frame = cv2.resize(frame, (cfg.resize_width, resized_height), interpolation=cv2.INTER_AREA)
+            frame = cv2.resize(
+                frame,
+                (cfg.resize_width, resized_height),
+                interpolation=cv2.INTER_AREA,
+            )
 
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         gray = cv2.GaussianBlur(gray, (5, 5), 0)

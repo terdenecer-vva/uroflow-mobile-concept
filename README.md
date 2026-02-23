@@ -1,4 +1,5 @@
 # Mobile Uroflow Concept
+[![CI](https://github.com/terdenecer-vva/uroflow-mobile-concept/actions/workflows/ci.yml/badge.svg)](https://github.com/terdenecer-vva/uroflow-mobile-concept/actions/workflows/ci.yml)
 
 Концептуальный репозиторий для разработки программного обеспечения мобильного урофлоуметра.
 
@@ -30,8 +31,8 @@
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -e ".[video]"
-pip install pytest
+pip install -e ".[video,dev]"
+ruff check .
 pytest -q
 python examples/demo_metrics.py
 ```
