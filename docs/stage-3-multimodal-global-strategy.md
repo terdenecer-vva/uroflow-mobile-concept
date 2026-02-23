@@ -168,3 +168,9 @@
 
 Текущая реализация synthetic-bench и iOS capture contract описана в:
 `docs/stage-3-synthetic-bench-and-ios-contract.md`.
+
+План перехода к рабочему MVP и клиническому запуску оформлен в:
+- `docs/mvp-v0.1-execution-plan.md`
+- `docs/clinical-protocol-one-pager-v0.1.md`
+- `docs/coreml-architecture-v0.1.md`
+- `docs/regulatory-matrix-ru-cn-eu-us-v0.1.md`
