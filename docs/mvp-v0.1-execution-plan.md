@@ -126,6 +126,9 @@ Go/No-Go критерии:
 - one-pager исследования: `docs/clinical-protocol-one-pager-v0.1.md`
 - CoreML/iOS архитектура: `docs/coreml-architecture-v0.1.md`
 - регуляторная матрица: `docs/regulatory-matrix-ru-cn-eu-us-v0.1.md`
+- sprint/backlog план: `docs/sprint-plan-v0.1-12-weeks.md`
+- ethics package: `docs/ethics-package-v0.1/`
+- claims governance: `docs/claims-governance-v0.1.md`
 
 ## 7) Decision Log (решения, которые нельзя откладывать)
 

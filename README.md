@@ -113,9 +113,12 @@ uroflow-mobile validate-capture-contract \
 - `docs/stage-3-multimodal-global-strategy.md` — мультимодальная стратегия и региональные рамки (RU/CN/EU/US)
 - `docs/stage-3-synthetic-bench-and-ios-contract.md` — реализация synthetic-bench и iOS capture contract
 - `docs/mvp-v0.1-execution-plan.md` — phase-gate план от R&D до клинического пилота
+- `docs/sprint-plan-v0.1-12-weeks.md` — детальный 12-недельный sprint/backlog план (owner/DoD/dependencies)
 - `docs/clinical-protocol-one-pager-v0.1.md` — one-pager протокол исследования для ethics/IRB
 - `docs/coreml-architecture-v0.1.md` — спецификация iOS/CoreML sensor-fusion архитектуры
 - `docs/regulatory-matrix-ru-cn-eu-us-v0.1.md` — регуляторная матрица по регионам
+- `docs/ethics-package-v0.1/` — шаблоны ICF/SOP/eCRF/data handling appendix
+- `docs/claims-governance-v0.1.md` — policy управления claims и процесс согласования формулировок
 - `docs/intended-use-v1.md` — документ Intended Use v1.0
 - `docs/dpia-checklist.md` — DPIA checklist v1.0 для данных видео/аудио/depth
 - `docs/pilot-protocol-v1.md` — pilot-протокол v1.0 сравнения с эталоном
