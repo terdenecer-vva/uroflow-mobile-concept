@@ -22,13 +22,14 @@
 - [x] Зафиксировать концепт этапа 2 (fusion-архитектура и DoD)
 - [ ] Реализовать синхронный capture `RGB/depth/audio`
 - [x] Реализовать baseline-оценку `h(t) -> V(t) -> Q(t)` для синхронизированных рядов
-- [ ] Реализовать confidence-gating depth и fallback на RGB waterline
+- [x] Реализовать confidence-gating depth и fallback на RGB waterline (series-level baseline)
 - [x] Ввести quality flags и правила `valid / repeat / reject` (baseline rules)
 - [x] Добавить CLI `analyze-level-series` и экспорт uncertainty (`sigma_Q`)
 - [ ] Обновить privacy-контур: derivatives-only, TTL, consent flows
 
 ## Phase 3: Synthetic Validation & Bench Tests
 
+- [x] Зафиксировать stage-3 концепт (multimodal strategy + global regulatory/privacy frame)
 - [ ] Генератор синтетических потоков и water-bench сценариев
 - [ ] Расширенный набор unit/integration тестов
 - [ ] Бенчмарки устойчивости к шуму/бликам/наклону

@@ -9,6 +9,7 @@ from .fusion import (
     estimate_from_level_series,
     estimate_volume_curve,
     evaluate_fusion_quality,
+    fuse_depth_and_rgb_levels,
 )
 from .metrics import UroflowSummary, calculate_uroflow_summary
 
@@ -22,6 +23,7 @@ __all__ = [
     "estimate_flow_curve",
     "estimate_flow_uncertainty",
     "evaluate_fusion_quality",
+    "fuse_depth_and_rgb_levels",
     "estimate_from_level_series",
 ]
 
