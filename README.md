@@ -46,6 +46,20 @@ uroflow-mobile analyze-video /path/to/mobile_recording.mp4 \
   --output-json /path/to/summary.json
 ```
 
+## Анализ синхронизированных рядов уровня (Phase 2 foundation)
+
+```bash
+uroflow-mobile analyze-level-series examples/level_series_sample.json \
+  --ml-per-mm 8.0 \
+  --output-csv examples/level_series_fusion_curve.csv \
+  --output-json examples/level_series_fusion_summary.json
+```
+
+Формат входного JSON:
+- `timestamps_s` — временная шкала
+- `level_mm` — измеренный уровень жидкости
+- `depth_confidence` — confidence глубины (`0..1`, опционально)
+
 Ключевые параметры:
 
 - `--known-volume-ml` — калибрует кривую так, чтобы интеграл дал заданный объём.

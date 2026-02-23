@@ -83,3 +83,9 @@
 1. Спринт 1: capture + калибровка + water-bench тесты.
 2. Спринт 2: стабильный `V(t)/Q(t)` + quality flags + uncertainty.
 3. Спринт 3: audio/depth fusion + pilot-ready протокол.
+
+## Текущий статус реализации (2026-02-23)
+
+- Добавлен baseline-модуль: `src/uroflow_mobile/fusion.py`
+- Добавлен CLI режим: `uroflow-mobile analyze-level-series`
+- Добавлены тесты baseline-fusion: `tests/test_fusion.py`

@@ -21,9 +21,10 @@
 
 - [x] Зафиксировать концепт этапа 2 (fusion-архитектура и DoD)
 - [ ] Реализовать синхронный capture `RGB/depth/audio`
-- [ ] Реализовать оценку `h(t) -> V(t) -> Q(t)` в калиброванной геометрии
+- [x] Реализовать baseline-оценку `h(t) -> V(t) -> Q(t)` для синхронизированных рядов
 - [ ] Реализовать confidence-gating depth и fallback на RGB waterline
-- [ ] Ввести quality flags и правила `valid / repeat / reject`
+- [x] Ввести quality flags и правила `valid / repeat / reject` (baseline rules)
+- [x] Добавить CLI `analyze-level-series` и экспорт uncertainty (`sigma_Q`)
 - [ ] Обновить privacy-контур: derivatives-only, TTL, consent flows
 
 ## Phase 3: Synthetic Validation & Bench Tests
