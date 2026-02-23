@@ -163,3 +163,8 @@
 2. v1 clinical: audio + water-ROI video + quality score + report export.
 3. v2 Pro: LiDAR/TrueDepth геометрия и улучшенная нормализация.
 4. v3: longitudinal monitoring + EMR/FHIR/HL7 + региональные облачные контуры.
+
+## Реализация в репозитории
+
+Текущая реализация synthetic-bench и iOS capture contract описана в:
+`docs/stage-3-synthetic-bench-and-ios-contract.md`.

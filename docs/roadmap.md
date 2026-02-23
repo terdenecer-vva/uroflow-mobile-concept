@@ -25,12 +25,13 @@
 - [x] Реализовать confidence-gating depth и fallback на RGB waterline (series-level baseline)
 - [x] Ввести quality flags и правила `valid / repeat / reject` (baseline rules)
 - [x] Добавить CLI `analyze-level-series` и экспорт uncertainty (`sigma_Q`)
+- [x] Зафиксировать и валидировать iOS capture JSON contract (`ios_capture_v1`) + конверсия в fusion payload
 - [ ] Обновить privacy-контур: derivatives-only, TTL, consent flows
 
 ## Phase 3: Synthetic Validation & Bench Tests
 
 - [x] Зафиксировать stage-3 концепт (multimodal strategy + global regulatory/privacy frame)
-- [ ] Генератор синтетических потоков и water-bench сценариев
+- [x] Генератор синтетических потоков и water-bench сценариев
 - [ ] Расширенный набор unit/integration тестов
 - [ ] Бенчмарки устойчивости к шуму/бликам/наклону
 - [ ] Оценка propagation of uncertainty (`sigma_h -> sigma_V -> sigma_Q`)
