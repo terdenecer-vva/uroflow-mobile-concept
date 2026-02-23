@@ -1,13 +1,13 @@
-# Pilot Protocol v1 (Working Draft)
+# Pilot Protocol (v1.0)
 
 ## 1. Protocol Metadata
 
 - Protocol ID: `UF-PILOT-001`
-- Version: `1.0-draft`
+- Version: `1.0`
 - Date: `2026-02-23`
 - Sponsor / institution: `Mobile Uroflow Concept R&D`
-- Principal investigator: `Vladimir Vorobev (acting PI for pilot preparation)`
-- Clinical site(s): `Single partner urology outpatient site (CLN-01) + optional supervised home arm`
+- Principal investigator: `Vladimir Vorobev`
+- Clinical site(s): `Partner urology outpatient site (CLN-01) + optional supervised home arm`
 
 ## 2. Objective
 
@@ -99,7 +99,7 @@ Decision logic:
 - Technical operator: `mobile app study engineer`
 - Data manager: `study data manager`
 - Statistician: `biostatistics lead`
-- Privacy officer: `DPO/privacy lead`
+- Privacy officer: `privacy lead`
 
 ## 12. Deliverables
 
@@ -108,7 +108,7 @@ Decision logic:
 - Final pilot report with go/no-go recommendation
 - Updated risk register and protocol v2 proposal
 
-## 13. Go/No-Go Criteria (Draft Targets)
+## 13. Go/No-Go Criteria (v1 Targets)
 
 Targets to be met on primary analysis set:
 - `Qmax MAE <= 3.0 ml/s`

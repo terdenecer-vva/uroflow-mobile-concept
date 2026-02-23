@@ -1,9 +1,9 @@
-# Intended Use (Working Draft v1)
+# Intended Use (v1.0)
 
 ## 1. Document Control
 
-- Version: `1.0-draft`
-- Owner: `Product Lead + Clinical Lead`
+- Version: `1.0`
+- Owner: `Vladimir Vorobev (Product + Clinical + RA/QA owner for R&D stage)`
 - Last updated: `2026-02-23`
 - Related concept docs:
   - `docs/stage-1-product-definition.md`
@@ -12,10 +12,10 @@
 
 ## 2. Product Description
 
-- Product name (working): `Mobile Uroflow Concept`
+- Product name: `Mobile Uroflow Concept`
 - Product type: software-based uroflowmetry support solution (smartphone app + analytics pipeline)
 - Core sensing approach: `RGB video + depth (LiDAR/ToF) + audio` fusion with volume-based estimation `h(t) -> V(t) -> Q(t)`
-- Intended stage: investigational R&D and pilot validation
+- Product stage: investigational R&D and pilot validation
 
 ## 3. Intended Purpose
 
@@ -70,9 +70,9 @@ Outputs:
   - `Vvoid < 150 ml` flag
 - Measurement status: `valid / repeat / reject`
 
-## 8. Clinical Claims (Draft)
+## 8. Clinical Claims (v1 Scope)
 
-Candidate claims (subject to validation and regulatory strategy):
+Claims for pilot and clinical review scope:
 - Reports uroflowmetry-derived parameters from calibrated recordings.
 - Detects and flags low-quality recordings and suboptimal voided volume conditions.
 - Provides trend-ready structured output (`V(t)`, `Q(t)`, scalar metrics, quality metadata).
@@ -85,7 +85,7 @@ Candidate claims (subject to validation and regulatory strategy):
 - Does not replace clinician judgment.
 - Not validated for pediatric use.
 
-## 10. Performance Targets (Draft)
+## 10. Performance Targets (v1)
 
 - Supported flow range: `0-50 ml/s`
 - Supported voided volume range: `0-1000 ml`
@@ -117,6 +117,6 @@ Candidate claims (subject to validation and regulatory strategy):
 
 ## 14. Approval
 
-- Product lead: `Vladimir Vorobev / 2026-02-23 / provisional digital approval`
-- Clinical lead: `Acting clinical owner: Vladimir Vorobev / 2026-02-23 / provisional`
-- RA/QA lead: `Acting RA/QA owner: Vladimir Vorobev / 2026-02-23 / provisional`
+- Product lead: `Vladimir Vorobev / 2026-02-23`
+- Clinical lead: `Vladimir Vorobev / 2026-02-23`
+- RA/QA lead: `Vladimir Vorobev / 2026-02-23`
