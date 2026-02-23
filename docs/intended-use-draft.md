@@ -117,6 +117,6 @@ Candidate claims (subject to validation and regulatory strategy):
 
 ## 14. Approval
 
-- Product lead: `[name/date/signature]`
-- Clinical lead: `[name/date/signature]`
-- RA/QA lead: `[name/date/signature]`
+- Product lead: `Vladimir Vorobev / 2026-02-23 / provisional digital approval`
+- Clinical lead: `Acting clinical owner: Vladimir Vorobev / 2026-02-23 / provisional`
+- RA/QA lead: `Acting RA/QA owner: Vladimir Vorobev / 2026-02-23 / provisional`
