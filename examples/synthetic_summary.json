@@ -1,0 +1,26 @@
+{
+  "video_path": "examples/synthetic_stream.mp4",
+  "fps": 30.0,
+  "config": {
+    "motion_threshold": 25,
+    "min_active_pixels": 30,
+    "smoothing_window_frames": 5,
+    "resize_width": 480,
+    "ml_per_active_pixel_per_frame": 0.002,
+    "flow_threshold_ml_s": 0.2,
+    "min_pause_s": 0.5,
+    "roi": null,
+    "known_volume_ml": 250.0
+  },
+  "summary": {
+    "start_time_s": 0.0,
+    "end_time_s": 3.9,
+    "voiding_time_s": 3.9,
+    "flow_time_s": 3.9,
+    "voided_volume_ml": 249.99999999999994,
+    "q_max_ml_s": 95.4669996831373,
+    "q_avg_ml_s": 64.10256410256409,
+    "time_to_qmax_s": 0.3999999999999999,
+    "interruptions_count": 0
+  }
+}
