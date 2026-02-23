@@ -46,7 +46,10 @@ def _quality_to_dict(quality: FusionQualityFlags) -> dict[str, float | bool | st
         "low_depth_confidence": quality.low_depth_confidence,
         "insufficient_volume": quality.insufficient_volume,
         "noisy_level_signal": quality.noisy_level_signal,
+        "missing_rgb_fallback": quality.missing_rgb_fallback,
+        "fallback_to_rgb_used": quality.fallback_to_rgb_used,
         "depth_confidence_ratio": quality.depth_confidence_ratio,
+        "fallback_ratio": quality.fallback_ratio,
         "level_noise_mm": quality.level_noise_mm,
         "status": quality.status,
     }
@@ -66,27 +69,50 @@ def _write_fusion_csv(path: Path, estimation: FusionEstimationResult) -> None:
         writer.writerow(
             [
                 "timestamp_s",
-                "level_mm",
+                "fused_level_mm",
+                "depth_level_mm",
+                "rgb_level_mm",
                 "depth_confidence",
+                "used_rgb_fallback",
                 "volume_ml",
                 "flow_ml_s",
                 "flow_uncertainty_ml_s",
             ]
         )
-        for timestamp, level, confidence, volume, flow, sigma_q in zip(
-            estimation.timestamps_s,
-            estimation.level_mm,
-            estimation.depth_confidence,
-            estimation.volume_ml,
-            estimation.flow_ml_s,
-            estimation.flow_uncertainty_ml_s,
-            strict=True,
+        rgb_series = estimation.rgb_level_mm
+        for index, (
+            timestamp,
+            fused_level,
+            depth_level,
+            confidence,
+            used_fallback,
+            volume,
+            flow,
+            sigma_q,
+        ) in enumerate(
+            zip(
+                estimation.timestamps_s,
+                estimation.level_mm,
+                estimation.depth_level_mm,
+                estimation.depth_confidence,
+                estimation.used_rgb_fallback,
+                estimation.volume_ml,
+                estimation.flow_ml_s,
+                estimation.flow_uncertainty_ml_s,
+                strict=True,
+            )
         ):
+            rgb_value = ""
+            if rgb_series is not None:
+                rgb_value = f"{rgb_series[index]:.6f}"
             writer.writerow(
                 [
                     f"{timestamp:.6f}",
-                    f"{level:.6f}",
+                    f"{fused_level:.6f}",
+                    f"{depth_level:.6f}",
+                    rgb_value,
                     f"{confidence:.6f}",
+                    str(used_fallback).lower(),
                     f"{volume:.6f}",
                     f"{flow:.6f}",
                     f"{sigma_q:.6f}",
@@ -129,7 +155,10 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     analyze_level.add_argument(
         "input_json",
-        help="Path to JSON with timestamps_s, level_mm, optional depth_confidence.",
+        help=(
+            "Path to JSON with timestamps_s and either level_mm or depth_level_mm; "
+            "optional rgb_level_mm and depth_confidence"
+        ),
     )
     analyze_level.add_argument(
         "--output-csv",
@@ -223,23 +252,35 @@ def _handle_analyze_video(args: argparse.Namespace) -> int:
     return 0
 
 
-def _load_level_series(path: Path) -> tuple[list[float], list[float], list[float] | None]:
+def _load_level_series(
+    path: Path,
+) -> tuple[list[float], list[float], list[float] | None, list[float] | None]:
     payload = json.loads(path.read_text(encoding="utf-8"))
-    try:
-        timestamps_raw = payload["timestamps_s"]
-        levels_raw = payload["level_mm"]
-    except KeyError as error:
-        raise ValueError("input JSON must include timestamps_s and level_mm") from error
+
+    timestamps_raw = payload.get("timestamps_s")
+    if timestamps_raw is None:
+        raise ValueError("input JSON must include timestamps_s")
+
+    depth_levels_raw = payload.get("depth_level_mm")
+    if depth_levels_raw is None:
+        depth_levels_raw = payload.get("level_mm")
+    if depth_levels_raw is None:
+        raise ValueError("input JSON must include level_mm or depth_level_mm")
 
     timestamps_s = [float(value) for value in timestamps_raw]
-    level_mm = [float(value) for value in levels_raw]
+    depth_level_mm = [float(value) for value in depth_levels_raw]
 
     confidence_raw = payload.get("depth_confidence")
     depth_confidence = None
     if confidence_raw is not None:
         depth_confidence = [float(value) for value in confidence_raw]
 
-    return timestamps_s, level_mm, depth_confidence
+    rgb_levels_raw = payload.get("rgb_level_mm")
+    rgb_level_mm = None
+    if rgb_levels_raw is not None:
+        rgb_level_mm = [float(value) for value in rgb_levels_raw]
+
+    return timestamps_s, depth_level_mm, depth_confidence, rgb_level_mm
 
 
 def _handle_analyze_level_series(args: argparse.Namespace) -> int:
@@ -247,7 +288,7 @@ def _handle_analyze_level_series(args: argparse.Namespace) -> int:
     if not input_json.exists():
         raise FileNotFoundError(input_json)
 
-    timestamps_s, level_mm, depth_confidence = _load_level_series(input_json)
+    timestamps_s, depth_level_mm, depth_confidence, rgb_level_mm = _load_level_series(input_json)
     config = FusionLevelConfig(
         ml_per_mm=args.ml_per_mm,
         level_sigma_mm=args.level_sigma_mm,
@@ -260,9 +301,10 @@ def _handle_analyze_level_series(args: argparse.Namespace) -> int:
 
     estimation = estimate_from_level_series(
         timestamps_s=timestamps_s,
-        level_mm=level_mm,
+        level_mm=depth_level_mm,
         depth_confidence=depth_confidence,
         config=config,
+        rgb_level_mm=rgb_level_mm,
     )
     summary = calculate_uroflow_summary(
         timestamps_s=estimation.timestamps_s,
@@ -302,6 +344,9 @@ def _handle_analyze_level_series(args: argparse.Namespace) -> int:
                     "final_volume_ml": estimation.volume_ml[-1],
                     "mean_flow_uncertainty_ml_s": sum(estimation.flow_uncertainty_ml_s)
                     / len(estimation.flow_uncertainty_ml_s),
+                    "used_rgb_fallback_samples": sum(
+                        1 for used in estimation.used_rgb_fallback if used
+                    ),
                 },
             },
             ensure_ascii=False,
@@ -314,6 +359,7 @@ def _handle_analyze_level_series(args: argparse.Namespace) -> int:
     print(f"Fusion curve CSV: {output_csv}")
     print(f"Summary JSON: {output_json}")
     print(f"Quality status: {estimation.quality.status}")
+    print(f"RGB fallback used: {estimation.quality.fallback_to_rgb_used}")
     print(f"Qmax: {summary.q_max_ml_s:.2f} ml/s")
     print(f"Qavg: {summary.q_avg_ml_s:.2f} ml/s")
     print(f"Voided volume: {summary.voided_volume_ml:.2f} ml")

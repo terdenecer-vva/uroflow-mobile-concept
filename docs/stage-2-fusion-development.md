@@ -88,4 +88,5 @@
 
 - Добавлен baseline-модуль: `src/uroflow_mobile/fusion.py`
 - Добавлен CLI режим: `uroflow-mobile analyze-level-series`
+- Реализован confidence-gating depth + fallback на `rgb_level_mm`
 - Добавлены тесты baseline-fusion: `tests/test_fusion.py`

@@ -57,7 +57,8 @@ uroflow-mobile analyze-level-series examples/level_series_sample.json \
 
 Формат входного JSON:
 - `timestamps_s` — временная шкала
-- `level_mm` — измеренный уровень жидкости
+- `depth_level_mm` или `level_mm` — уровень из depth-канала
+- `rgb_level_mm` — опорный уровень из RGB waterline (опционально fallback)
 - `depth_confidence` — confidence глубины (`0..1`, опционально)
 
 Ключевые параметры:
@@ -71,6 +72,7 @@ uroflow-mobile analyze-level-series examples/level_series_sample.json \
 - `docs/` — архитектура, ограничения, roadmap
 - `docs/stage-1-product-definition.md` — формализация первого этапа концепции
 - `docs/stage-2-fusion-development.md` — развитие концепции v2 (video+audio+LiDAR/ToF)
+- `docs/stage-3-multimodal-global-strategy.md` — мультимодальная стратегия и региональные рамки (RU/CN/EU/US)
 - `docs/intended-use-v1.md` — документ Intended Use v1.0
 - `docs/dpia-checklist.md` — DPIA checklist v1.0 для данных видео/аудио/depth
 - `docs/pilot-protocol-v1.md` — pilot-протокол v1.0 сравнения с эталоном
