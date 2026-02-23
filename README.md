@@ -67,12 +67,46 @@ uroflow-mobile analyze-level-series examples/level_series_sample.json \
 - `--roi x,y,w,h` — ограничивает область анализа для устойчивости.
 - `--motion-threshold` и `--min-active-pixels` — фильтрация шумов.
 
+## Генерация synthetic bench-сценариев (Phase 3)
+
+```bash
+uroflow-mobile generate-synthetic-bench \
+  --profile intermittent \
+  --scenario reflective_bowl \
+  --target-volume-ml 320 \
+  --ml-per-mm 8.0 \
+  --output-json examples/synth_reflective.json \
+  --output-csv examples/synth_reflective.csv
+```
+
+Профили:
+- `bell`
+- `plateau`
+- `intermittent`
+- `staccato`
+
+Сценарии:
+- `quiet_lab`
+- `reflective_bowl`
+- `phone_motion`
+
+## Контракт iOS-capture (валидация и экспорт в fusion payload)
+
+```bash
+uroflow-mobile validate-capture-contract \
+  examples/ios_capture_contract_sample.json \
+  --output-level-json examples/ios_capture_level_payload.json
+```
+
+`output-level-json` можно напрямую передавать в `analyze-level-series`.
+
 ## Структура
 
 - `docs/` — архитектура, ограничения, roadmap
 - `docs/stage-1-product-definition.md` — формализация первого этапа концепции
 - `docs/stage-2-fusion-development.md` — развитие концепции v2 (video+audio+LiDAR/ToF)
 - `docs/stage-3-multimodal-global-strategy.md` — мультимодальная стратегия и региональные рамки (RU/CN/EU/US)
+- `docs/stage-3-synthetic-bench-and-ios-contract.md` — реализация synthetic-bench и iOS capture contract
 - `docs/intended-use-v1.md` — документ Intended Use v1.0
 - `docs/dpia-checklist.md` — DPIA checklist v1.0 для данных видео/аудио/depth
 - `docs/pilot-protocol-v1.md` — pilot-протокол v1.0 сравнения с эталоном

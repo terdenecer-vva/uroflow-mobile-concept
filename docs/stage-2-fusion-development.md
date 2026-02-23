@@ -90,3 +90,5 @@
 - Добавлен CLI режим: `uroflow-mobile analyze-level-series`
 - Реализован confidence-gating depth + fallback на `rgb_level_mm`
 - Добавлены тесты baseline-fusion: `tests/test_fusion.py`
+- Добавлен iOS capture contract validator + экспорт в fusion payload:
+  `uroflow-mobile validate-capture-contract`

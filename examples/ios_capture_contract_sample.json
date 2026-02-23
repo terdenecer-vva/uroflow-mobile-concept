@@ -1,0 +1,72 @@
+{
+  "schema_version": "ios_capture_v1",
+  "session": {
+    "session_id": "demo-20260223-001",
+    "started_at": "2026-02-23T20:30:00Z",
+    "mode": "water_impact",
+    "device": {
+      "model": "iPhone16,2",
+      "ios_version": "18.2"
+    },
+    "app": {
+      "version": "0.3.0-dev"
+    },
+    "calibration": {
+      "ml_per_mm": 8.0,
+      "min_depth_confidence": 0.6,
+      "camera_distance_mm": 650
+    },
+    "privacy": {
+      "store_raw_video": false,
+      "store_raw_audio": false,
+      "roi_only": true
+    }
+  },
+  "samples": [
+    {
+      "t_s": 0.0,
+      "depth_level_mm": 0.0,
+      "rgb_level_mm": 0.0,
+      "depth_confidence": 0.96,
+      "audio_rms_dbfs": -41.3,
+      "motion_norm": 0.02,
+      "roi_valid": true
+    },
+    {
+      "t_s": 0.5,
+      "depth_level_mm": 1.1,
+      "rgb_level_mm": 1.0,
+      "depth_confidence": 0.93,
+      "audio_rms_dbfs": -32.1,
+      "motion_norm": 0.03,
+      "roi_valid": true
+    },
+    {
+      "t_s": 1.0,
+      "depth_level_mm": 2.9,
+      "rgb_level_mm": 2.7,
+      "depth_confidence": 0.87,
+      "audio_rms_dbfs": -27.4,
+      "motion_norm": 0.03,
+      "roi_valid": true
+    },
+    {
+      "t_s": 1.5,
+      "depth_level_mm": null,
+      "rgb_level_mm": 4.4,
+      "depth_confidence": 0.24,
+      "audio_rms_dbfs": -26.8,
+      "motion_norm": 0.12,
+      "roi_valid": true
+    },
+    {
+      "t_s": 2.0,
+      "depth_level_mm": 5.8,
+      "rgb_level_mm": 5.6,
+      "depth_confidence": 0.9,
+      "audio_rms_dbfs": -25.0,
+      "motion_norm": 0.04,
+      "roi_valid": true
+    }
+  ]
+}
