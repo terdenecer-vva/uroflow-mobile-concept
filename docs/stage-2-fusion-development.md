@@ -3,7 +3,7 @@
 Источник этапа: `/Users/denecer/Yandex.Disk.localized/Научные материалы/Патентные заявки/Урофлоуметр/deep-research-report v2.md`
 
 Связанные шаблоны:
-- `docs/intended-use-draft.md`
+- `docs/intended-use-v1.md`
 - `docs/dpia-checklist.md`
 - `docs/pilot-protocol-v1.md`
 

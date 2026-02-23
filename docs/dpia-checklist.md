@@ -1,4 +1,4 @@
-# DPIA Checklist (Working Draft v1)
+# DPIA Checklist (v1.0 Baseline)
 
 Use this checklist before any pilot or production processing of `video/audio/depth` uroflowmetry data.
 
@@ -7,9 +7,9 @@ Use this checklist before any pilot or production processing of `video/audio/dep
 - Project / feature name: `Mobile Uroflow Concept - Fusion MVP`
 - Controller entity: `Individual controller during R&D: Vladimir Vorobev`
 - Processor(s): `none by default (on-device mode)`
-- DPO / privacy contact: `Acting privacy owner: Vladimir Vorobev (project owner)`
+- DPO / privacy contact: `Privacy contact: Vladimir Vorobev`
 - Assessment date: `2026-02-23`
-- Assessment owner: `Privacy Lead + Product Lead`
+- Assessment owner: `Vladimir Vorobev`
 
 ## 2. Scope of Processing
 
@@ -44,7 +44,7 @@ Working assumption for pilot planning only:
 
 - [x] Data minimization implemented (derivatives-only default)
 - [x] Purpose limitation implemented in design docs
-- [x] Storage limitation/retention periods defined (draft)
+- [x] Storage limitation/retention periods defined
 - [ ] Access controls least-privilege by role implemented and tested
 - [ ] User transparency notices reviewed by legal/privacy
 
@@ -82,7 +82,7 @@ Working assumption for pilot planning only:
 - [ ] Transfer mechanism documented (if cloud region is outside jurisdiction)
 - [ ] Supplemental safeguards assessed (if transfer is introduced)
 
-## 10. Retention and Deletion Policy (Draft)
+## 10. Retention and Deletion Policy (v1)
 
 - Raw media retention: `disabled by default`; if explicit consent enabled -> `max 30 days`
 - Derived metrics retention: `24 months` (pilot analytics and reproducibility)
@@ -105,7 +105,7 @@ Conditions before pilot data collection:
 2. Approved consent and privacy notice text.
 3. Verified deletion and access-control tests.
 
-Decision owner: `Vladimir Vorobev (acting product/privacy owner)`
+Decision owner: `Vladimir Vorobev`
 Date: `2026-02-23`
 
 ## 12. Reassessment Triggers

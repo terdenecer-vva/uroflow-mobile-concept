@@ -57,9 +57,9 @@ uroflow-mobile analyze-video /path/to/mobile_recording.mp4 \
 - `docs/` — архитектура, ограничения, roadmap
 - `docs/stage-1-product-definition.md` — формализация первого этапа концепции
 - `docs/stage-2-fusion-development.md` — развитие концепции v2 (video+audio+LiDAR/ToF)
-- `docs/intended-use-draft.md` — шаблон Intended Use (черновик)
-- `docs/dpia-checklist.md` — чеклист DPIA для данных видео/аудио/depth
-- `docs/pilot-protocol-v1.md` — шаблон pilot-протокола сравнения с эталоном
+- `docs/intended-use-v1.md` — документ Intended Use v1.0
+- `docs/dpia-checklist.md` — DPIA checklist v1.0 для данных видео/аудио/depth
+- `docs/pilot-protocol-v1.md` — pilot-протокол v1.0 сравнения с эталоном
 - `src/uroflow_mobile/` — доменные модели и расчёт метрик
 - `tests/` — базовые тесты расчёта метрик
 - `examples/` — демо-скрипты
