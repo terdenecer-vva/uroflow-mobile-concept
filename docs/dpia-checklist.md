@@ -5,9 +5,9 @@ Use this checklist before any pilot or production processing of `video/audio/dep
 ## 1. Processing Overview
 
 - Project / feature name: `Mobile Uroflow Concept - Fusion MVP`
-- Controller entity: `TBD legal entity`
+- Controller entity: `Individual controller during R&D: Vladimir Vorobev`
 - Processor(s): `none by default (on-device mode)`
-- DPO / privacy contact: `TBD`
+- DPO / privacy contact: `Acting privacy owner: Vladimir Vorobev (project owner)`
 - Assessment date: `2026-02-23`
 - Assessment owner: `Privacy Lead + Product Lead`
 
@@ -105,8 +105,8 @@ Conditions before pilot data collection:
 2. Approved consent and privacy notice text.
 3. Verified deletion and access-control tests.
 
-Decision owner: `[name]`
-Date: `[YYYY-MM-DD]`
+Decision owner: `Vladimir Vorobev (acting product/privacy owner)`
+Date: `2026-02-23`
 
 ## 12. Reassessment Triggers
 

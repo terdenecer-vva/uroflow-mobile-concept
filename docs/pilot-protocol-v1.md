@@ -6,8 +6,8 @@
 - Version: `1.0-draft`
 - Date: `2026-02-23`
 - Sponsor / institution: `Mobile Uroflow Concept R&D`
-- Principal investigator: `TBD`
-- Clinical site(s): `TBD (1 clinic + optional home supervised arm)`
+- Principal investigator: `Vladimir Vorobev (acting PI for pilot preparation)`
+- Clinical site(s): `Single partner urology outpatient site (CLN-01) + optional supervised home arm`
 
 ## 2. Objective
 
