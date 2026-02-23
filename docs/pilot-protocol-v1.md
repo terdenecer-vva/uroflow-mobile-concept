@@ -1,13 +1,13 @@
-# Pilot Protocol v1 (Template)
+# Pilot Protocol v1 (Working Draft)
 
 ## 1. Protocol Metadata
 
 - Protocol ID: `UF-PILOT-001`
-- Version: `0.1-draft`
-- Date: `YYYY-MM-DD`
-- Sponsor / institution:
-- Principal investigator:
-- Clinical site(s):
+- Version: `1.0-draft`
+- Date: `2026-02-23`
+- Sponsor / institution: `Mobile Uroflow Concept R&D`
+- Principal investigator: `TBD`
+- Clinical site(s): `TBD (1 clinic + optional home supervised arm)`
 
 ## 2. Objective
 
@@ -16,41 +16,44 @@ Primary objective:
 
 Secondary objectives:
 - Evaluate repeatability and measurement quality flags.
-- Assess robustness across capture conditions.
+- Assess robustness across capture conditions (lighting, depth confidence, container alignment).
 
 ## 3. Study Design
 
 - Type: prospective paired-comparison pilot
-- Reference method: certified clinical uroflowmeter
+- Reference method: certified clinical uroflowmeter (gravimetric preferred)
 - Test method: smartphone fusion pipeline (`RGB + depth + audio`)
 - Unit of analysis: paired measurement (test + reference)
+- Study mode: observational, non-interventional measurement comparison
 
 ## 4. Population
 
-Inclusion criteria (draft):
-- Adults able to void spontaneously
+Inclusion criteria:
+- Adults (`>=18 years`) able to void spontaneously
 - Able to provide informed consent
+- Able to follow capture instructions
 
-Exclusion criteria (draft):
-- Inability to follow protocol
-- Conditions that invalidate safe participation (per investigator)
+Exclusion criteria:
+- Catheterized voiding
+- Inability to complete protocol capture safely
+- Missing consent or withdrawal of consent
 
 ## 5. Sample Size (Pilot)
 
 - Target participants: `20-30`
-- Target paired measurements: `[set target, e.g. >=60]`
-- Repeat measurements per participant: `[e.g. 2-3 when feasible]`
+- Target paired measurements: `>=90`
+- Repeat measurements per participant: `2-4 when feasible`
 
 Note: this pilot is for variance estimation, workflow validation, and failure-mode discovery; not definitive clinical performance claims.
 
 ## 6. Measurement Workflow
 
-1. Verify setup and calibration (fiducial + container profile).
-2. Start synchronized capture and reference recording.
+1. Verify setup and calibration (fiducial + container profile + camera stability).
+2. Start synchronized smartphone capture (`RGB/depth/audio`) and reference recording.
 3. Record voiding event and derive `V(t), Q(t)`.
 4. Collect reference outputs from clinical uroflowmeter.
 5. Attach quality flags and protocol deviations.
-6. Repeat if `Vvoid < 150 ml` or measurement is flagged invalid.
+6. Repeat measurement if `Vvoid < 150 ml` or status is `repeat/reject`.
 
 ## 7. Endpoints
 
@@ -60,14 +63,14 @@ Primary endpoints:
 Secondary endpoints:
 - Agreement for timing metrics (`Flow time`, `Voiding time`, `TQmax`).
 - Repeatability metrics within participant.
-- Invalid/failed capture rate and reasons.
+- Invalid/failed capture rate and root-cause categories.
 
-## 8. Statistical Analysis Plan (Draft)
+## 8. Statistical Analysis Plan
 
 - Continuous agreement: Bland-Altman (bias, limits of agreement)
-- Error metrics: MAE, RMSE
-- Reliability: ICC for repeatability where applicable
-- Subgroup analyses (if sample allows): sex, age band, `Vvoid` strata
+- Error metrics: MAE, RMSE for `Qmax`, `Qavg`, `Vvoid`
+- Reliability: ICC for repeated measurements (where available)
+- Subgroup analyses (sample permitting): sex, age band, `Vvoid` strata (`<150`, `150-300`, `>300 ml`)
 
 ## 9. Data Quality and QC Rules
 
@@ -80,23 +83,23 @@ Mandatory QC fields per measurement:
 
 Decision logic:
 - `valid` -> include in primary analysis
-- `repeat` -> acceptable with repeat capture
+- `repeat` -> include only repeated valid measurement in primary analysis
 - `reject` -> exclude from primary analysis; include in failure analysis
 
 ## 10. Safety, Ethics, and Privacy
 
 - Informed consent required before data capture
 - Derivatives-only storage default; raw media only with explicit consent
-- De-identification and access controls enforced
-- Incident reporting path defined
+- De-identification and role-based access controls required
+- Incident reporting path and escalation owner defined before first participant
 
 ## 11. Operational Roles
 
-- Clinical operator:
-- Technical operator:
-- Data manager:
-- Statistician:
-- Privacy officer:
+- Clinical operator: `site uroflow nurse/technician`
+- Technical operator: `mobile app study engineer`
+- Data manager: `study data manager`
+- Statistician: `biostatistics lead`
+- Privacy officer: `DPO/privacy lead`
 
 ## 12. Deliverables
 
@@ -105,13 +108,15 @@ Decision logic:
 - Final pilot report with go/no-go recommendation
 - Updated risk register and protocol v2 proposal
 
-## 13. Go/No-Go Criteria (Draft)
+## 13. Go/No-Go Criteria (Draft Targets)
 
-Define thresholds before study start:
-- Maximum acceptable bias per primary metric
-- Maximum acceptable failed-capture rate
-- Minimum repeatability threshold (ICC target)
-- Minimum percentage of valid captures
+Targets to be met on primary analysis set:
+- `Qmax MAE <= 3.0 ml/s`
+- `Qavg MAE <= 2.0 ml/s`
+- `Vvoid MAE <= 25 ml` or `<=10%` relative error (whichever is larger)
+- Valid-capture rate `>=85%`
+- Failed/reject capture rate `<=15%`
+- ICC (`Qmax`, repeated measures) `>=0.75`
 
 Outcome:
 - [ ] Go to pivotal planning
