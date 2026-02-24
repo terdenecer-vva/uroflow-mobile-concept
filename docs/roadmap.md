@@ -46,6 +46,7 @@
 
 - [x] Зафиксировать iOS/CoreML архитектуру MVP v0.1
 - [x] Подготовить 12-недельный sprint/backlog план (Jira/Linear-ready)
+- [x] Подготовить import-ready backlog package для Linear (`CSV/JSON`)
 - [ ] Прототип мобильного клиента
 - [ ] Захват и on-device обработка fusion-данных
 - [ ] Отображение отчёта на устройстве
@@ -55,6 +56,7 @@
 - [x] Подготовить one-pager протокол клинического исследования (draft)
 - [x] Сформировать регуляторную матрицу (РФ/Китай/ЕС/США) для planning
 - [x] Подготовить ethics package (ICF/SOP/eCRF/data handling appendix)
+- [x] Подготовить bilingual ethics templates (RU/EN) для site onboarding
 - [x] Ввести claims governance policy и claim registry process
 - [ ] Анализ рисков и ISO 14971
 - [ ] Путь к сертификации (по юрисдикции)

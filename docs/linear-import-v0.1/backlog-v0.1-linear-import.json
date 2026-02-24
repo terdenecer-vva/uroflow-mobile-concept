@@ -1,0 +1,253 @@
+{
+  "format": "linear_seed_v1",
+  "created_at": "2026-02-24",
+  "notes": [
+    "CSV follows Linear importer fields (Title, Description, Priority, Status, Assignee, Created, Completed, Labels, Estimate).",
+    "Set target team during import and verify workflow state names before final upload."
+  ],
+  "issues": [
+    {
+      "id": "CAP-01",
+      "title": "Unified capture timestamps for audio/video/IMU",
+      "description": "Implement synchronized capture clock and export trace logs; DoD: max drift <= 50 ms on 20 validation sessions.",
+      "priority": "High",
+      "status": "Backlog",
+      "labels": ["project:mvp-v0.1", "phase:g0", "epic:capture"],
+      "estimate": 5
+    },
+    {
+      "id": "CAP-02",
+      "title": "Depth availability and validity flags in capture contract",
+      "description": "Add depth availability, confidence validity, and fallback reason fields in ios_capture_v1 payload.",
+      "priority": "High",
+      "status": "Backlog",
+      "labels": ["project:mvp-v0.1", "phase:g0", "epic:capture"],
+      "estimate": 3
+    },
+    {
+      "id": "CAP-03",
+      "title": "AR onboarding for ROI water positioning",
+      "description": "Build AR setup flow with green ROI zone and readiness checks for angle, water visibility, and exposure.",
+      "priority": "High",
+      "status": "Backlog",
+      "labels": ["project:mvp-v0.1", "phase:g0", "epic:ux"],
+      "estimate": 5
+    },
+    {
+      "id": "CAP-04",
+      "title": "Freeze ios_capture_v1 contract and version policy",
+      "description": "Publish final schema, compatibility policy, and validation checklist; tag as contract freeze for pilot.",
+      "priority": "High",
+      "status": "Backlog",
+      "labels": ["project:mvp-v0.1", "phase:g0", "epic:data-contract"],
+      "estimate": 3
+    },
+    {
+      "id": "CAP-05",
+      "title": "Offline replay pipeline for reproducible inference",
+      "description": "Implement deterministic replay from capture payload to fusion outputs with model/config hash tracing.",
+      "priority": "High",
+      "status": "Backlog",
+      "labels": ["project:mvp-v0.1", "phase:g0", "epic:mlops"],
+      "estimate": 5
+    },
+    {
+      "id": "CAP-06",
+      "title": "Capture quality telemetry dashboard stub",
+      "description": "Create basic dashboard feed for ROI loss, motion, low-SNR, and reject/repeat rates.",
+      "priority": "Medium",
+      "status": "Backlog",
+      "labels": ["project:mvp-v0.1", "phase:g0", "epic:ops"],
+      "estimate": 2
+    },
+    {
+      "id": "CLN-01",
+      "title": "Clinical operator SOP rollout in pilot site",
+      "description": "Train at least 2 operators and record competency checklist completion for site readiness.",
+      "priority": "High",
+      "status": "Backlog",
+      "labels": ["project:mvp-v0.1", "phase:g0", "epic:clinical"],
+      "estimate": 3
+    },
+    {
+      "id": "GOV-01",
+      "title": "Intended use and non-claims freeze memo",
+      "description": "Finalize intended use wording and non-claims boundaries; sign off by RA/QA and Clinical Lead.",
+      "priority": "Urgent",
+      "status": "Backlog",
+      "labels": ["project:mvp-v0.1", "phase:g0", "epic:governance"],
+      "estimate": 2
+    },
+    {
+      "id": "ML-01",
+      "title": "Late-fusion baseline training pipeline",
+      "description": "Train baseline audio/video/geometry model with reproducible run metadata and artifact registry.",
+      "priority": "High",
+      "status": "Backlog",
+      "labels": ["project:mvp-v0.1", "phase:g1", "epic:model"],
+      "estimate": 5
+    },
+    {
+      "id": "ML-02",
+      "title": "Uncertainty calibration for sigma outputs",
+      "description": "Calibrate sigma_h/sigma_V/sigma_Q against validation set; add uncertainty coverage report.",
+      "priority": "High",
+      "status": "Backlog",
+      "labels": ["project:mvp-v0.1", "phase:g1", "epic:model"],
+      "estimate": 3
+    },
+    {
+      "id": "ML-03",
+      "title": "Quality score and valid/repeat/reject policy",
+      "description": "Tune policy thresholds and document trigger reasons for each status class.",
+      "priority": "High",
+      "status": "Backlog",
+      "labels": ["project:mvp-v0.1", "phase:g1", "epic:quality"],
+      "estimate": 3
+    },
+    {
+      "id": "BEN-01",
+      "title": "Bench stress pack execution",
+      "description": "Run noise/tilt/lighting/toilet scenarios and generate MAE-RMSE comparison summary.",
+      "priority": "High",
+      "status": "Backlog",
+      "labels": ["project:mvp-v0.1", "phase:g1", "epic:bench"],
+      "estimate": 5
+    },
+    {
+      "id": "BEN-02",
+      "title": "Leave-one-toilet-out generalization test",
+      "description": "Evaluate robustness across unseen toilets and propose mitigations for outlier failures.",
+      "priority": "High",
+      "status": "Backlog",
+      "labels": ["project:mvp-v0.1", "phase:g1", "epic:bench"],
+      "estimate": 3
+    },
+    {
+      "id": "DATA-01",
+      "title": "Dataset lineage and leakage validation",
+      "description": "Publish dataset card, split strategy, and leakage check report with signed review.",
+      "priority": "High",
+      "status": "Backlog",
+      "labels": ["project:mvp-v0.1", "phase:g1", "epic:data"],
+      "estimate": 3
+    },
+    {
+      "id": "SEC-01",
+      "title": "Pilot threat and privacy risk workshop",
+      "description": "Create risk register with owners, severities, and mitigation deadlines.",
+      "priority": "High",
+      "status": "Backlog",
+      "labels": ["project:mvp-v0.1", "phase:g1", "epic:security"],
+      "estimate": 2
+    },
+    {
+      "id": "ETH-01",
+      "title": "ICF package finalization for site submission",
+      "description": "Finalize ICF language with PI and legal review; prepare versioned approval copy.",
+      "priority": "Urgent",
+      "status": "Backlog",
+      "labels": ["project:mvp-v0.1", "phase:g2", "epic:ethics"],
+      "estimate": 3
+    },
+    {
+      "id": "ETH-02",
+      "title": "eCRF build and data dictionary approval",
+      "description": "Implement eCRF fields from dictionary and validate mandatory logic before pilot dry run.",
+      "priority": "High",
+      "status": "Backlog",
+      "labels": ["project:mvp-v0.1", "phase:g2", "epic:ethics"],
+      "estimate": 3
+    },
+    {
+      "id": "ETH-03",
+      "title": "Data handling appendix and retention controls",
+      "description": "Approve retention, de-identification, and role-based access controls for pilot dataset.",
+      "priority": "High",
+      "status": "Backlog",
+      "labels": ["project:mvp-v0.1", "phase:g2", "epic:ethics"],
+      "estimate": 2
+    },
+    {
+      "id": "CLN-02",
+      "title": "Statistical Analysis Plan v1.0",
+      "description": "Freeze SAP with primary and secondary endpoint methods before first patient enrolled.",
+      "priority": "Urgent",
+      "status": "Backlog",
+      "labels": ["project:mvp-v0.1", "phase:g2", "epic:clinical"],
+      "estimate": 3
+    },
+    {
+      "id": "GOV-02",
+      "title": "Claims governance rollout to product and marketing",
+      "description": "Adopt claim registry and release gate checks for app UI, report templates, and website text.",
+      "priority": "High",
+      "status": "Backlog",
+      "labels": ["project:mvp-v0.1", "phase:g2", "epic:governance"],
+      "estimate": 2
+    },
+    {
+      "id": "QA-01",
+      "title": "Pilot release checklist and DHF index",
+      "description": "Publish checklist and evidence index; close all blocking compliance gaps.",
+      "priority": "High",
+      "status": "Backlog",
+      "labels": ["project:mvp-v0.1", "phase:g2", "epic:quality"],
+      "estimate": 2
+    },
+    {
+      "id": "DRY-01",
+      "title": "Clinical dry-run sessions (10-15 records)",
+      "description": "Execute dry-run protocol and capture corrective action list with owners and deadlines.",
+      "priority": "High",
+      "status": "Backlog",
+      "labels": ["project:mvp-v0.1", "phase:g3", "epic:clinical-ops"],
+      "estimate": 3
+    },
+    {
+      "id": "DRY-02",
+      "title": "Model freeze release fusion_v0.1.0",
+      "description": "Freeze model artifact and add hash injection into every generated summary report.",
+      "priority": "Urgent",
+      "status": "Backlog",
+      "labels": ["project:mvp-v0.1", "phase:g3", "epic:model-ops"],
+      "estimate": 2
+    },
+    {
+      "id": "DRY-03",
+      "title": "End-to-end audit trail verification",
+      "description": "Verify each session is traceable to app version, model hash, config, and operator action logs.",
+      "priority": "High",
+      "status": "Backlog",
+      "labels": ["project:mvp-v0.1", "phase:g3", "epic:data-ops"],
+      "estimate": 3
+    },
+    {
+      "id": "DRY-04",
+      "title": "Incident response tabletop drill",
+      "description": "Run access breach drill and close resulting corrective actions.",
+      "priority": "High",
+      "status": "Backlog",
+      "labels": ["project:mvp-v0.1", "phase:g3", "epic:security"],
+      "estimate": 2
+    },
+    {
+      "id": "OPS-01",
+      "title": "Pilot kickoff runbook and handoff",
+      "description": "Deliver single runbook covering SOP flow, escalation, contacts, and daily reporting format.",
+      "priority": "Medium",
+      "status": "Backlog",
+      "labels": ["project:mvp-v0.1", "phase:g3", "epic:operations"],
+      "estimate": 2
+    },
+    {
+      "id": "GATE-01",
+      "title": "Go-NoGo governance board decision",
+      "description": "Hold formal board review and publish signed go/no-go decision with blockers or launch approval.",
+      "priority": "Urgent",
+      "status": "Backlog",
+      "labels": ["project:mvp-v0.1", "phase:g3", "epic:governance"],
+      "estimate": 2
+    }
+  ]
+}

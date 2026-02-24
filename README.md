@@ -118,6 +118,7 @@ uroflow-mobile validate-capture-contract \
 - `docs/coreml-architecture-v0.1.md` — спецификация iOS/CoreML sensor-fusion архитектуры
 - `docs/regulatory-matrix-ru-cn-eu-us-v0.1.md` — регуляторная матрица по регионам
 - `docs/ethics-package-v0.1/` — шаблоны ICF/SOP/eCRF/data handling appendix
+- `docs/linear-import-v0.1/` — import-ready backlog package для Linear (CSV/JSON + инструкция)
 - `docs/claims-governance-v0.1.md` — policy управления claims и процесс согласования формулировок
 - `docs/intended-use-v1.md` — документ Intended Use v1.0
 - `docs/dpia-checklist.md` — DPIA checklist v1.0 для данных видео/аудио/depth
