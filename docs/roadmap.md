@@ -33,6 +33,7 @@
 - [x] Зафиксировать stage-3 концепт (multimodal strategy + global regulatory/privacy frame)
 - [x] Генератор синтетических потоков и water-bench сценариев
 - [x] Расширенный набор unit/integration тестов (synthetic + contract-to-fusion pipeline)
+- [x] Подготовить bench package v0.2 (BOM variants, wiring, mechanics, acceptance criteria)
 - [ ] Бенчмарки устойчивости к шуму/бликам/наклону
 - [x] Оценка propagation of uncertainty (`sigma_h -> sigma_V -> sigma_Q`) для series-level baseline
 
@@ -47,6 +48,7 @@
 - [x] Зафиксировать iOS/CoreML архитектуру MVP v0.1
 - [x] Подготовить 12-недельный sprint/backlog план (Jira/Linear-ready)
 - [x] Подготовить import-ready backlog package для Linear (`CSV/JSON`)
+- [x] Подготовить ML training package v1.0 (gates/checklist/data contract)
 - [ ] Прототип мобильного клиента
 - [ ] Захват и on-device обработка fusion-данных
 - [ ] Отображение отчёта на устройстве

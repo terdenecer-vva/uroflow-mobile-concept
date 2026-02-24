@@ -1,0 +1,16 @@
+gate_id,model,metric,target,stage,severity,source
+MLA-GT-001,Model A,t_start_t_end_median_abs_error_s,<= 0.5,clinical_validation,error,Spec section 10
+MLA-GT-002,Model A,flow_present_recall,>= 0.95,clinical_validation,error,Spec section 10
+MLA-GT-003,Model A,flush_not_in_water_recall,>= 0.90,clinical_validation,error,Spec section 10
+MLA-GT-004,Model A,false_start_stop_rate_pct,track and reduce release-to-release,bench_regression,warning,Spec section 7.1/10
+MLB-GT-001,Model B,qmax_mae_ml_s,pre-specified in pilot protocol,clinical_validation,error,Spec section 10
+MLB-GT-002,Model B,qavg_mae_ml_s,pre-specified in pilot protocol,clinical_validation,error,Spec section 10
+MLB-GT-003,Model B,vvoid_mae_ml,pre-specified in pilot protocol,clinical_validation,error,Spec section 10
+MLB-GT-004,Model B,bland_altman_bias_and_loa,within pre-specified clinical limits,clinical_validation,error,Spec section 10
+MLB-GT-005,Model B,uncertainty_coverage_q_ref_in_qhat_pm_2sigma,track and improve toward nominal 95%,clinical_validation,warning,Spec section 10
+MLQ-GT-001,Quality Gate,valid_measurement_rate_pct,>= 85 under protocol conditions,clinical_validation,error,Spec section 10
+MLQ-GT-002,Quality Gate,low_quality_measurements_labeled,100% of low-quality cases are marked non-reliable,clinical_validation,error,Spec section 10
+MLOPS-GT-001,MLOps,model_card_and_data_card_published,required per model release,release,error,Spec section 12
+MLOPS-GT-002,MLOps,dataset_lineage_and_training_config_logged,required per model release,release,error,Spec section 12
+COREML-GT-001,Deployment,on_device_inference_latency_ms,measured and versioned per target iPhone,release,error,Spec section 11
+COREML-GT-002,Deployment,on_device_memory_peak_mb,measured and versioned per target iPhone,release,error,Spec section 11
