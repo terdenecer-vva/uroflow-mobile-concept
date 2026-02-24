@@ -58,5 +58,5 @@
 - [x] Подготовить ethics package (ICF/SOP/eCRF/data handling appendix)
 - [x] Подготовить bilingual ethics templates (RU/EN) для site onboarding
 - [x] Ввести claims governance policy и claim registry process
-- [ ] Анализ рисков и ISO 14971
-- [ ] Путь к сертификации (по юрисдикции)
+- [x] Подготовить ISO 14971 risk management draft + risk register
+- [x] Подготовить certification pathway draft по юрисдикциям

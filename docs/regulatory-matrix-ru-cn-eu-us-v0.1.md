@@ -122,3 +122,9 @@ Immediate actions:
 Недели 9-12:
 - собрать pre-submission пакет (внутренний) для РФ first-pilot;
 - подготовить адаптацию пакета для ЕС/США/Китая.
+
+## Связанные operational artifacts
+
+- `docs/iso14971-risk-management-v0.1.md`
+- `docs/risk-register-v0.1.csv`
+- `docs/certification-pathway-v0.1.md`

@@ -129,6 +129,9 @@ Go/No-Go критерии:
 - sprint/backlog план: `docs/sprint-plan-v0.1-12-weeks.md`
 - ethics package: `docs/ethics-package-v0.1/`
 - claims governance: `docs/claims-governance-v0.1.md`
+- ISO 14971 draft: `docs/iso14971-risk-management-v0.1.md`
+- risk register: `docs/risk-register-v0.1.csv`
+- certification pathway: `docs/certification-pathway-v0.1.md`
 
 ## 7) Decision Log (решения, которые нельзя откладывать)
 
