@@ -119,6 +119,9 @@ uroflow-mobile validate-capture-contract \
 - `docs/regulatory-matrix-ru-cn-eu-us-v0.1.md` — регуляторная матрица по регионам
 - `docs/ethics-package-v0.1/` — шаблоны ICF/SOP/eCRF/data handling appendix
 - `docs/linear-import-v0.1/` — import-ready backlog package для Linear (CSV/JSON + инструкция)
+- `docs/bench-package-v0.2/` — bench BOM/SOP package (variants, wiring, mechanics, acceptance)
+- `docs/ml-pipeline-package-v1.0/` — ML training pipeline package (gates, checklist, data contract)
+- `docs/bench-ml-additional-data-analysis-v0.2.md` — сводный анализ дополнительных bench/ML материалов
 - `docs/claims-governance-v0.1.md` — policy управления claims и процесс согласования формулировок
 - `docs/iso14971-risk-management-v0.1.md` — risk management file draft (ISO 14971)
 - `docs/risk-register-v0.1.csv` — risk register для operational tracking
@@ -136,6 +139,7 @@ uroflow-mobile validate-capture-contract \
 - `scripts/generate_redcap_profile_v1_1.py` — генератор REDCap Data Dictionary из canonical EDC
 - `scripts/generate_redcap_dry_run_records_v1_1.py` — генератор REDCap dry-run импортных записей
 - `scripts/generate_openclinica_profile_v1_1.py` — генератор OpenClinica профиля из canonical EDC
+- `scripts/extract_bench_bom_v0_2.py` — генератор CSV-пакета bench BOM из XLSX
 
 ## Важно
 

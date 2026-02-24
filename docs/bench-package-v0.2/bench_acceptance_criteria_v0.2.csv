@@ -1,0 +1,11 @@
+criterion_id,scope,rule,severity,source
+BEN-GT-001,ground_truth,mass_sampling_hz >= 50 (low-tier fallback >= 10),error,SOP v0.2 section 2
+BEN-GT-002,ground_truth,volume_calibration_error_pct <= 1,error,SOP v0.2 section 2
+BEN-SYNC-001,synchronization,t0 marker detected in bench log and (audio or video),error,SOP v0.2 section 7.3
+BEN-RUN-001,run_acceptance,mass_series_monotonic == true,error,SOP v0.2 section 10
+BEN-RUN-002,run_acceptance,abs(volume_integral_error_pct) <= 2,error,SOP v0.2 section 10
+BEN-RUN-003,run_acceptance,metadata_completeness_pct == 100,error,SOP v0.2 section 8/10
+BEN-MECH-001,mechanics,water_level_mm in [60,90],warning,SOP v0.2 section 4.1
+BEN-MECH-002,mechanics,fall_height_m in {0.2,0.4,0.6},warning,SOP v0.2 section 9
+BEN-MECH-003,mechanics,iphone_distance_m in [0.6,1.2],warning,SOP v0.2 section 9
+BEN-SAFE-001,safety,electronics_splash_protection == true,error,SOP v0.2 section 11

@@ -1,0 +1,11 @@
+stage_id,stage_name,inputs,outputs,done_definition,source
+MLP-01,Data Ingestion and Versioning,"bench/clinic/home records; consent metadata","dataset_version manifest; record index; split groups",All records have immutable IDs and source tags,Spec section 2/3
+MLP-02,Annotation and QA,"Q_ref(t); event markers; artifact labels","validated labels for Model A/B; QA report","5-10% double annotation and integrity checks pass,Spec section 4
+MLP-03,Grouped Splits,"record index with subject/toilet/device/site tags","train/val/test manifests",No leakage across subject and grouped dimensions,Spec section 5
+MLP-04,Feature Pipeline,"audio/video/IMU/depth inputs","10 Hz synchronized feature tensors","Beep/LED t0 sync and feature extraction reproducible,Spec section 6
+MLP-05,Model A Training,"feature tensors; event/artifact labels","Model A checkpoint; metrics","Event/artifact metrics meet gate profile,Spec section 7.1/10
+MLP-06,Model B Training,"feature tensors; Q_ref(t)","Model B checkpoint; uncertainty calibration report","Regression metrics and uncertainty coverage reported,Spec section 7.2/10
+MLP-07,Fusion and Calibration,"Model A/B outputs; domain params","fused Q(t); quality-gated outputs","Fusion logic + toilet fingerprint behavior validated,Spec section 8
+MLP-08,Augmentation Robustness,"base dataset; augmentation configs","robustness benchmark report",Noise/glare/motion scenarios executed and compared,Spec section 9
+MLP-09,CoreML Export and Device Tests,final checkpoints,CoreML models + device perf report,Latency/memory/stability measured on target devices,Spec section 11
+MLP-10,Release and Monitoring,release candidate + cards,model release package + PMS monitoring plan,Model card and drift monitors published,Spec section 12/13
