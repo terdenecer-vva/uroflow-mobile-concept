@@ -1,0 +1,2 @@
+Anomaly ID,Title,Description,Detected date,Affected versions,Severity (Low/Med/High),Risk assessment summary,Mitigation / Workaround,Status (Open/Deferred/Closed),Target fix release,Verification evidence,Notes
+ANOM-000,Baseline build - no unresolved anomalies recorded yet,N/A,N/A,N/A,N/A,Open,,,,To be updated during V&V and pilot,

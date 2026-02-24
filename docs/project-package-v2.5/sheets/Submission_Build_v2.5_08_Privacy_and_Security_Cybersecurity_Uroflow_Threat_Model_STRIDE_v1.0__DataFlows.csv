@@ -1,0 +1,6 @@
+Flow_ID,Source,Destination,Data,Protocol,Security_Notes
+F-01,Sensors,App,Audio/Video/IMU/Depth,Local,On-device processing; avoid saving media
+F-02,App,Local storage,"Q(t), metrics, logs",Local,Encrypted at rest
+F-03,App,User export,PDF report,Share sheet,User confirmation; minimize data
+F-04,App,Clinic EMR,Metrics / PDF / FHIR,TLS,"AuthN/AuthZ, audit trail"
+F-05,Update server (optional),App,App/Model updates,TLS + signing,Integrity check; rollback

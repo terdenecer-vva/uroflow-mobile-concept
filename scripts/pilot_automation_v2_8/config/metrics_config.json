@@ -1,0 +1,66 @@
+{
+  "version": "1.1",
+  "pred_curve_candidates": [
+    "Q_pred.csv",
+    "Q_app.csv"
+  ],
+  "pred_result_candidates": [
+    "app_result.json",
+    "pred_params.json"
+  ],
+  "curve_expected_columns": [
+    "t_s",
+    "Q_ml_s"
+  ],
+  "curve_alt_column_map": {
+    "time_s": "t_s",
+    "t": "t_s",
+    "Q": "Q_ml_s",
+    "flow_ml_s": "Q_ml_s"
+  },
+  "flow_threshold_ml_s": 0.5,
+  "posture_map": {
+    "male_standing": "M_STAND",
+    "male_sitting": "M_SIT",
+    "female_sitting": "F_SIT",
+    "M_STAND": "M_STAND",
+    "M_SIT": "M_SIT",
+    "F_SIT": "F_SIT"
+  },
+  "bool_map": {
+    "yes": "Y",
+    "no": "N",
+    "Y": "Y",
+    "N": "N",
+    "true": "Y",
+    "false": "N",
+    "1": "Y",
+    "0": "N"
+  },
+  "artifact_map": {
+    "yes": 1,
+    "no": 0,
+    "1": 1,
+    "0": 0,
+    "true": 1,
+    "false": 0
+  },
+  "valid_map": {
+    "yes": "Y",
+    "no": "N",
+    "Y": "Y",
+    "N": "N",
+    "true": "Y",
+    "false": "N",
+    "1": "Y",
+    "0": "N"
+  },
+  "groupings": [
+    "site_id",
+    "toilet_id",
+    "iphone_model",
+    "noise_level",
+    "sex",
+    "posture"
+  ]
+}

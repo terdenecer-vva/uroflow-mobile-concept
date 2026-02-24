@@ -1,0 +1,6 @@
+cohort,quality_status,ref_qmax_ml_s,app_qmax_ml_s,ref_qavg_ml_s,app_qavg_ml_s,ref_vvoid_ml,app_vvoid_ml,ref_t_start_s,app_t_start_s,ref_t_end_s,app_t_end_s,full_frame_stored
+clinic,valid,20,21,12,11,300,315,0.0,0.1,20.0,20.2,0
+clinic,valid,18,17,10,11,280,270,0.0,0.2,18.0,17.8,0
+clinic,repeat,25,23,14,13,350,325,0.0,0.2,22.0,22.4,0
+clinic,valid,22,21,13,12,330,315,0.0,0.2,21.0,21.2,0
+clinic,valid,19,20,11,10,290,300,0.0,0.1,19.0,19.3,0

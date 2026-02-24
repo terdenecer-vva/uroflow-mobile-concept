@@ -1,0 +1,54 @@
+{
+  "sex": [
+    "M",
+    "F"
+  ],
+  "posture": [
+    "male_standing",
+    "male_sitting",
+    "female_sitting",
+    "other"
+  ],
+  "noise_level": [
+    "none",
+    "moderate",
+    "high"
+  ],
+  "noise_source": [
+    "none",
+    "fan",
+    "speech",
+    "running_water",
+    "other"
+  ],
+  "lighting": [
+    "normal",
+    "low",
+    "glare"
+  ],
+  "aimed_into_water": [
+    "yes",
+    "no",
+    "uncertain"
+  ],
+  "pattern_label_ref": [
+    "bell",
+    "plateau",
+    "intermittent",
+    "staccato",
+    "other",
+    "unclassified"
+  ],
+  "overall_record_valid": [
+    "yes",
+    "no"
+  ],
+  "invalid_reason_code": [
+    "flush",
+    "roi_lost",
+    "major_motion",
+    "ref_export_missing",
+    "privacy_issue",
+    "other"
+  ]
+}

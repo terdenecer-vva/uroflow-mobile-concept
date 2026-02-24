@@ -1,0 +1,19 @@
+Build root,/mnt/data/work_v2.7_build/Submission_Build_v2.7
+GSPR input,/mnt/data/work_v2.7_build/Submission_Build_v2.7/06_EU_MDR/Uroflow_EU_MDR_GSPR_Checklist_AnnexI_v1.1_EXECUTED.xlsx
+Evidence manifest,/mnt/data/work_v2.7_build/Submission_Build_v2.7/05_Clinical/Uroflow_P0_Pilot_Readiness_Evidence_Manifest_v1.0.xlsx
+,
+Total referenced files,101
+Total present,70
+Total missing,31
+,
+Missing reference,Count
+06_EU_MDR/Uroflow_Software_System_VV_Plan_v1.0_EN.docx,7
+01_Product_QMS/Uroflow_IFU_Draft_v1.0_EN.docx,7
+06_EU_MDR/Uroflow_VV_Evidence_Matrix_v1.0.xlsx,6
+01_Product_QMS/Uroflow_Labeling_Claims_Alignment_v1.0_RU.docx,4
+01_Product_QMS/Uroflow_IFU_Draft_v1.0_RU.docx,2
+06_EU_MDR/Uroflow_Software_System_VV_Report_v1.0_EN.docx,1
+02_Algorithm_and_ML/Uroflow_Quality_Score_Calibration_Protocol_v1.0_RU.docx,1
+06_EU_MDR/Uroflow_PMCF_Plan_v1.0_RU.docx,1
+06_EU_MDR/Uroflow_PSUR_Template_v1.0_RU.docx,1
+06_EU_MDR/Uroflow_PMS_Forms_and_Registers_v1.0.xlsx,1

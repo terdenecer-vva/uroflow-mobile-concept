@@ -1,0 +1,4 @@
+Consent item,When shown,Data covered,UI artifact reference,Logging requirement,Notes
+Processing of health data for measurement,First launch / before first test,Derived uroflow results,UI-SCREEN-PRIV-001,Store consent timestamp/version,
+Storage of raw audio/video (optional),Before enabling raw storage,Audio/video,UI-SCREEN-PRIV-002,Store explicit opt-in; allow opt-out,Should be off by default
+Sharing/export to clinic,When user exports,Report + identifiers,UI-SCREEN-SHARE-001,Log share event (non-PHI),

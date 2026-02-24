@@ -1,0 +1,4 @@
+Gate,Definition,Minimum evidence (examples),Owner,Status
+G0,Pilot readiness: safe to start clinical pilot on-site,DR-2 Go/No-Go signed; claims/acceptance locked; site SOPs; pilot execution runbook; daily QA SOP/tools; data privacy controls; model/app baseline freeze; evidence manifest created,QA/RA + Clinical lead,Planned
+G1,Algorithm performance readiness: meets acceptance criteria on golden dataset (clinic),Golden dataset v1 freeze; BA analysis; MAE/MAPE; valid-rate >= target; QS calibrated; V&V report updated; automated TFL + drift dashboard + G1 evidence bundle,ML lead + Biostat,Planned
+G2,Submission readiness: EU MDR + US FDA evidence packs complete (as applicable),GSPR applicability filled; Annex II/III index complete; RMF complete; PMS/PMCF plan; cybersecurity file; HFE summative report; V&V final,RA lead,Planned

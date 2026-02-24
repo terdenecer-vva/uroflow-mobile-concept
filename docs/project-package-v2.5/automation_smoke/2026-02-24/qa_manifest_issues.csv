@@ -1,0 +1,36 @@
+record_id,issue_code,field,message,severity
+R000001,CODELIST_VIOLATION,lighting,"Invalid value 'dim'; allowed: ['normal', 'low', 'glare']",REVIEW
+R000001,CODELIST_VIOLATION,invalid_reason_code,"Invalid value 'MOTION'; allowed: ['flush', 'roi_lost', 'major_motion', 'ref_export_missing', 'privacy_issue', 'other']",REVIEW
+R000002,CODELIST_VIOLATION,noise_level,"Invalid value 'fan'; allowed: ['none', 'moderate', 'high']",REVIEW
+R000003,CODELIST_VIOLATION,noise_level,"Invalid value 'fan'; allowed: ['none', 'moderate', 'high']",REVIEW
+R000004,CODELIST_VIOLATION,noise_level,"Invalid value 'speech'; allowed: ['none', 'moderate', 'high']",REVIEW
+R000005,CODELIST_VIOLATION,noise_level,"Invalid value 'fan'; allowed: ['none', 'moderate', 'high']",REVIEW
+R000005,CODELIST_VIOLATION,lighting,"Invalid value 'dim'; allowed: ['normal', 'low', 'glare']",REVIEW
+R000007,CODELIST_VIOLATION,noise_level,"Invalid value 'speech'; allowed: ['none', 'moderate', 'high']",REVIEW
+R000008,CODELIST_VIOLATION,invalid_reason_code,"Invalid value 'MOTION'; allowed: ['flush', 'roi_lost', 'major_motion', 'ref_export_missing', 'privacy_issue', 'other']",REVIEW
+R000009,CODELIST_VIOLATION,noise_level,"Invalid value 'speech'; allowed: ['none', 'moderate', 'high']",REVIEW
+R000009,CODELIST_VIOLATION,lighting,"Invalid value 'dim'; allowed: ['normal', 'low', 'glare']",REVIEW
+R000011,CODELIST_VIOLATION,noise_level,"Invalid value 'fan'; allowed: ['none', 'moderate', 'high']",REVIEW
+R000011,CODELIST_VIOLATION,lighting,"Invalid value 'dim'; allowed: ['normal', 'low', 'glare']",REVIEW
+R000011,CODELIST_VIOLATION,invalid_reason_code,"Invalid value 'MOTION'; allowed: ['flush', 'roi_lost', 'major_motion', 'ref_export_missing', 'privacy_issue', 'other']",REVIEW
+R000012,CODELIST_VIOLATION,noise_level,"Invalid value 'speech'; allowed: ['none', 'moderate', 'high']",REVIEW
+R000013,CODELIST_VIOLATION,noise_level,"Invalid value 'fan'; allowed: ['none', 'moderate', 'high']",REVIEW
+R000013,CODELIST_VIOLATION,invalid_reason_code,"Invalid value 'ROI_LOST'; allowed: ['flush', 'roi_lost', 'major_motion', 'ref_export_missing', 'privacy_issue', 'other']",REVIEW
+R000014,CODELIST_VIOLATION,noise_level,"Invalid value 'fan'; allowed: ['none', 'moderate', 'high']",REVIEW
+R000014,CODELIST_VIOLATION,lighting,"Invalid value 'dim'; allowed: ['normal', 'low', 'glare']",REVIEW
+R000015,CODELIST_VIOLATION,lighting,"Invalid value 'dim'; allowed: ['normal', 'low', 'glare']",REVIEW
+R000016,CODELIST_VIOLATION,noise_level,"Invalid value 'speech'; allowed: ['none', 'moderate', 'high']",REVIEW
+R000016,CODELIST_VIOLATION,lighting,"Invalid value 'dim'; allowed: ['normal', 'low', 'glare']",REVIEW
+R000017,CODELIST_VIOLATION,noise_level,"Invalid value 'fan'; allowed: ['none', 'moderate', 'high']",REVIEW
+R000017,CODELIST_VIOLATION,invalid_reason_code,"Invalid value 'ROI_LOST'; allowed: ['flush', 'roi_lost', 'major_motion', 'ref_export_missing', 'privacy_issue', 'other']",REVIEW
+R000018,CODELIST_VIOLATION,lighting,"Invalid value 'dim'; allowed: ['normal', 'low', 'glare']",REVIEW
+R000018,CODELIST_VIOLATION,invalid_reason_code,"Invalid value 'MOTION'; allowed: ['flush', 'roi_lost', 'major_motion', 'ref_export_missing', 'privacy_issue', 'other']",REVIEW
+R000019,CODELIST_VIOLATION,noise_level,"Invalid value 'fan'; allowed: ['none', 'moderate', 'high']",REVIEW
+R000020,CODELIST_VIOLATION,noise_level,"Invalid value 'fan'; allowed: ['none', 'moderate', 'high']",REVIEW
+R000020,CODELIST_VIOLATION,lighting,"Invalid value 'dim'; allowed: ['normal', 'low', 'glare']",REVIEW
+R000021,CODELIST_VIOLATION,noise_level,"Invalid value 'speech'; allowed: ['none', 'moderate', 'high']",REVIEW
+R000021,CODELIST_VIOLATION,lighting,"Invalid value 'dim'; allowed: ['normal', 'low', 'glare']",REVIEW
+R000022,CODELIST_VIOLATION,lighting,"Invalid value 'dim'; allowed: ['normal', 'low', 'glare']",REVIEW
+R000023,CODELIST_VIOLATION,noise_level,"Invalid value 'fan'; allowed: ['none', 'moderate', 'high']",REVIEW
+R000023,CODELIST_VIOLATION,lighting,"Invalid value 'dim'; allowed: ['normal', 'low', 'glare']",REVIEW
+R000024,CODELIST_VIOLATION,lighting,"Invalid value 'dim'; allowed: ['normal', 'low', 'glare']",REVIEW

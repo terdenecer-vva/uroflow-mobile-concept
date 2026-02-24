@@ -1,0 +1,31 @@
+{
+  "valid_rate": {
+    "value": 0.75,
+    "threshold": 0.85,
+    "pass": false
+  },
+  "mae_qmax": {
+    "value": 1.5946993964209026,
+    "threshold": 2.5,
+    "pass": true
+  },
+  "mae_qavg": {
+    "value": 0.4913387139132433,
+    "threshold": 2.0,
+    "pass": true
+  },
+  "mape_vvoid": {
+    "value": 8.166472911490574,
+    "threshold": 15.0,
+    "pass": true
+  },
+  "mae_flowtime": {
+    "value": 0.8611111111111075,
+    "threshold": 3.0,
+    "pass": true
+  },
+  "_counts": {
+    "n_total": 24,
+    "n_valid": 18
+  }
+}

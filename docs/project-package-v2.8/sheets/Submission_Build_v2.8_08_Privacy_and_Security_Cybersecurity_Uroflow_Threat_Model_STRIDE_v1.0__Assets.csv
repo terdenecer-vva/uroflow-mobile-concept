@@ -1,0 +1,6 @@
+Asset_ID,Asset,Description,Data_Class,Owner,Notes
+A-01,Results DB (on-device),"Хранилище Q(t), метрик, дневника",Health/PHI,App,По умолчанию без медиа
+A-02,Media cache (optional),Аудио/видео ROI при согласии,Sensitive,App,Должно быть выключено по умолчанию
+A-03,ML Model,"Модель Q(t)/quality, model_id",Confidential,App,Требует контроля целостности
+A-04,Export channel,FHIR/HL7/PDF экспорт,Sensitive,Clinic IT,TLS + аудит
+A-05,Toilet fingerprint,Калибровочные параметры,Personal,App,Локально

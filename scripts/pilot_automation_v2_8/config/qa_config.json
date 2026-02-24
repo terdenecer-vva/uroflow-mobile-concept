@@ -1,0 +1,161 @@
+{
+  "version": "1.0",
+  "manifest_expected_columns": [
+    "record_id",
+    "subject_id",
+    "site_id",
+    "toilet_id",
+    "cabin_id",
+    "collection_datetime_local",
+    "sex",
+    "posture",
+    "age_years",
+    "diagnosis_group",
+    "iphone_model",
+    "ios_version",
+    "lidar_available",
+    "toilet_scan",
+    "pour_calibration",
+    "noise_level",
+    "noise_source",
+    "lighting",
+    "aimed_into_water",
+    "ref_uroflow_make_model",
+    "ref_export_type",
+    "ref_sampling_hz",
+    "Qmax_ref_ml_s",
+    "Qavg_ref_ml_s",
+    "Vvoid_ref_ml",
+    "flow_time_ref_s",
+    "t_start_ref_s",
+    "t_end_ref_s",
+    "pattern_label_ref",
+    "art_flush",
+    "art_phone_motion",
+    "art_roi_lost",
+    "art_not_in_water",
+    "art_external_water",
+    "overall_record_valid",
+    "invalid_reason_code",
+    "files_present_check",
+    "notes"
+  ],
+  "manifest_required_nonempty_fields": [
+    "record_id",
+    "site_id",
+    "toilet_id",
+    "collection_datetime_local",
+    "sex",
+    "posture",
+    "iphone_model",
+    "ios_version",
+    "lidar_available",
+    "toilet_scan",
+    "pour_calibration",
+    "noise_level",
+    "lighting",
+    "aimed_into_water",
+    "ref_sampling_hz",
+    "overall_record_valid"
+  ],
+  "codelists": {
+    "sex": [
+      "M",
+      "F"
+    ],
+    "posture": [
+      "male_standing",
+      "male_sitting",
+      "female_sitting",
+      "other"
+    ],
+    "noise_level": [
+      "none",
+      "moderate",
+      "high"
+    ],
+    "noise_source": [
+      "none",
+      "fan",
+      "speech",
+      "running_water",
+      "other"
+    ],
+    "lighting": [
+      "normal",
+      "low",
+      "glare"
+    ],
+    "aimed_into_water": [
+      "yes",
+      "no",
+      "uncertain"
+    ],
+    "pattern_label_ref": [
+      "bell",
+      "plateau",
+      "intermittent",
+      "staccato",
+      "other",
+      "unclassified"
+    ],
+    "overall_record_valid": [
+      "yes",
+      "no"
+    ],
+    "invalid_reason_code": [
+      "flush",
+      "roi_lost",
+      "major_motion",
+      "ref_export_missing",
+      "privacy_issue",
+      "other"
+    ]
+  },
+  "record_folder_candidates": [
+    "records/{record_id}",
+    "{record_id}"
+  ],
+  "required_record_files": [
+    "meta.json",
+    "Q_ref.csv"
+  ],
+  "recommended_record_files": [
+    "ref_params.json",
+    "quality.json"
+  ],
+  "optional_record_files": [
+    "Q_pred.csv",
+    "app_result.json",
+    "audio.m4a",
+    "audio.wav",
+    "depth_meta.json",
+    "pred_params.json",
+    "roi_video.mp4"
+  ],
+  "qref_expected_columns": [
+    "t_s",
+    "Q_ml_s"
+  ],
+  "qref_alt_column_map": {
+    "t": "t_s",
+    "time_s": "t_s",
+    "Q": "Q_ml_s",
+    "flow_ml_s": "Q_ml_s",
+    "q_ml_s": "Q_ml_s",
+    "flow": "Q_ml_s",
+    "V_ml": "V_ml",
+    "vol_ml": "V_ml"
+  },
+  "qref_integral_abs_ml_max": 10,
+  "qref_integral_pct_max": 0.05,
+  "audio_target_fs_hz": 48000,
+  "audio_onset_window_ms": 20,
+  "audio_onset_hop_ms": 10,
+  "audio_onset_min_sustain_ms": 200,
+  "audio_onset_max_time_from_start_s": 120,
+  "audio_onset_zscore_threshold": 6.0,
+  "sync_corr_min": 0.25,
+  "sync_max_offset_s": 2.0,
+  "daily_report_top_n_failures": 15
+}

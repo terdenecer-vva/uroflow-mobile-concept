@@ -1,0 +1,12 @@
+file_name,sheet_name,rows,cols,output_csv
+Uroflow_Bench_and_Dataset_Templates_v1.0.xlsx,BenchMatrix,5,16,sheets/Uroflow_Bench_and_Dataset_Templates_v1.0__BenchMatrix.csv
+Uroflow_Bench_and_Dataset_Templates_v1.0.xlsx,AnnotationSchema,11,5,sheets/Uroflow_Bench_and_Dataset_Templates_v1.0__AnnotationSchema.csv
+Uroflow_Bench_and_Dataset_Templates_v1.0.xlsx,MetricsTemplate,20,13,sheets/Uroflow_Bench_and_Dataset_Templates_v1.0__MetricsTemplate.csv
+Uroflow_Bench_BOM_and_Wiring_v1.0.xlsx,BOM,21,7,sheets/Uroflow_Bench_BOM_and_Wiring_v1.0__BOM.csv
+Uroflow_Bench_BOM_and_Wiring_v1.0.xlsx,Wiring,12,5,sheets/Uroflow_Bench_BOM_and_Wiring_v1.0__Wiring.csv
+Uroflow_Regulatory_Mapping_Matrix_v1.0.xlsx,Overview,6,5,sheets/Uroflow_Regulatory_Mapping_Matrix_v1.0__Overview.csv
+Uroflow_Regulatory_Mapping_Matrix_v1.0.xlsx,Standards_Crosswalk,12,6,sheets/Uroflow_Regulatory_Mapping_Matrix_v1.0__Standards_Crosswalk.csv
+Uroflow_Regulatory_Mapping_Matrix_v1.0.xlsx,US_FDA,6,8,sheets/Uroflow_Regulatory_Mapping_Matrix_v1.0__US_FDA.csv
+Uroflow_Regulatory_Mapping_Matrix_v1.0.xlsx,EU_MDR,6,8,sheets/Uroflow_Regulatory_Mapping_Matrix_v1.0__EU_MDR.csv
+Uroflow_Regulatory_Mapping_Matrix_v1.0.xlsx,RU_RZN,5,8,sheets/Uroflow_Regulatory_Mapping_Matrix_v1.0__RU_RZN.csv
+Uroflow_Regulatory_Mapping_Matrix_v1.0.xlsx,CN_NMPA,5,8,sheets/Uroflow_Regulatory_Mapping_Matrix_v1.0__CN_NMPA.csv

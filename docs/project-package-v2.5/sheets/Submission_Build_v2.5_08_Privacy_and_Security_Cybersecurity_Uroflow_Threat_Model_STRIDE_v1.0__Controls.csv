@@ -1,0 +1,6 @@
+Control_ID,Control_Type,Description,Linked_Threats,Status,Owner
+C-01,Design,ROI-only analysis; do not save media by default,T-04,Planned,App
+C-02,Technical,Signed updates + integrity verification + rollback,T-02,Planned,App/DevOps
+C-03,Technical,Encrypted storage + Keychain for secrets,"T-04,T-06",Planned,App
+C-04,Process,SBOM per release + dependency scanning,"T-02,T-04",Planned,DevOps
+C-05,Process,Audit logging for export/EMR,T-03,Planned,App/Clinic IT

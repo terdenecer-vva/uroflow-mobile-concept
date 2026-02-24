@@ -1,0 +1,6 @@
+Тема,Требование / ожидание,Доказательства / испытания,Артефакт / документ,Приоритет,Ответственный,Примечания,Ключевые источники (URL)
+Классификация ПО,MDR Annex VIII Rule 11: software for diagnostic/therapeutic decisions -> обычно IIa (или выше),Classification rationale + intended use,EU classification file,High,RA,Rule 11 текст в MDR,https://eur-lex.europa.eu/eli/reg/2017/745/2017-05-05
+Гайд по ПО,MDCG 2019-11 rev.1 (June 2025): qualification and classification of software,"Аргументация по Rule 11, примеры",MDCG mapping,High,RA,,https://health.ec.europa.eu/latest-updates/update-mdcg-2019-11-rev1-qualification-and-classification-software-regulation-eu-2017745-and-2025-06-17_en
+Техническая документация,MDR Annex II/III: техническое досье и PMS,"SRS, risk, V&V, clinical evaluation, PMS plan",Technical Documentation,High,RA/QA,,https://eur-lex.europa.eu/eli/reg/2017/745/2017-05-05
+Клиническая оценка,CER + PMCF (если нужно),Literature + clinical study + post-market plan,CER/PMCF,High,Clinical,,
+Защита данных,GDPR special category data,"DPIA, privacy-by-design",Privacy file,High,Legal/Security,Зависит от модели бизнеса B2C/B2B,

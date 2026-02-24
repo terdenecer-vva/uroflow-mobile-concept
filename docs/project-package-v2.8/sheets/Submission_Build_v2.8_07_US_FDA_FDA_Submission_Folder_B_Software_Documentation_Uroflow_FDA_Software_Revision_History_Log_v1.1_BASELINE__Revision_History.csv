@@ -1,0 +1,2 @@
+Release ID,Release date,App version,Model ID,QS version,Claims/Label version,Dataset ID,Summary of changes,Risk impact assessed (Y/N),Regression suite run ID,Approval (name/date),Notes
+PILOT-BASELINE-001,2026-02-24,TBD (pilot freeze),TBD (model_id),QS v1.0,Claim Set A (locked),TBD (golden dataset id),Baseline build for clinical pilot; offline-only default; quality gating enabled.,Y,TBD (regression run id),TBD,

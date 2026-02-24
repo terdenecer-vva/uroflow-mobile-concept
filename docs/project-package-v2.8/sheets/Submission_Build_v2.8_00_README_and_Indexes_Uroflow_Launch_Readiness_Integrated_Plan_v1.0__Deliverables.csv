@@ -1,0 +1,9 @@
+Deliverable ID,Deliverable,Location in build,Gate,Owner,Status,Evidence link / notes
+DEL-CLAIMS-LOCK,Claims lock record (by region),01_Product_QMS/,G0,RA,Planned,
+DEL-ACC-LOCK,Acceptance criteria lock record,01_Product_QMS/,G0,RA+ML,Planned,
+DEL-DATA-SOP,Golden dataset acquisition SOP,03_Data_Golden_Dataset/,G0,Clinical Ops,Planned,
+DEL-DR2,Pilot DR-2 Go/No-Go,05_Clinical/,G0,QA/RA,Planned,
+DEL-GOLDEN-V1,Golden dataset v1 freeze,03_Data_Golden_Dataset/,G1,Data manager,Planned,
+DEL-VV-REPORT,V&V report updated with results,06_EU_MDR/ and 07_US_FDA/,G1,QA,Planned,
+DEL-GSPR,GSPR checklist filled with evidence,06_EU_MDR/,G2,RA,Planned,
+DEL-CER,CER final (CEP + CSR + literature),06_EU_MDR/,G2,Clinical/RA,Planned,

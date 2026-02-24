@@ -1,0 +1,12 @@
+{
+  "date": "2026-02-24",
+  "dataset_root": "/Users/denecer/Documents/uroflow-mobile-concept/tmp/project-package-v2.5-source/Submission_Build_v2.5/10_Pilot_Automation/sample/sample_dataset_v1.1",
+  "manifest": "/Users/denecer/Documents/uroflow-mobile-concept/tmp/project-package-v2.5-source/Submission_Build_v2.5/10_Pilot_Automation/sample/sample_dataset_v1.1/manifest.csv",
+  "config": "/Users/denecer/Documents/uroflow-mobile-concept/scripts/pilot_automation_v2_5/config/qa_config.json",
+  "n_records_manifest": 24,
+  "n_records_checked": 24,
+  "n_pass": 24,
+  "n_review": 0,
+  "n_fail": 0,
+  "manifest_issue_count": 35
+}

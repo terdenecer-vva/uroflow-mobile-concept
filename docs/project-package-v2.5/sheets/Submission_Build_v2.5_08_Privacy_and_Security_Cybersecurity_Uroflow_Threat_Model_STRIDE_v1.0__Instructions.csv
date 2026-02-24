@@ -1,0 +1,4 @@
+Threat Model (STRIDE) - Uroflow
+""
+Заполните/обновляйте Likelihood/Severity по мере уточнения архитектуры и результатов тестирования.
+"Risk (H/M/L) рекомендуется определять через матрицу: например, H если Severity>=4 и Likelihood>=3."

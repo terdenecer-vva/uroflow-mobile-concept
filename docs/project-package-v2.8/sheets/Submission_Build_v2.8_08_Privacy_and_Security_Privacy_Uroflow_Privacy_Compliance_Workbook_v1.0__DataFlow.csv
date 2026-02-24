@@ -1,0 +1,4 @@
+Step,System/Component,Data in,Processing,Data out,Storage location,Encryption,Retention,Access,Notes
+1,iPhone capture (transient),Audio/video/IMU/depth,On-device feature extraction,Feature vectors (transient),On-device RAM,N/A,N/A,App sandbox,No raw storage by default
+2,On-device inference,Feature vectors,Model A/B inference,"Q(t), parameters, quality score",On-device storage,iOS Data Protection,User-controlled,App sandbox,
+3,Export/share (optional),Report + metadata,User-initiated share,PDF / FHIR bundle,Clinic system / user destination,TLS/secure channel,Per clinic policy,Clinic RBAC,Region-specific
