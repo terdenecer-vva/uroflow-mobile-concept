@@ -1,0 +1,52 @@
+list_name,canonical_code,redcap_code,label_en,label_ru
+CAPTURE_MODE,fallback_nonwater,1,Fallback non-water,Не в воду
+CAPTURE_MODE,jet_assist,2,Jet in air assist,Струя в воздухе
+CAPTURE_MODE,water_impact,3,Water impact,В воду
+CONSENT_LEVEL,full_recording,1,Full recording,Полная запись
+CONSENT_LEVEL,metrics_only,2,Metrics only,Только метрики
+CONSENT_LEVEL,roi_video_local,3,ROI video local,Локальное ROI-видео
+DIAGNOSTIC_GROUP,bph_luts,1,Bph Luts,ДГПЖ/LUTS
+DIAGNOSTIC_GROUP,neurogenic,2,Neurogenic,Нейрогенные нарушения
+DIAGNOSTIC_GROUP,other,3,Other,Другое
+DIAGNOSTIC_GROUP,postop,4,Postop,Послеоперационное
+DIAGNOSTIC_GROUP,stricture,5,Stricture,Стриктура
+EXPORT_DESTINATION,emr,1,EMR/EHR,EMR/EHR
+EXPORT_DESTINATION,local,2,Local device,Локально
+EXPORT_FORMAT,fhir,1,FHIR Observation,FHIR
+EXPORT_FORMAT,hl7,2,HL7 ORU^R01,HL7
+EXPORT_FORMAT,pdf,3,PDF report,PDF-отчёт
+FLOW_PATTERN,bell,1,Bell,Колокол (норма)
+FLOW_PATTERN,intermittent,3,Intermittent,Интермиттирующий
+FLOW_PATTERN,other,4,Other,Другое/неопределено
+FLOW_PATTERN,plateau,2,Plateau,Плато
+LIGHTING_LEVEL,dim,1,Dim,Тускло
+LIGHTING_LEVEL,glare,2,Glare,Сильные блики
+LIGHTING_LEVEL,normal,3,Normal,Нормальное
+NOISE_LEVEL,high,1,High,Высокий
+NOISE_LEVEL,moderate,2,Moderate,Умеренный
+NOISE_LEVEL,none,3,None,Нет
+PVR_METHOD,bladder_scan,1,Bladder Scan,Bladder scan
+PVR_METHOD,ultrasound,2,Ultrasound,УЗИ
+QUALITY_FLAGS,flush,5,Flush,Смыв/посторонняя вода
+QUALITY_FLAGS,low_volume,6,Low Volume,Слишком коротко/мало
+QUALITY_FLAGS,motion,2,Motion,Движение
+QUALITY_FLAGS,noise,1,Noise,Шум
+QUALITY_FLAGS,not_in_water,4,Not In Water,Не в воду
+QUALITY_FLAGS,other,7,Other,Другое
+QUALITY_FLAGS,roi_lost,3,Roi Lost,Потеря ROI/вода не видна
+QUALITY_STATUS,reject,3,Rejected,Отклонено
+QUALITY_STATUS,repeat,2,Repeat needed,Нужен повтор
+QUALITY_STATUS,valid,1,Valid,Валидно
+ROI_VISIBILITY,lost,3,ROI lost,ROI потерян
+ROI_VISIBILITY,ok,1,ROI visible,ROI виден
+ROI_VISIBILITY,partial,2,ROI partially visible,ROI частично виден
+SEX_AT_BIRTH,female,2,Female,Женский
+SEX_AT_BIRTH,male,1,Male,Мужской
+VOIDING_POSITION,female_sitting,3,Female Sitting,Ж: сидя
+VOIDING_POSITION,male_sitting,2,Male Sitting,М: сидя
+VOIDING_POSITION,male_standing,1,Male Standing,М: стоя
+VOID_INTO_WATER,no,2,No,Нет
+VOID_INTO_WATER,unsure,3,Unsure,Не уверен(а)
+VOID_INTO_WATER,yes,1,Yes,Да
+YES_NO,no,0,No,Нет
+YES_NO,yes,1,Yes,Да

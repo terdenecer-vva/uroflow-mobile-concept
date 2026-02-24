@@ -1,0 +1,10 @@
+field_name,branching_logic
+ae_description,[ae_occurred]='1'
+ae_related,[ae_occurred]='1'
+deviation_comment,[protocol_deviation]='1'
+pour_calibration_volume_ml,[pour_calibration_done]='1'
+pvr_delay_min,[pvr_available]='1'
+pvr_method,[pvr_available]='1'
+pvr_ml,[pvr_available]='1'
+quality_notes,[quality_status]='3'
+repeat_reason,([quality_status]='2' or [quality_status]='3')

@@ -127,10 +127,12 @@ uroflow-mobile validate-capture-contract \
 - `docs/dpia-checklist.md` — DPIA checklist v1.0 для данных видео/аудио/depth
 - `docs/pilot-protocol-v1.md` — pilot-протокол v1.0 сравнения с эталоном
 - `docs/edc-v1.1/` — canonical EDC schema v1.1 (dictionary/codelists/crosswalk/rules)
+- `docs/edc-v1.1/redcap/` — import-ready REDCap profile v1.1
 - `src/uroflow_mobile/` — доменные модели и расчёт метрик
 - `tests/` — базовые тесты расчёта метрик
 - `examples/` — демо-скрипты
 - `scripts/normalize_edc_dictionary_v1_1.py` — генератор пакета `docs/edc-v1.1`
+- `scripts/generate_redcap_profile_v1_1.py` — генератор REDCap Data Dictionary из canonical EDC
 
 ## Важно
 
