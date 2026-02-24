@@ -1,0 +1,9 @@
+record_id,scenario_name,focus_checks
+UFLOW-DRY-001,valid_baseline,"All mandatory fields, valid quality"
+UFLOW-DRY-002,repeat_due_motion,Branching repeat_reason + motion artifact
+UFLOW-DRY-003,reject_non_water,Reject flow + non-water fallback mode
+UFLOW-DRY-004,with_pvr,Branching PVR fields
+UFLOW-DRY-005,protocol_deviation,Deviation comment branching
+UFLOW-DRY-006,ae_reported,AE branching fields
+UFLOW-DRY-007,pour_calibrated,Pour calibration conditional field
+UFLOW-DRY-008,female_high_noise,Noise artifacts in female sitting scenario

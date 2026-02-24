@@ -1,0 +1,13 @@
+study_event_oid,study_event_name,form_oid,form_name,item_group_oid,item_group_name,repeating
+SE.UFLOW.VISIT,Uroflow Visit,F.IDENTIFICATION,Identification,IG.IDENTIFICATION,Identification,no
+SE.UFLOW.VISIT,Uroflow Visit,F.CAPTURE_SETUP,Capture Setup,IG.CAPTURE_SETUP,Capture Setup,no
+SE.UFLOW.VISIT,Uroflow Visit,F.SCREENING,Screening,IG.SCREENING,Screening,no
+SE.UFLOW.VISIT,Uroflow Visit,F.TEST_CONDITIONS,Test Conditions,IG.TEST_CONDITIONS,Test Conditions,no
+SE.UFLOW.VISIT,Uroflow Visit,F.EVENT_TIMING,Event Timing,IG.EVENT_TIMING,Event Timing,no
+SE.UFLOW.VISIT,Uroflow Visit,F.REFERENCE_UROFLOW,Reference Uroflow,IG.REFERENCE_UROFLOW,Reference Uroflow,no
+SE.UFLOW.VISIT,Uroflow Visit,F.APP_OUTPUT,Smartphone App Output,IG.APP_OUTPUT,Smartphone App Output,no
+SE.UFLOW.VISIT,Uroflow Visit,F.QUALITY,Quality and Artifacts,IG.QUALITY,Quality and Artifacts,no
+SE.UFLOW.VISIT,Uroflow Visit,F.PVR,PVR,IG.PVR,PVR,no
+SE.UFLOW.VISIT,Uroflow Visit,F.PRIVACY_EXPORT,Privacy and Export,IG.PRIVACY_EXPORT,Privacy and Export,no
+SE.UFLOW.VISIT,Uroflow Visit,F.SAFETY,Safety,IG.SAFETY,Safety,no
+SE.UFLOW.VISIT,Uroflow Visit,F.DERIVED,Derived Metrics,IG.DERIVED,Derived Metrics,no

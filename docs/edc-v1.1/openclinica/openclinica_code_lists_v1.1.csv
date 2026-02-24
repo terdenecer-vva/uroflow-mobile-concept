@@ -1,0 +1,52 @@
+code_list_oid,list_name,coded_value,decode_en,decode_ru
+CL.CAPTURE_MODE,CAPTURE_MODE,fallback_nonwater,Fallback non-water,Не в воду
+CL.CAPTURE_MODE,CAPTURE_MODE,jet_assist,Jet in air assist,Струя в воздухе
+CL.CAPTURE_MODE,CAPTURE_MODE,water_impact,Water impact,В воду
+CL.CONSENT_LEVEL,CONSENT_LEVEL,full_recording,Full recording,Полная запись
+CL.CONSENT_LEVEL,CONSENT_LEVEL,metrics_only,Metrics only,Только метрики
+CL.CONSENT_LEVEL,CONSENT_LEVEL,roi_video_local,ROI video local,Локальное ROI-видео
+CL.DIAGNOSTIC_GROUP,DIAGNOSTIC_GROUP,bph_luts,Bph Luts,ДГПЖ/LUTS
+CL.DIAGNOSTIC_GROUP,DIAGNOSTIC_GROUP,neurogenic,Neurogenic,Нейрогенные нарушения
+CL.DIAGNOSTIC_GROUP,DIAGNOSTIC_GROUP,other,Other,Другое
+CL.DIAGNOSTIC_GROUP,DIAGNOSTIC_GROUP,postop,Postop,Послеоперационное
+CL.DIAGNOSTIC_GROUP,DIAGNOSTIC_GROUP,stricture,Stricture,Стриктура
+CL.EXPORT_DESTINATION,EXPORT_DESTINATION,emr,EMR/EHR,EMR/EHR
+CL.EXPORT_DESTINATION,EXPORT_DESTINATION,local,Local device,Локально
+CL.EXPORT_FORMAT,EXPORT_FORMAT,fhir,FHIR Observation,FHIR
+CL.EXPORT_FORMAT,EXPORT_FORMAT,hl7,HL7 ORU^R01,HL7
+CL.EXPORT_FORMAT,EXPORT_FORMAT,pdf,PDF report,PDF-отчёт
+CL.FLOW_PATTERN,FLOW_PATTERN,bell,Bell,Колокол (норма)
+CL.FLOW_PATTERN,FLOW_PATTERN,intermittent,Intermittent,Интермиттирующий
+CL.FLOW_PATTERN,FLOW_PATTERN,other,Other,Другое/неопределено
+CL.FLOW_PATTERN,FLOW_PATTERN,plateau,Plateau,Плато
+CL.LIGHTING_LEVEL,LIGHTING_LEVEL,dim,Dim,Тускло
+CL.LIGHTING_LEVEL,LIGHTING_LEVEL,glare,Glare,Сильные блики
+CL.LIGHTING_LEVEL,LIGHTING_LEVEL,normal,Normal,Нормальное
+CL.NOISE_LEVEL,NOISE_LEVEL,high,High,Высокий
+CL.NOISE_LEVEL,NOISE_LEVEL,moderate,Moderate,Умеренный
+CL.NOISE_LEVEL,NOISE_LEVEL,none,None,Нет
+CL.PVR_METHOD,PVR_METHOD,bladder_scan,Bladder Scan,Bladder scan
+CL.PVR_METHOD,PVR_METHOD,ultrasound,Ultrasound,УЗИ
+CL.QUALITY_FLAGS,QUALITY_FLAGS,flush,Flush,Смыв/посторонняя вода
+CL.QUALITY_FLAGS,QUALITY_FLAGS,low_volume,Low Volume,Слишком коротко/мало
+CL.QUALITY_FLAGS,QUALITY_FLAGS,motion,Motion,Движение
+CL.QUALITY_FLAGS,QUALITY_FLAGS,noise,Noise,Шум
+CL.QUALITY_FLAGS,QUALITY_FLAGS,not_in_water,Not In Water,Не в воду
+CL.QUALITY_FLAGS,QUALITY_FLAGS,other,Other,Другое
+CL.QUALITY_FLAGS,QUALITY_FLAGS,roi_lost,Roi Lost,Потеря ROI/вода не видна
+CL.QUALITY_STATUS,QUALITY_STATUS,reject,Rejected,Отклонено
+CL.QUALITY_STATUS,QUALITY_STATUS,repeat,Repeat needed,Нужен повтор
+CL.QUALITY_STATUS,QUALITY_STATUS,valid,Valid,Валидно
+CL.ROI_VISIBILITY,ROI_VISIBILITY,lost,ROI lost,ROI потерян
+CL.ROI_VISIBILITY,ROI_VISIBILITY,ok,ROI visible,ROI виден
+CL.ROI_VISIBILITY,ROI_VISIBILITY,partial,ROI partially visible,ROI частично виден
+CL.SEX_AT_BIRTH,SEX_AT_BIRTH,female,Female,Женский
+CL.SEX_AT_BIRTH,SEX_AT_BIRTH,male,Male,Мужской
+CL.VOIDING_POSITION,VOIDING_POSITION,female_sitting,Female Sitting,Ж: сидя
+CL.VOIDING_POSITION,VOIDING_POSITION,male_sitting,Male Sitting,М: сидя
+CL.VOIDING_POSITION,VOIDING_POSITION,male_standing,Male Standing,М: стоя
+CL.VOID_INTO_WATER,VOID_INTO_WATER,no,No,Нет
+CL.VOID_INTO_WATER,VOID_INTO_WATER,unsure,Unsure,Не уверен(а)
+CL.VOID_INTO_WATER,VOID_INTO_WATER,yes,Yes,Да
+CL.YES_NO,YES_NO,no,No,Нет
+CL.YES_NO,YES_NO,yes,Yes,Да
