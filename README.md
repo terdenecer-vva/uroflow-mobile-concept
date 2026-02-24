@@ -120,6 +120,9 @@ uroflow-mobile validate-capture-contract \
 - `docs/ethics-package-v0.1/` — шаблоны ICF/SOP/eCRF/data handling appendix
 - `docs/linear-import-v0.1/` — import-ready backlog package для Linear (CSV/JSON + инструкция)
 - `docs/claims-governance-v0.1.md` — policy управления claims и процесс согласования формулировок
+- `docs/iso14971-risk-management-v0.1.md` — risk management file draft (ISO 14971)
+- `docs/risk-register-v0.1.csv` — risk register для operational tracking
+- `docs/certification-pathway-v0.1.md` — практический маршрут подготовки к регистрации по регионам
 - `docs/intended-use-v1.md` — документ Intended Use v1.0
 - `docs/dpia-checklist.md` — DPIA checklist v1.0 для данных видео/аудио/depth
 - `docs/pilot-protocol-v1.md` — pilot-протокол v1.0 сравнения с эталоном
