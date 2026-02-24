@@ -1,0 +1,13 @@
+rule_id,severity,expression,error_message_ru,source
+VR-001,error,app_qmax_ml_s >= app_qavg_ml_s,Qmax приложения должен быть не меньше Qavg.,clinical baseline
+VR-002,error,ref_qmax_ml_s >= ref_qavg_ml_s,Эталонный Qmax должен быть не меньше эталонного Qavg.,clinical baseline
+VR-003,error,pvr_available == no => pvr_ml is null and pvr_method is null,При отсутствии PVR поля PVR должны быть пустыми.,repo v0.1
+VR-004,error,pvr_available == yes => pvr_method is not null,При наличии PVR метод обязателен.,clinical protocol
+VR-005,error,"quality_status in (repeat,reject) => repeat_reason is not null",Для repeat/reject требуется причина повтора.,repo v0.1
+VR-006,error,protocol_deviation == yes => deviation_comment is not null,При отклонении от протокола нужен комментарий.,repo v0.1
+VR-007,warning,quality_score < 60 => quality_status != valid,Низкий quality_score несовместим со статусом valid.,quality policy
+VR-008,error,flow_end_time_s > flow_start_time_s,Время окончания потока должно быть больше времени старта.,docx v1.0
+VR-009,warning,pour_calibration_done == yes => pour_calibration_volume_ml is not null,При pour calibration должен быть указан объём.,capture SOP
+VR-010,warning,void_into_water == no => capture_mode != water_impact,Режим water_impact некорректен без попадания в воду.,capture SOP
+VR-011,warning,app_vvoid_ml >= 50,Малый объём мочеиспускания может быть нерепрезентативным.,clinical QC
+VR-012,warning,"capture_fps >= 24 and audio_sample_rate_hz in (44100, 48000)",Скорость видео/аудио ниже минимальных значений.,FR-010

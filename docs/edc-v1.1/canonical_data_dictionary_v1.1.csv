@@ -1,0 +1,95 @@
+field_name,section,type,units,required_level,codelist,phi_sensitive,description_ru,source_coverage,aliases
+abs_pct_error_qmax,derived,float,,O,,no,MAPE,repo,
+ae_description,safety,string,,O,,no,Описание AE,zip,
+ae_occurred,safety,bool,,O,YES_NO,no,Нежелательные явления/инциденты были,zip,
+ae_related,safety,bool,,O,YES_NO,no,Связь с процедурой,zip,
+age_years,screening,int,years,M,,no,Возраст,"repo,zip",
+app_curve_class,app_output,enum,-,C,FLOW_PATTERN,no,Паттерн кривой (приложение),"docx,zip","pattern_app,pattern_class"
+app_flow_time_s,app_output,float,s,M,,no,Длительность потока (приложение),"docx,repo,zip","flow_time,flowtime_app"
+app_qavg_ml_s,app_output,float,ml/s,M,,no,Qavg (приложение),"docx,repo,zip","qavg,qavg_app"
+app_qmax_ml_s,app_output,float,ml/s,M,,no,Qmax (приложение),"docx,repo,zip","qmax,qmax_app"
+app_tqmax_s,app_output,float,s,M,,no,Время до Qmax (приложение),"docx,repo,zip","tqmax,tqmax_app"
+app_version,capture_setup,string,-,M,,no,Версия приложения,"docx,repo,zip",
+app_vvoid_ml,app_output,float,ml,M,,no,Vvoid (приложение),"docx,repo,zip","vvoid,vvoid_app"
+attempt_number,test_conditions,int,,M,,no,Номер попытки (1/2/3),"repo,zip",
+audio_sample_rate_hz,capture_setup,int,Hz,M,,no,Частота дискретизации аудио,docx,audio_sample_rate
+capture_fps,capture_setup,int,fps,M,,no,Фактическая частота кадров,docx,
+capture_mode,capture_setup,enum,-,M,CAPTURE_MODE,no,Режим измерения,docx,mode
+comments_conditions,test_conditions,string,,O,,no,Комментарии по условиям,zip,
+consent_level,screening,enum,-,M,CONSENT_LEVEL,yes,Уровень согласия на данные,docx,
+consent_signed,screening,bool,,M,YES_NO,no,Информированное согласие подписано,zip,
+delta_qavg,derived,float,,O,,no,Bland-Altman,repo,
+delta_qmax,derived,float,,O,,no,Bland-Altman,repo,
+delta_vvoid,derived,float,,O,,no,Bland-Altman,repo,
+deviation_comment,quality,string,,O,,no,Deviation comment,repo,
+device_model,capture_setup,string,-,M,,no,Модель iPhone,"docx,zip",
+diagnostic_group,screening,enum,,M,DIAGNOSTIC_GROUP,no,Основная категория состояния/диагноза,"repo,zip",primary_condition
+environment_noise_level,test_conditions,enum,-,M,NOISE_LEVEL,no,Фоновый шум,"docx,zip",ambient_noise_level
+export_destination,privacy_export,enum,-,O,EXPORT_DESTINATION,no,Назначение экспорта,docx,
+export_format,privacy_export,enum,-,O,EXPORT_FORMAT,no,Формат экспорта,docx,
+flow_end_time_s,event_timing,float,s,M,,no,Конец потока относительно начала записи,docx,flow_end_time
+flow_start_time_s,event_timing,float,s,M,,no,Начало потока относительно начала записи,docx,flow_start_time
+flush_detected,quality,bool,-,M,,no,Обнаружен ли смыв/посторонняя вода,docx,
+flush_during_recording,test_conditions,bool,,M,YES_NO,no,Смыв/посторонняя вода во время записи,zip,
+height_cm,screening,float,cm,O,,no,Рост,zip,
+intermittency_index,app_output,float,-,C,,no,Индекс интермиттирующести,docx,
+ios_version,capture_setup,string,-,M,,no,Версия iOS,"docx,zip",
+lidar_available,capture_setup,bool,-,M,YES_NO,no,LiDAR доступен,"docx,zip",
+lighting_level,test_conditions,enum,-,M,LIGHTING_LEVEL,no,Освещение/блики,"docx,zip",lighting
+media_consent,privacy_export,bool,,O,YES_NO,yes,Согласие на сохранение медиа,zip,
+media_saved,privacy_export,bool,,M,YES_NO,yes,Медиа сохранены локально,zip,
+medications,screening,string,,O,,no,Текущая терапия (текст),zip,
+model_hash,capture_setup,string,,M,,no,Model artifact hash,repo,
+model_id,capture_setup,string,-,M,,no,Версия ML-модели (model_id),"docx,zip",
+model_version,capture_setup,string,,M,,no,Model version,repo,
+motion_score,quality,float,-,C,,no,Оценка движения телефона,docx,
+noise_source,test_conditions,string,,O,,no,Источник шума (если был),zip,
+notes_clinician,privacy_export,string,-,O,,no,Комментарий врача,docx,
+operator_id,identification,string,,M,,no,Operator code,repo,
+overall_uncertainty,quality,float,0-1,O,,no,Неопределенность/Confidence (если реализовано),zip,uncertainty_overall
+phone_on_support,test_conditions,bool,,M,YES_NO,no,Телефон на опоре/штативе,zip,
+pour_calibration_done,capture_setup,bool,-,M,YES_NO,no,Pour Calibration выполнена,"docx,zip",pour_calibration_used
+pour_calibration_volume_ml,capture_setup,float,ml,O,,no,Объем pour calibration (если была),zip,
+protocol_deviation,quality,bool,,M,,no,SOP deviation,repo,
+pvr_available,pvr,bool,-,M,YES_NO,no,PVR измеряли,"docx,repo,zip","pvr_done,pvr_measured"
+pvr_delay_min,pvr,float,min,O,,no,Минут после мочеиспускания,zip,pvr_minutes_after_void
+pvr_method,pvr,enum,-,C,PVR_METHOD,no,Метод PVR,"docx,repo,zip",
+pvr_ml,pvr,float,ml,C,,no,PVR,"docx,repo,zip",
+q_curve_sampling_hz,app_output,float,Hz,M,,no,Частота дискретизации кривой Q(t),docx,
+q_curve_series,app_output,float[],ml/s,M,,no,Массив значений Q(t),docx,q_curve
+q_curve_uncertainty_series,app_output,float[],ml/s,C,,no,Неопределённость σ(t) или доверие по времени,docx,q_curve_uncertainty
+qr_low_snr,quality,bool,,M,,no,Low SNR,repo,
+qr_low_volume,quality,bool,,M,,no,Low volume,repo,
+qr_motion,quality,bool,,M,,no,Device motion,repo,
+qr_not_in_water,quality,bool,,M,,no,Impact not in water,repo,
+qr_other_text,quality,string,,O,,no,Other reason,repo,
+qr_roi_lost,quality,bool,,M,,no,ROI lost,repo,
+quality_flags,quality,enum[],-,M,QUALITY_FLAGS,no,Причины снижения качества (multi),"docx,zip",quality_reasons
+quality_notes,quality,string,,O,,no,Причина невалидности (если есть),zip,invalid_reason
+quality_score,quality,int,score,M,,no,Quality score (0-100),"docx,repo,zip",
+quality_status,quality,enum,,M,QUALITY_STATUS,no,Результат невалиден (флаг),"repo,zip",invalid_flag
+recording_duration_s,capture_setup,float,s,M,,no,Длительность записи,docx,recording_duration
+ref_artifacts,reference_uroflow,string,,O,,no,Артефакты/заметки (референс),zip,
+ref_curve_class,reference_uroflow,enum,,O,FLOW_PATTERN,no,Паттерн кривой (референс),"repo,zip",pattern_ref
+ref_flow_time_s,reference_uroflow,float,s,M,,no,Длительность потока (референс),"repo,zip",flowtime_ref
+ref_qavg_ml_s,reference_uroflow,float,ml/s,M,,no,Qavg (референс),"repo,zip",qavg_ref
+ref_qmax_ml_s,reference_uroflow,float,ml/s,M,,no,Qmax (референс),"repo,zip",qmax_ref
+ref_tqmax_s,reference_uroflow,float,s,O,,no,Время до Qmax (референс),"repo,zip",tqmax_ref
+ref_vvoid_ml,reference_uroflow,float,ml,M,,no,Vvoid (референс),"repo,zip",vvoid_ref
+repeat_reason,quality,string,,O,,no,Repeat reason,repo,
+repeat_required,quality,bool,,M,,no,Repeat required,repo,
+roi_visibility,quality,enum,-,M,ROI_VISIBILITY,no,Видимость воды/ROI,docx,
+session_id,identification,string,-,M,,no,Идентификатор сессии мочеиспускания,"docx,repo",
+sex_at_birth,screening,enum,,M,SEX_AT_BIRTH,no,Пол,"repo,zip",sex
+site_id,identification,string,-,M,,no,Центр/сайт (код),"docx,repo,zip",
+study_id,identification,string,-,M,,no,Идентификатор участника (Study ID),"docx,repo,zip",
+subject_id,identification,string,-,M,,yes,Псевдонимизированный идентификатор участника,"docx,repo",
+timezone,identification,string,-,O,,no,Часовой пояс устройства,docx,
+toilet_fingerprint_id,capture_setup,string,-,O,,no,Профиль туалета (локальный),docx,
+toilet_id,capture_setup,string,,M,,no,Toilet ID (кабинка/унитаз),zip,
+toilet_scan_done,capture_setup,bool,-,M,YES_NO,no,Toilet Scan выполнен,"docx,zip",toilet_scan_performed
+visit_datetime,identification,datetime,-,M,,yes,Дата/время визита (локальное),"docx,repo,zip",session_datetime_local
+visit_id,identification,string,,M,,no,Visit identifier,repo,
+void_into_water,test_conditions,enum,,M,VOID_INTO_WATER,no,Попадание 'в воду',zip,
+voiding_position,test_conditions,enum,-,M,VOIDING_POSITION,no,Поза при мочеиспускании,"docx,repo,zip",posture
+weight_kg,screening,float,kg,O,,no,Вес,zip,

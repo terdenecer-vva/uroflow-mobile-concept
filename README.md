@@ -126,9 +126,11 @@ uroflow-mobile validate-capture-contract \
 - `docs/intended-use-v1.md` — документ Intended Use v1.0
 - `docs/dpia-checklist.md` — DPIA checklist v1.0 для данных видео/аудио/depth
 - `docs/pilot-protocol-v1.md` — pilot-протокол v1.0 сравнения с эталоном
+- `docs/edc-v1.1/` — canonical EDC schema v1.1 (dictionary/codelists/crosswalk/rules)
 - `src/uroflow_mobile/` — доменные модели и расчёт метрик
 - `tests/` — базовые тесты расчёта метрик
 - `examples/` — демо-скрипты
+- `scripts/normalize_edc_dictionary_v1_1.py` — генератор пакета `docs/edc-v1.1`
 
 ## Важно
 

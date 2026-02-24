@@ -1,0 +1,52 @@
+list_name,canonical_code,label_en,label_ru,source_system,source_list_name,source_code
+CAPTURE_MODE,fallback_nonwater,Fallback non-water,Не в воду,docx,CAPTURE_MODE,fallback_nonwater
+CAPTURE_MODE,jet_assist,Jet in air assist,Струя в воздухе,docx,CAPTURE_MODE,jet_assist
+CAPTURE_MODE,water_impact,Water impact,В воду,docx,CAPTURE_MODE,water_impact
+CONSENT_LEVEL,full_recording,Full recording,Полная запись,docx,CONSENT_LEVEL,full_recording
+CONSENT_LEVEL,metrics_only,Metrics only,Только метрики,docx,CONSENT_LEVEL,metrics_only
+CONSENT_LEVEL,roi_video_local,ROI video local,Локальное ROI-видео,docx,CONSENT_LEVEL,roi_video_local
+DIAGNOSTIC_GROUP,bph_luts,Bph Luts,ДГПЖ/LUTS,zip,PRIMARY_CONDITION,BPH_LUTS
+DIAGNOSTIC_GROUP,neurogenic,Neurogenic,Нейрогенные нарушения,zip,PRIMARY_CONDITION,NEURO
+DIAGNOSTIC_GROUP,other,Other,Другое,zip,PRIMARY_CONDITION,OTHER
+DIAGNOSTIC_GROUP,postop,Postop,Послеоперационное,zip,PRIMARY_CONDITION,POSTOP
+DIAGNOSTIC_GROUP,stricture,Stricture,Стриктура,zip,PRIMARY_CONDITION,STRICTURE
+EXPORT_DESTINATION,emr,EMR/EHR,EMR/EHR,docx,EXPORT_DESTINATION,emr
+EXPORT_DESTINATION,local,Local device,Локально,docx,EXPORT_DESTINATION,local
+EXPORT_FORMAT,fhir,FHIR Observation,FHIR,docx,EXPORT_FORMAT,fhir
+EXPORT_FORMAT,hl7,HL7 ORU^R01,HL7,docx,EXPORT_FORMAT,hl7
+EXPORT_FORMAT,pdf,PDF report,PDF-отчёт,docx,EXPORT_FORMAT,pdf
+FLOW_PATTERN,bell,Bell,Колокол (норма),zip,PATTERN,BELL
+FLOW_PATTERN,intermittent,Intermittent,Интермиттирующий,zip,PATTERN,INTERMITTENT
+FLOW_PATTERN,other,Other,Другое/неопределено,zip,PATTERN,OTHER
+FLOW_PATTERN,plateau,Plateau,Плато,zip,PATTERN,PLATEAU
+LIGHTING_LEVEL,dim,Dim,Тускло,zip,LIGHTING,DIM
+LIGHTING_LEVEL,glare,Glare,Сильные блики,zip,LIGHTING,GLARE
+LIGHTING_LEVEL,normal,Normal,Нормальное,zip,LIGHTING,NORMAL
+NOISE_LEVEL,high,High,Высокий,zip,NOISE_LEVEL,HIGH
+NOISE_LEVEL,moderate,Moderate,Умеренный,zip,NOISE_LEVEL,MODERATE
+NOISE_LEVEL,none,None,Нет,zip,NOISE_LEVEL,NONE
+PVR_METHOD,bladder_scan,Bladder Scan,Bladder scan,zip,PVR_METHOD,BLADDER_SCAN
+PVR_METHOD,ultrasound,Ultrasound,УЗИ,zip,PVR_METHOD,ULTRASOUND
+QUALITY_FLAGS,flush,Flush,Смыв/посторонняя вода,zip,QUALITY_REASONS,FLUSH
+QUALITY_FLAGS,low_volume,Low Volume,Слишком коротко/мало,zip,QUALITY_REASONS,SHORT_VOID
+QUALITY_FLAGS,motion,Motion,Движение,zip,QUALITY_REASONS,MOTION
+QUALITY_FLAGS,noise,Noise,Шум,zip,QUALITY_REASONS,NOISE
+QUALITY_FLAGS,not_in_water,Not In Water,Не в воду,zip,QUALITY_REASONS,NOT_IN_WATER
+QUALITY_FLAGS,other,Other,Другое,zip,QUALITY_REASONS,OTHER
+QUALITY_FLAGS,roi_lost,Roi Lost,Потеря ROI/вода не видна,zip,QUALITY_REASONS,ROI_LOST
+QUALITY_STATUS,reject,Rejected,Отклонено,repo,QUALITY_STATUS,reject
+QUALITY_STATUS,repeat,Repeat needed,Нужен повтор,repo,QUALITY_STATUS,repeat
+QUALITY_STATUS,valid,Valid,Валидно,repo,QUALITY_STATUS,valid
+ROI_VISIBILITY,lost,ROI lost,ROI потерян,docx,ROI_VISIBILITY,lost
+ROI_VISIBILITY,ok,ROI visible,ROI виден,docx,ROI_VISIBILITY,ok
+ROI_VISIBILITY,partial,ROI partially visible,ROI частично виден,docx,ROI_VISIBILITY,partial
+SEX_AT_BIRTH,female,Female,Женский,zip,SEX,F
+SEX_AT_BIRTH,male,Male,Мужской,zip,SEX,M
+VOIDING_POSITION,female_sitting,Female Sitting,Ж: сидя,zip,POSTURE,F_SIT
+VOIDING_POSITION,male_sitting,Male Sitting,М: сидя,zip,POSTURE,M_SIT
+VOIDING_POSITION,male_standing,Male Standing,М: стоя,zip,POSTURE,M_STAND
+VOID_INTO_WATER,no,No,Нет,zip,VOID_INTO_WATER,NO
+VOID_INTO_WATER,unsure,Unsure,Не уверен(а),zip,VOID_INTO_WATER,UNSURE
+VOID_INTO_WATER,yes,Yes,Да,zip,VOID_INTO_WATER,YES
+YES_NO,no,No,Нет,zip,YESNO,0
+YES_NO,yes,Yes,Да,zip,YESNO,1
