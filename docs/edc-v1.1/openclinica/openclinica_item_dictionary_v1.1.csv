@@ -1,0 +1,95 @@
+item_oid,field_name,form_name,section_title,odm_data_type,response_type,required,code_list_oid,units,phi_sensitive,label_ru
+I.OPERATOR_ID,operator_id,identification,Identification,text,text,yes,,,no,Operator code
+I.SESSION_ID,session_id,identification,Identification,text,text,yes,,-,no,Идентификатор сессии мочеиспускания
+I.SITE_ID,site_id,identification,Identification,text,text,yes,,-,no,Центр/сайт (код)
+I.STUDY_ID,study_id,identification,Identification,text,text,yes,,-,no,Идентификатор участника (Study ID)
+I.SUBJECT_ID,subject_id,identification,Identification,text,text,yes,,-,yes,Псевдонимизированный идентификатор участника
+I.TIMEZONE,timezone,identification,Identification,text,text,no,,-,no,Часовой пояс устройства
+I.VISIT_DATETIME,visit_datetime,identification,Identification,datetime,text,yes,,-,yes,Дата/время визита (локальное)
+I.VISIT_ID,visit_id,identification,Identification,text,text,yes,,,no,Visit identifier
+I.APP_VERSION,app_version,capture_setup,Capture Setup,text,text,yes,,-,no,Версия приложения
+I.AUDIO_SAMPLE_RATE_HZ,audio_sample_rate_hz,capture_setup,Capture Setup,integer,text,yes,,Hz,no,Частота дискретизации аудио
+I.CAPTURE_FPS,capture_fps,capture_setup,Capture Setup,integer,text,yes,,fps,no,Фактическая частота кадров
+I.CAPTURE_MODE,capture_mode,capture_setup,Capture Setup,text,single_select,yes,CL.CAPTURE_MODE,-,no,Режим измерения
+I.DEVICE_MODEL,device_model,capture_setup,Capture Setup,text,text,yes,,-,no,Модель iPhone
+I.IOS_VERSION,ios_version,capture_setup,Capture Setup,text,text,yes,,-,no,Версия iOS
+I.LIDAR_AVAILABLE,lidar_available,capture_setup,Capture Setup,text,single_select,yes,CL.YES_NO,-,no,LiDAR доступен
+I.MODEL_HASH,model_hash,capture_setup,Capture Setup,text,text,yes,,,no,Model artifact hash
+I.MODEL_ID,model_id,capture_setup,Capture Setup,text,text,yes,,-,no,Версия ML-модели (model_id)
+I.MODEL_VERSION,model_version,capture_setup,Capture Setup,text,text,yes,,,no,Model version
+I.POUR_CALIBRATION_DONE,pour_calibration_done,capture_setup,Capture Setup,text,single_select,yes,CL.YES_NO,-,no,Pour Calibration выполнена
+I.POUR_CALIBRATION_VOLUME_ML,pour_calibration_volume_ml,capture_setup,Capture Setup,float,text,no,,ml,no,Объем pour calibration (если была)
+I.RECORDING_DURATION_S,recording_duration_s,capture_setup,Capture Setup,float,text,yes,,s,no,Длительность записи
+I.TOILET_FINGERPRINT_ID,toilet_fingerprint_id,capture_setup,Capture Setup,text,text,no,,-,no,Профиль туалета (локальный)
+I.TOILET_ID,toilet_id,capture_setup,Capture Setup,text,text,yes,,,no,Toilet ID (кабинка/унитаз)
+I.TOILET_SCAN_DONE,toilet_scan_done,capture_setup,Capture Setup,text,single_select,yes,CL.YES_NO,-,no,Toilet Scan выполнен
+I.AGE_YEARS,age_years,screening,Screening,integer,text,yes,,years,no,Возраст
+I.CONSENT_LEVEL,consent_level,screening,Screening,text,single_select,yes,CL.CONSENT_LEVEL,-,yes,Уровень согласия на данные
+I.CONSENT_SIGNED,consent_signed,screening,Screening,text,single_select,yes,CL.YES_NO,,no,Информированное согласие подписано
+I.DIAGNOSTIC_GROUP,diagnostic_group,screening,Screening,text,single_select,yes,CL.DIAGNOSTIC_GROUP,,no,Основная категория состояния/диагноза
+I.HEIGHT_CM,height_cm,screening,Screening,float,text,no,,cm,no,Рост
+I.MEDICATIONS,medications,screening,Screening,text,text,no,,,no,Текущая терапия (текст)
+I.SEX_AT_BIRTH,sex_at_birth,screening,Screening,text,single_select,yes,CL.SEX_AT_BIRTH,,no,Пол
+I.WEIGHT_KG,weight_kg,screening,Screening,float,text,no,,kg,no,Вес
+I.ATTEMPT_NUMBER,attempt_number,test_conditions,Test Conditions,integer,text,yes,,,no,Номер попытки (1/2/3)
+I.COMMENTS_CONDITIONS,comments_conditions,test_conditions,Test Conditions,text,text,no,,,no,Комментарии по условиям
+I.ENVIRONMENT_NOISE_LEVEL,environment_noise_level,test_conditions,Test Conditions,text,single_select,yes,CL.NOISE_LEVEL,-,no,Фоновый шум
+I.FLUSH_DURING_RECORDING,flush_during_recording,test_conditions,Test Conditions,text,single_select,yes,CL.YES_NO,,no,Смыв/посторонняя вода во время записи
+I.LIGHTING_LEVEL,lighting_level,test_conditions,Test Conditions,text,single_select,yes,CL.LIGHTING_LEVEL,-,no,Освещение/блики
+I.NOISE_SOURCE,noise_source,test_conditions,Test Conditions,text,text,no,,,no,Источник шума (если был)
+I.PHONE_ON_SUPPORT,phone_on_support,test_conditions,Test Conditions,text,single_select,yes,CL.YES_NO,,no,Телефон на опоре/штативе
+I.VOID_INTO_WATER,void_into_water,test_conditions,Test Conditions,text,single_select,yes,CL.VOID_INTO_WATER,,no,Попадание 'в воду'
+I.VOIDING_POSITION,voiding_position,test_conditions,Test Conditions,text,single_select,yes,CL.VOIDING_POSITION,-,no,Поза при мочеиспускании
+I.FLOW_END_TIME_S,flow_end_time_s,event_timing,Event Timing,float,text,yes,,s,no,Конец потока относительно начала записи
+I.FLOW_START_TIME_S,flow_start_time_s,event_timing,Event Timing,float,text,yes,,s,no,Начало потока относительно начала записи
+I.REF_ARTIFACTS,ref_artifacts,reference_uroflow,Reference Uroflow,text,text,no,,,no,Артефакты/заметки (референс)
+I.REF_CURVE_CLASS,ref_curve_class,reference_uroflow,Reference Uroflow,text,single_select,no,CL.FLOW_PATTERN,,no,Паттерн кривой (референс)
+I.REF_FLOW_TIME_S,ref_flow_time_s,reference_uroflow,Reference Uroflow,float,text,yes,,s,no,Длительность потока (референс)
+I.REF_QAVG_ML_S,ref_qavg_ml_s,reference_uroflow,Reference Uroflow,float,text,yes,,ml/s,no,Qavg (референс)
+I.REF_QMAX_ML_S,ref_qmax_ml_s,reference_uroflow,Reference Uroflow,float,text,yes,,ml/s,no,Qmax (референс)
+I.REF_TQMAX_S,ref_tqmax_s,reference_uroflow,Reference Uroflow,float,text,no,,s,no,Время до Qmax (референс)
+I.REF_VVOID_ML,ref_vvoid_ml,reference_uroflow,Reference Uroflow,float,text,yes,,ml,no,Vvoid (референс)
+I.APP_CURVE_CLASS,app_curve_class,app_output,Smartphone App Output,text,single_select,no,CL.FLOW_PATTERN,-,no,Паттерн кривой (приложение)
+I.APP_FLOW_TIME_S,app_flow_time_s,app_output,Smartphone App Output,float,text,yes,,s,no,Длительность потока (приложение)
+I.APP_QAVG_ML_S,app_qavg_ml_s,app_output,Smartphone App Output,float,text,yes,,ml/s,no,Qavg (приложение)
+I.APP_QMAX_ML_S,app_qmax_ml_s,app_output,Smartphone App Output,float,text,yes,,ml/s,no,Qmax (приложение)
+I.APP_TQMAX_S,app_tqmax_s,app_output,Smartphone App Output,float,text,yes,,s,no,Время до Qmax (приложение)
+I.APP_VVOID_ML,app_vvoid_ml,app_output,Smartphone App Output,float,text,yes,,ml,no,Vvoid (приложение)
+I.INTERMITTENCY_INDEX,intermittency_index,app_output,Smartphone App Output,float,text,no,,-,no,Индекс интермиттирующести
+I.Q_CURVE_SAMPLING_HZ,q_curve_sampling_hz,app_output,Smartphone App Output,float,text,yes,,Hz,no,Частота дискретизации кривой Q(t)
+I.Q_CURVE_SERIES,q_curve_series,app_output,Smartphone App Output,text,json_text,yes,,ml/s,no,Массив значений Q(t)
+I.Q_CURVE_UNCERTAINTY_SERIES,q_curve_uncertainty_series,app_output,Smartphone App Output,text,json_text,no,,ml/s,no,Неопределённость σ(t) или доверие по времени
+I.DEVIATION_COMMENT,deviation_comment,quality,Quality and Artifacts,text,text,no,,,no,Deviation comment
+I.FLUSH_DETECTED,flush_detected,quality,Quality and Artifacts,text,single_select,yes,CL.YES_NO,-,no,Обнаружен ли смыв/посторонняя вода
+I.MOTION_SCORE,motion_score,quality,Quality and Artifacts,float,text,no,,-,no,Оценка движения телефона
+I.OVERALL_UNCERTAINTY,overall_uncertainty,quality,Quality and Artifacts,float,text,no,,0-1,no,Неопределенность/Confidence (если реализовано)
+I.PROTOCOL_DEVIATION,protocol_deviation,quality,Quality and Artifacts,text,single_select,yes,CL.YES_NO,,no,SOP deviation
+I.QR_LOW_SNR,qr_low_snr,quality,Quality and Artifacts,text,single_select,yes,CL.YES_NO,,no,Low SNR
+I.QR_LOW_VOLUME,qr_low_volume,quality,Quality and Artifacts,text,single_select,yes,CL.YES_NO,,no,Low volume
+I.QR_MOTION,qr_motion,quality,Quality and Artifacts,text,single_select,yes,CL.YES_NO,,no,Device motion
+I.QR_NOT_IN_WATER,qr_not_in_water,quality,Quality and Artifacts,text,single_select,yes,CL.YES_NO,,no,Impact not in water
+I.QR_OTHER_TEXT,qr_other_text,quality,Quality and Artifacts,text,text,no,,,no,Other reason
+I.QR_ROI_LOST,qr_roi_lost,quality,Quality and Artifacts,text,single_select,yes,CL.YES_NO,,no,ROI lost
+I.QUALITY_FLAGS,quality_flags,quality,Quality and Artifacts,text,multi_select,yes,CL.QUALITY_FLAGS,-,no,Причины снижения качества (multi)
+I.QUALITY_NOTES,quality_notes,quality,Quality and Artifacts,text,text,no,,,no,Причина невалидности (если есть)
+I.QUALITY_SCORE,quality_score,quality,Quality and Artifacts,integer,text,yes,,score,no,Quality score (0-100)
+I.QUALITY_STATUS,quality_status,quality,Quality and Artifacts,text,single_select,yes,CL.QUALITY_STATUS,,no,Результат невалиден (флаг)
+I.REPEAT_REASON,repeat_reason,quality,Quality and Artifacts,text,text,no,,,no,Repeat reason
+I.REPEAT_REQUIRED,repeat_required,quality,Quality and Artifacts,text,single_select,yes,CL.YES_NO,,no,Repeat required
+I.ROI_VISIBILITY,roi_visibility,quality,Quality and Artifacts,text,single_select,yes,CL.ROI_VISIBILITY,-,no,Видимость воды/ROI
+I.PVR_AVAILABLE,pvr_available,pvr,PVR,text,single_select,yes,CL.YES_NO,-,no,PVR измеряли
+I.PVR_DELAY_MIN,pvr_delay_min,pvr,PVR,float,text,no,,min,no,Минут после мочеиспускания
+I.PVR_METHOD,pvr_method,pvr,PVR,text,single_select,no,CL.PVR_METHOD,-,no,Метод PVR
+I.PVR_ML,pvr_ml,pvr,PVR,float,text,no,,ml,no,PVR
+I.EXPORT_DESTINATION,export_destination,privacy_export,Privacy and Export,text,single_select,no,CL.EXPORT_DESTINATION,-,no,Назначение экспорта
+I.EXPORT_FORMAT,export_format,privacy_export,Privacy and Export,text,single_select,no,CL.EXPORT_FORMAT,-,no,Формат экспорта
+I.MEDIA_CONSENT,media_consent,privacy_export,Privacy and Export,text,single_select,no,CL.YES_NO,,yes,Согласие на сохранение медиа
+I.MEDIA_SAVED,media_saved,privacy_export,Privacy and Export,text,single_select,yes,CL.YES_NO,,yes,Медиа сохранены локально
+I.NOTES_CLINICIAN,notes_clinician,privacy_export,Privacy and Export,text,text,no,,-,no,Комментарий врача
+I.AE_DESCRIPTION,ae_description,safety,Safety,text,text,no,,,no,Описание AE
+I.AE_OCCURRED,ae_occurred,safety,Safety,text,single_select,no,CL.YES_NO,,no,Нежелательные явления/инциденты были
+I.AE_RELATED,ae_related,safety,Safety,text,single_select,no,CL.YES_NO,,no,Связь с процедурой
+I.ABS_PCT_ERROR_QMAX,abs_pct_error_qmax,derived,Derived Metrics,float,text,no,,,no,MAPE
+I.DELTA_QAVG,delta_qavg,derived,Derived Metrics,float,text,no,,,no,Bland-Altman
+I.DELTA_QMAX,delta_qmax,derived,Derived Metrics,float,text,no,,,no,Bland-Altman
+I.DELTA_VVOID,delta_vvoid,derived,Derived Metrics,float,text,no,,,no,Bland-Altman

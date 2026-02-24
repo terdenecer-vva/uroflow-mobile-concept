@@ -1,0 +1,975 @@
+<?xml version='1.0' encoding='utf-8'?>
+<ODM xmlns="http://www.cdisc.org/ns/odm/v1.3" FileType="Snapshot" Granularity="Metadata" ODMVersion="1.3.2" CreationDateTime="2026-02-24T00:00:00">
+  <Study OID="STUDY.UFLOW.SMARTPHONE">
+    <GlobalVariables>
+      <StudyName>Uroflow Smartphone EDC</StudyName>
+      <StudyDescription>OpenClinica profile v1.1</StudyDescription>
+      <ProtocolName>UFLOW-EDC-V1_1</ProtocolName>
+    </GlobalVariables>
+    <MetaDataVersion OID="MDV.UFLOW.EDC.V1_1" Name="Uroflow EDC v1.1" Description="Auto-generated profile">
+      <Protocol>
+        <StudyEventRef StudyEventOID="SE.UFLOW.VISIT" Mandatory="Yes" />
+      </Protocol>
+      <StudyEventDef OID="SE.UFLOW.VISIT" Name="Uroflow Visit" Repeating="No" Type="Scheduled">
+        <FormRef FormOID="F.IDENTIFICATION" Mandatory="Yes" OrderNumber="1" />
+        <FormRef FormOID="F.CAPTURE_SETUP" Mandatory="Yes" OrderNumber="2" />
+        <FormRef FormOID="F.SCREENING" Mandatory="Yes" OrderNumber="3" />
+        <FormRef FormOID="F.TEST_CONDITIONS" Mandatory="Yes" OrderNumber="4" />
+        <FormRef FormOID="F.EVENT_TIMING" Mandatory="Yes" OrderNumber="5" />
+        <FormRef FormOID="F.REFERENCE_UROFLOW" Mandatory="Yes" OrderNumber="6" />
+        <FormRef FormOID="F.APP_OUTPUT" Mandatory="Yes" OrderNumber="7" />
+        <FormRef FormOID="F.QUALITY" Mandatory="Yes" OrderNumber="8" />
+        <FormRef FormOID="F.PVR" Mandatory="Yes" OrderNumber="9" />
+        <FormRef FormOID="F.PRIVACY_EXPORT" Mandatory="Yes" OrderNumber="10" />
+        <FormRef FormOID="F.SAFETY" Mandatory="Yes" OrderNumber="11" />
+        <FormRef FormOID="F.DERIVED" Mandatory="Yes" OrderNumber="12" />
+      </StudyEventDef>
+      <FormDef OID="F.IDENTIFICATION" Name="Identification">
+        <ItemGroupRef ItemGroupOID="IG.IDENTIFICATION" Mandatory="Yes" OrderNumber="1" />
+      </FormDef>
+      <ItemGroupDef OID="IG.IDENTIFICATION" Name="Identification" Repeating="No">
+        <ItemRef ItemOID="I.OPERATOR_ID" Mandatory="Yes" OrderNumber="1" />
+        <ItemRef ItemOID="I.SESSION_ID" Mandatory="Yes" OrderNumber="2" />
+        <ItemRef ItemOID="I.SITE_ID" Mandatory="Yes" OrderNumber="3" />
+        <ItemRef ItemOID="I.STUDY_ID" Mandatory="Yes" OrderNumber="4" />
+        <ItemRef ItemOID="I.SUBJECT_ID" Mandatory="Yes" OrderNumber="5" />
+        <ItemRef ItemOID="I.TIMEZONE" Mandatory="No" OrderNumber="6" />
+        <ItemRef ItemOID="I.VISIT_DATETIME" Mandatory="Yes" OrderNumber="7" />
+        <ItemRef ItemOID="I.VISIT_ID" Mandatory="Yes" OrderNumber="8" />
+      </ItemGroupDef>
+      <FormDef OID="F.CAPTURE_SETUP" Name="Capture Setup">
+        <ItemGroupRef ItemGroupOID="IG.CAPTURE_SETUP" Mandatory="Yes" OrderNumber="1" />
+      </FormDef>
+      <ItemGroupDef OID="IG.CAPTURE_SETUP" Name="Capture Setup" Repeating="No">
+        <ItemRef ItemOID="I.APP_VERSION" Mandatory="Yes" OrderNumber="1" />
+        <ItemRef ItemOID="I.AUDIO_SAMPLE_RATE_HZ" Mandatory="Yes" OrderNumber="2" />
+        <ItemRef ItemOID="I.CAPTURE_FPS" Mandatory="Yes" OrderNumber="3" />
+        <ItemRef ItemOID="I.CAPTURE_MODE" Mandatory="Yes" OrderNumber="4" />
+        <ItemRef ItemOID="I.DEVICE_MODEL" Mandatory="Yes" OrderNumber="5" />
+        <ItemRef ItemOID="I.IOS_VERSION" Mandatory="Yes" OrderNumber="6" />
+        <ItemRef ItemOID="I.LIDAR_AVAILABLE" Mandatory="Yes" OrderNumber="7" />
+        <ItemRef ItemOID="I.MODEL_HASH" Mandatory="Yes" OrderNumber="8" />
+        <ItemRef ItemOID="I.MODEL_ID" Mandatory="Yes" OrderNumber="9" />
+        <ItemRef ItemOID="I.MODEL_VERSION" Mandatory="Yes" OrderNumber="10" />
+        <ItemRef ItemOID="I.POUR_CALIBRATION_DONE" Mandatory="Yes" OrderNumber="11" />
+        <ItemRef ItemOID="I.POUR_CALIBRATION_VOLUME_ML" Mandatory="No" OrderNumber="12" />
+        <ItemRef ItemOID="I.RECORDING_DURATION_S" Mandatory="Yes" OrderNumber="13" />
+        <ItemRef ItemOID="I.TOILET_FINGERPRINT_ID" Mandatory="No" OrderNumber="14" />
+        <ItemRef ItemOID="I.TOILET_ID" Mandatory="Yes" OrderNumber="15" />
+        <ItemRef ItemOID="I.TOILET_SCAN_DONE" Mandatory="Yes" OrderNumber="16" />
+      </ItemGroupDef>
+      <FormDef OID="F.SCREENING" Name="Screening">
+        <ItemGroupRef ItemGroupOID="IG.SCREENING" Mandatory="Yes" OrderNumber="1" />
+      </FormDef>
+      <ItemGroupDef OID="IG.SCREENING" Name="Screening" Repeating="No">
+        <ItemRef ItemOID="I.AGE_YEARS" Mandatory="Yes" OrderNumber="1" />
+        <ItemRef ItemOID="I.CONSENT_LEVEL" Mandatory="Yes" OrderNumber="2" />
+        <ItemRef ItemOID="I.CONSENT_SIGNED" Mandatory="Yes" OrderNumber="3" />
+        <ItemRef ItemOID="I.DIAGNOSTIC_GROUP" Mandatory="Yes" OrderNumber="4" />
+        <ItemRef ItemOID="I.HEIGHT_CM" Mandatory="No" OrderNumber="5" />
+        <ItemRef ItemOID="I.MEDICATIONS" Mandatory="No" OrderNumber="6" />
+        <ItemRef ItemOID="I.SEX_AT_BIRTH" Mandatory="Yes" OrderNumber="7" />
+        <ItemRef ItemOID="I.WEIGHT_KG" Mandatory="No" OrderNumber="8" />
+      </ItemGroupDef>
+      <FormDef OID="F.TEST_CONDITIONS" Name="Test Conditions">
+        <ItemGroupRef ItemGroupOID="IG.TEST_CONDITIONS" Mandatory="Yes" OrderNumber="1" />
+      </FormDef>
+      <ItemGroupDef OID="IG.TEST_CONDITIONS" Name="Test Conditions" Repeating="No">
+        <ItemRef ItemOID="I.ATTEMPT_NUMBER" Mandatory="Yes" OrderNumber="1" />
+        <ItemRef ItemOID="I.COMMENTS_CONDITIONS" Mandatory="No" OrderNumber="2" />
+        <ItemRef ItemOID="I.ENVIRONMENT_NOISE_LEVEL" Mandatory="Yes" OrderNumber="3" />
+        <ItemRef ItemOID="I.FLUSH_DURING_RECORDING" Mandatory="Yes" OrderNumber="4" />
+        <ItemRef ItemOID="I.LIGHTING_LEVEL" Mandatory="Yes" OrderNumber="5" />
+        <ItemRef ItemOID="I.NOISE_SOURCE" Mandatory="No" OrderNumber="6" />
+        <ItemRef ItemOID="I.PHONE_ON_SUPPORT" Mandatory="Yes" OrderNumber="7" />
+        <ItemRef ItemOID="I.VOID_INTO_WATER" Mandatory="Yes" OrderNumber="8" />
+        <ItemRef ItemOID="I.VOIDING_POSITION" Mandatory="Yes" OrderNumber="9" />
+      </ItemGroupDef>
+      <FormDef OID="F.EVENT_TIMING" Name="Event Timing">
+        <ItemGroupRef ItemGroupOID="IG.EVENT_TIMING" Mandatory="Yes" OrderNumber="1" />
+      </FormDef>
+      <ItemGroupDef OID="IG.EVENT_TIMING" Name="Event Timing" Repeating="No">
+        <ItemRef ItemOID="I.FLOW_END_TIME_S" Mandatory="Yes" OrderNumber="1" />
+        <ItemRef ItemOID="I.FLOW_START_TIME_S" Mandatory="Yes" OrderNumber="2" />
+      </ItemGroupDef>
+      <FormDef OID="F.REFERENCE_UROFLOW" Name="Reference Uroflow">
+        <ItemGroupRef ItemGroupOID="IG.REFERENCE_UROFLOW" Mandatory="Yes" OrderNumber="1" />
+      </FormDef>
+      <ItemGroupDef OID="IG.REFERENCE_UROFLOW" Name="Reference Uroflow" Repeating="No">
+        <ItemRef ItemOID="I.REF_ARTIFACTS" Mandatory="No" OrderNumber="1" />
+        <ItemRef ItemOID="I.REF_CURVE_CLASS" Mandatory="No" OrderNumber="2" />
+        <ItemRef ItemOID="I.REF_FLOW_TIME_S" Mandatory="Yes" OrderNumber="3" />
+        <ItemRef ItemOID="I.REF_QAVG_ML_S" Mandatory="Yes" OrderNumber="4" />
+        <ItemRef ItemOID="I.REF_QMAX_ML_S" Mandatory="Yes" OrderNumber="5" />
+        <ItemRef ItemOID="I.REF_TQMAX_S" Mandatory="No" OrderNumber="6" />
+        <ItemRef ItemOID="I.REF_VVOID_ML" Mandatory="Yes" OrderNumber="7" />
+      </ItemGroupDef>
+      <FormDef OID="F.APP_OUTPUT" Name="Smartphone App Output">
+        <ItemGroupRef ItemGroupOID="IG.APP_OUTPUT" Mandatory="Yes" OrderNumber="1" />
+      </FormDef>
+      <ItemGroupDef OID="IG.APP_OUTPUT" Name="Smartphone App Output" Repeating="No">
+        <ItemRef ItemOID="I.APP_CURVE_CLASS" Mandatory="No" OrderNumber="1" />
+        <ItemRef ItemOID="I.APP_FLOW_TIME_S" Mandatory="Yes" OrderNumber="2" />
+        <ItemRef ItemOID="I.APP_QAVG_ML_S" Mandatory="Yes" OrderNumber="3" />
+        <ItemRef ItemOID="I.APP_QMAX_ML_S" Mandatory="Yes" OrderNumber="4" />
+        <ItemRef ItemOID="I.APP_TQMAX_S" Mandatory="Yes" OrderNumber="5" />
+        <ItemRef ItemOID="I.APP_VVOID_ML" Mandatory="Yes" OrderNumber="6" />
+        <ItemRef ItemOID="I.INTERMITTENCY_INDEX" Mandatory="No" OrderNumber="7" />
+        <ItemRef ItemOID="I.Q_CURVE_SAMPLING_HZ" Mandatory="Yes" OrderNumber="8" />
+        <ItemRef ItemOID="I.Q_CURVE_SERIES" Mandatory="Yes" OrderNumber="9" />
+        <ItemRef ItemOID="I.Q_CURVE_UNCERTAINTY_SERIES" Mandatory="No" OrderNumber="10" />
+      </ItemGroupDef>
+      <FormDef OID="F.QUALITY" Name="Quality and Artifacts">
+        <ItemGroupRef ItemGroupOID="IG.QUALITY" Mandatory="Yes" OrderNumber="1" />
+      </FormDef>
+      <ItemGroupDef OID="IG.QUALITY" Name="Quality and Artifacts" Repeating="No">
+        <ItemRef ItemOID="I.DEVIATION_COMMENT" Mandatory="No" OrderNumber="1" />
+        <ItemRef ItemOID="I.FLUSH_DETECTED" Mandatory="Yes" OrderNumber="2" />
+        <ItemRef ItemOID="I.MOTION_SCORE" Mandatory="No" OrderNumber="3" />
+        <ItemRef ItemOID="I.OVERALL_UNCERTAINTY" Mandatory="No" OrderNumber="4" />
+        <ItemRef ItemOID="I.PROTOCOL_DEVIATION" Mandatory="Yes" OrderNumber="5" />
+        <ItemRef ItemOID="I.QR_LOW_SNR" Mandatory="Yes" OrderNumber="6" />
+        <ItemRef ItemOID="I.QR_LOW_VOLUME" Mandatory="Yes" OrderNumber="7" />
+        <ItemRef ItemOID="I.QR_MOTION" Mandatory="Yes" OrderNumber="8" />
+        <ItemRef ItemOID="I.QR_NOT_IN_WATER" Mandatory="Yes" OrderNumber="9" />
+        <ItemRef ItemOID="I.QR_OTHER_TEXT" Mandatory="No" OrderNumber="10" />
+        <ItemRef ItemOID="I.QR_ROI_LOST" Mandatory="Yes" OrderNumber="11" />
+        <ItemRef ItemOID="I.QUALITY_FLAGS" Mandatory="Yes" OrderNumber="12" />
+        <ItemRef ItemOID="I.QUALITY_NOTES" Mandatory="No" OrderNumber="13" />
+        <ItemRef ItemOID="I.QUALITY_SCORE" Mandatory="Yes" OrderNumber="14" />
+        <ItemRef ItemOID="I.QUALITY_STATUS" Mandatory="Yes" OrderNumber="15" />
+        <ItemRef ItemOID="I.REPEAT_REASON" Mandatory="No" OrderNumber="16" />
+        <ItemRef ItemOID="I.REPEAT_REQUIRED" Mandatory="Yes" OrderNumber="17" />
+        <ItemRef ItemOID="I.ROI_VISIBILITY" Mandatory="Yes" OrderNumber="18" />
+      </ItemGroupDef>
+      <FormDef OID="F.PVR" Name="PVR">
+        <ItemGroupRef ItemGroupOID="IG.PVR" Mandatory="Yes" OrderNumber="1" />
+      </FormDef>
+      <ItemGroupDef OID="IG.PVR" Name="PVR" Repeating="No">
+        <ItemRef ItemOID="I.PVR_AVAILABLE" Mandatory="Yes" OrderNumber="1" />
+        <ItemRef ItemOID="I.PVR_DELAY_MIN" Mandatory="No" OrderNumber="2" />
+        <ItemRef ItemOID="I.PVR_METHOD" Mandatory="No" OrderNumber="3" />
+        <ItemRef ItemOID="I.PVR_ML" Mandatory="No" OrderNumber="4" />
+      </ItemGroupDef>
+      <FormDef OID="F.PRIVACY_EXPORT" Name="Privacy and Export">
+        <ItemGroupRef ItemGroupOID="IG.PRIVACY_EXPORT" Mandatory="Yes" OrderNumber="1" />
+      </FormDef>
+      <ItemGroupDef OID="IG.PRIVACY_EXPORT" Name="Privacy and Export" Repeating="No">
+        <ItemRef ItemOID="I.EXPORT_DESTINATION" Mandatory="No" OrderNumber="1" />
+        <ItemRef ItemOID="I.EXPORT_FORMAT" Mandatory="No" OrderNumber="2" />
+        <ItemRef ItemOID="I.MEDIA_CONSENT" Mandatory="No" OrderNumber="3" />
+        <ItemRef ItemOID="I.MEDIA_SAVED" Mandatory="Yes" OrderNumber="4" />
+        <ItemRef ItemOID="I.NOTES_CLINICIAN" Mandatory="No" OrderNumber="5" />
+      </ItemGroupDef>
+      <FormDef OID="F.SAFETY" Name="Safety">
+        <ItemGroupRef ItemGroupOID="IG.SAFETY" Mandatory="Yes" OrderNumber="1" />
+      </FormDef>
+      <ItemGroupDef OID="IG.SAFETY" Name="Safety" Repeating="No">
+        <ItemRef ItemOID="I.AE_DESCRIPTION" Mandatory="No" OrderNumber="1" />
+        <ItemRef ItemOID="I.AE_OCCURRED" Mandatory="No" OrderNumber="2" />
+        <ItemRef ItemOID="I.AE_RELATED" Mandatory="No" OrderNumber="3" />
+      </ItemGroupDef>
+      <FormDef OID="F.DERIVED" Name="Derived Metrics">
+        <ItemGroupRef ItemGroupOID="IG.DERIVED" Mandatory="Yes" OrderNumber="1" />
+      </FormDef>
+      <ItemGroupDef OID="IG.DERIVED" Name="Derived Metrics" Repeating="No">
+        <ItemRef ItemOID="I.ABS_PCT_ERROR_QMAX" Mandatory="No" OrderNumber="1" />
+        <ItemRef ItemOID="I.DELTA_QAVG" Mandatory="No" OrderNumber="2" />
+        <ItemRef ItemOID="I.DELTA_QMAX" Mandatory="No" OrderNumber="3" />
+        <ItemRef ItemOID="I.DELTA_VVOID" Mandatory="No" OrderNumber="4" />
+      </ItemGroupDef>
+      <ItemDef OID="I.OPERATOR_ID" Name="operator_id" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">Operator code</TranslatedText>
+        </Question>
+      </ItemDef>
+      <ItemDef OID="I.SESSION_ID" Name="session_id" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">Идентификатор сессии мочеиспускания</TranslatedText>
+        </Question>
+      </ItemDef>
+      <ItemDef OID="I.SITE_ID" Name="site_id" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">Центр/сайт (код)</TranslatedText>
+        </Question>
+      </ItemDef>
+      <ItemDef OID="I.STUDY_ID" Name="study_id" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">Идентификатор участника (Study ID)</TranslatedText>
+        </Question>
+      </ItemDef>
+      <ItemDef OID="I.SUBJECT_ID" Name="subject_id" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">Псевдонимизированный идентификатор участника</TranslatedText>
+        </Question>
+      </ItemDef>
+      <ItemDef OID="I.TIMEZONE" Name="timezone" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">Часовой пояс устройства</TranslatedText>
+        </Question>
+      </ItemDef>
+      <ItemDef OID="I.VISIT_DATETIME" Name="visit_datetime" DataType="datetime">
+        <Question>
+          <TranslatedText xml:lang="ru">Дата/время визита (локальное)</TranslatedText>
+        </Question>
+      </ItemDef>
+      <ItemDef OID="I.VISIT_ID" Name="visit_id" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">Visit identifier</TranslatedText>
+        </Question>
+      </ItemDef>
+      <ItemDef OID="I.APP_VERSION" Name="app_version" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">Версия приложения</TranslatedText>
+        </Question>
+      </ItemDef>
+      <ItemDef OID="I.AUDIO_SAMPLE_RATE_HZ" Name="audio_sample_rate_hz" DataType="integer">
+        <Question>
+          <TranslatedText xml:lang="ru">Частота дискретизации аудио</TranslatedText>
+        </Question>
+      </ItemDef>
+      <ItemDef OID="I.CAPTURE_FPS" Name="capture_fps" DataType="integer">
+        <Question>
+          <TranslatedText xml:lang="ru">Фактическая частота кадров</TranslatedText>
+        </Question>
+      </ItemDef>
+      <ItemDef OID="I.CAPTURE_MODE" Name="capture_mode" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">Режим измерения</TranslatedText>
+        </Question>
+        <CodeListRef CodeListOID="CL.CAPTURE_MODE" />
+      </ItemDef>
+      <ItemDef OID="I.DEVICE_MODEL" Name="device_model" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">Модель iPhone</TranslatedText>
+        </Question>
+      </ItemDef>
+      <ItemDef OID="I.IOS_VERSION" Name="ios_version" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">Версия iOS</TranslatedText>
+        </Question>
+      </ItemDef>
+      <ItemDef OID="I.LIDAR_AVAILABLE" Name="lidar_available" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">LiDAR доступен</TranslatedText>
+        </Question>
+        <CodeListRef CodeListOID="CL.YES_NO" />
+      </ItemDef>
+      <ItemDef OID="I.MODEL_HASH" Name="model_hash" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">Model artifact hash</TranslatedText>
+        </Question>
+      </ItemDef>
+      <ItemDef OID="I.MODEL_ID" Name="model_id" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">Версия ML-модели (model_id)</TranslatedText>
+        </Question>
+      </ItemDef>
+      <ItemDef OID="I.MODEL_VERSION" Name="model_version" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">Model version</TranslatedText>
+        </Question>
+      </ItemDef>
+      <ItemDef OID="I.POUR_CALIBRATION_DONE" Name="pour_calibration_done" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">Pour Calibration выполнена</TranslatedText>
+        </Question>
+        <CodeListRef CodeListOID="CL.YES_NO" />
+      </ItemDef>
+      <ItemDef OID="I.POUR_CALIBRATION_VOLUME_ML" Name="pour_calibration_volume_ml" DataType="float">
+        <Question>
+          <TranslatedText xml:lang="ru">Объем pour calibration (если была)</TranslatedText>
+        </Question>
+      </ItemDef>
+      <ItemDef OID="I.RECORDING_DURATION_S" Name="recording_duration_s" DataType="float">
+        <Question>
+          <TranslatedText xml:lang="ru">Длительность записи</TranslatedText>
+        </Question>
+      </ItemDef>
+      <ItemDef OID="I.TOILET_FINGERPRINT_ID" Name="toilet_fingerprint_id" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">Профиль туалета (локальный)</TranslatedText>
+        </Question>
+      </ItemDef>
+      <ItemDef OID="I.TOILET_ID" Name="toilet_id" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">Toilet ID (кабинка/унитаз)</TranslatedText>
+        </Question>
+      </ItemDef>
+      <ItemDef OID="I.TOILET_SCAN_DONE" Name="toilet_scan_done" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">Toilet Scan выполнен</TranslatedText>
+        </Question>
+        <CodeListRef CodeListOID="CL.YES_NO" />
+      </ItemDef>
+      <ItemDef OID="I.AGE_YEARS" Name="age_years" DataType="integer">
+        <Question>
+          <TranslatedText xml:lang="ru">Возраст</TranslatedText>
+        </Question>
+      </ItemDef>
+      <ItemDef OID="I.CONSENT_LEVEL" Name="consent_level" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">Уровень согласия на данные</TranslatedText>
+        </Question>
+        <CodeListRef CodeListOID="CL.CONSENT_LEVEL" />
+      </ItemDef>
+      <ItemDef OID="I.CONSENT_SIGNED" Name="consent_signed" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">Информированное согласие подписано</TranslatedText>
+        </Question>
+        <CodeListRef CodeListOID="CL.YES_NO" />
+      </ItemDef>
+      <ItemDef OID="I.DIAGNOSTIC_GROUP" Name="diagnostic_group" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">Основная категория состояния/диагноза</TranslatedText>
+        </Question>
+        <CodeListRef CodeListOID="CL.DIAGNOSTIC_GROUP" />
+      </ItemDef>
+      <ItemDef OID="I.HEIGHT_CM" Name="height_cm" DataType="float">
+        <Question>
+          <TranslatedText xml:lang="ru">Рост</TranslatedText>
+        </Question>
+      </ItemDef>
+      <ItemDef OID="I.MEDICATIONS" Name="medications" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">Текущая терапия (текст)</TranslatedText>
+        </Question>
+      </ItemDef>
+      <ItemDef OID="I.SEX_AT_BIRTH" Name="sex_at_birth" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">Пол</TranslatedText>
+        </Question>
+        <CodeListRef CodeListOID="CL.SEX_AT_BIRTH" />
+      </ItemDef>
+      <ItemDef OID="I.WEIGHT_KG" Name="weight_kg" DataType="float">
+        <Question>
+          <TranslatedText xml:lang="ru">Вес</TranslatedText>
+        </Question>
+      </ItemDef>
+      <ItemDef OID="I.ATTEMPT_NUMBER" Name="attempt_number" DataType="integer">
+        <Question>
+          <TranslatedText xml:lang="ru">Номер попытки (1/2/3)</TranslatedText>
+        </Question>
+      </ItemDef>
+      <ItemDef OID="I.COMMENTS_CONDITIONS" Name="comments_conditions" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">Комментарии по условиям</TranslatedText>
+        </Question>
+      </ItemDef>
+      <ItemDef OID="I.ENVIRONMENT_NOISE_LEVEL" Name="environment_noise_level" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">Фоновый шум</TranslatedText>
+        </Question>
+        <CodeListRef CodeListOID="CL.NOISE_LEVEL" />
+      </ItemDef>
+      <ItemDef OID="I.FLUSH_DURING_RECORDING" Name="flush_during_recording" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">Смыв/посторонняя вода во время записи</TranslatedText>
+        </Question>
+        <CodeListRef CodeListOID="CL.YES_NO" />
+      </ItemDef>
+      <ItemDef OID="I.LIGHTING_LEVEL" Name="lighting_level" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">Освещение/блики</TranslatedText>
+        </Question>
+        <CodeListRef CodeListOID="CL.LIGHTING_LEVEL" />
+      </ItemDef>
+      <ItemDef OID="I.NOISE_SOURCE" Name="noise_source" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">Источник шума (если был)</TranslatedText>
+        </Question>
+      </ItemDef>
+      <ItemDef OID="I.PHONE_ON_SUPPORT" Name="phone_on_support" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">Телефон на опоре/штативе</TranslatedText>
+        </Question>
+        <CodeListRef CodeListOID="CL.YES_NO" />
+      </ItemDef>
+      <ItemDef OID="I.VOID_INTO_WATER" Name="void_into_water" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">Попадание 'в воду'</TranslatedText>
+        </Question>
+        <CodeListRef CodeListOID="CL.VOID_INTO_WATER" />
+      </ItemDef>
+      <ItemDef OID="I.VOIDING_POSITION" Name="voiding_position" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">Поза при мочеиспускании</TranslatedText>
+        </Question>
+        <CodeListRef CodeListOID="CL.VOIDING_POSITION" />
+      </ItemDef>
+      <ItemDef OID="I.FLOW_END_TIME_S" Name="flow_end_time_s" DataType="float">
+        <Question>
+          <TranslatedText xml:lang="ru">Конец потока относительно начала записи</TranslatedText>
+        </Question>
+      </ItemDef>
+      <ItemDef OID="I.FLOW_START_TIME_S" Name="flow_start_time_s" DataType="float">
+        <Question>
+          <TranslatedText xml:lang="ru">Начало потока относительно начала записи</TranslatedText>
+        </Question>
+      </ItemDef>
+      <ItemDef OID="I.REF_ARTIFACTS" Name="ref_artifacts" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">Артефакты/заметки (референс)</TranslatedText>
+        </Question>
+      </ItemDef>
+      <ItemDef OID="I.REF_CURVE_CLASS" Name="ref_curve_class" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">Паттерн кривой (референс)</TranslatedText>
+        </Question>
+        <CodeListRef CodeListOID="CL.FLOW_PATTERN" />
+      </ItemDef>
+      <ItemDef OID="I.REF_FLOW_TIME_S" Name="ref_flow_time_s" DataType="float">
+        <Question>
+          <TranslatedText xml:lang="ru">Длительность потока (референс)</TranslatedText>
+        </Question>
+      </ItemDef>
+      <ItemDef OID="I.REF_QAVG_ML_S" Name="ref_qavg_ml_s" DataType="float">
+        <Question>
+          <TranslatedText xml:lang="ru">Qavg (референс)</TranslatedText>
+        </Question>
+      </ItemDef>
+      <ItemDef OID="I.REF_QMAX_ML_S" Name="ref_qmax_ml_s" DataType="float">
+        <Question>
+          <TranslatedText xml:lang="ru">Qmax (референс)</TranslatedText>
+        </Question>
+      </ItemDef>
+      <ItemDef OID="I.REF_TQMAX_S" Name="ref_tqmax_s" DataType="float">
+        <Question>
+          <TranslatedText xml:lang="ru">Время до Qmax (референс)</TranslatedText>
+        </Question>
+      </ItemDef>
+      <ItemDef OID="I.REF_VVOID_ML" Name="ref_vvoid_ml" DataType="float">
+        <Question>
+          <TranslatedText xml:lang="ru">Vvoid (референс)</TranslatedText>
+        </Question>
+      </ItemDef>
+      <ItemDef OID="I.APP_CURVE_CLASS" Name="app_curve_class" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">Паттерн кривой (приложение)</TranslatedText>
+        </Question>
+        <CodeListRef CodeListOID="CL.FLOW_PATTERN" />
+      </ItemDef>
+      <ItemDef OID="I.APP_FLOW_TIME_S" Name="app_flow_time_s" DataType="float">
+        <Question>
+          <TranslatedText xml:lang="ru">Длительность потока (приложение)</TranslatedText>
+        </Question>
+      </ItemDef>
+      <ItemDef OID="I.APP_QAVG_ML_S" Name="app_qavg_ml_s" DataType="float">
+        <Question>
+          <TranslatedText xml:lang="ru">Qavg (приложение)</TranslatedText>
+        </Question>
+      </ItemDef>
+      <ItemDef OID="I.APP_QMAX_ML_S" Name="app_qmax_ml_s" DataType="float">
+        <Question>
+          <TranslatedText xml:lang="ru">Qmax (приложение)</TranslatedText>
+        </Question>
+      </ItemDef>
+      <ItemDef OID="I.APP_TQMAX_S" Name="app_tqmax_s" DataType="float">
+        <Question>
+          <TranslatedText xml:lang="ru">Время до Qmax (приложение)</TranslatedText>
+        </Question>
+      </ItemDef>
+      <ItemDef OID="I.APP_VVOID_ML" Name="app_vvoid_ml" DataType="float">
+        <Question>
+          <TranslatedText xml:lang="ru">Vvoid (приложение)</TranslatedText>
+        </Question>
+      </ItemDef>
+      <ItemDef OID="I.INTERMITTENCY_INDEX" Name="intermittency_index" DataType="float">
+        <Question>
+          <TranslatedText xml:lang="ru">Индекс интермиттирующести</TranslatedText>
+        </Question>
+      </ItemDef>
+      <ItemDef OID="I.Q_CURVE_SAMPLING_HZ" Name="q_curve_sampling_hz" DataType="float">
+        <Question>
+          <TranslatedText xml:lang="ru">Частота дискретизации кривой Q(t)</TranslatedText>
+        </Question>
+      </ItemDef>
+      <ItemDef OID="I.Q_CURVE_SERIES" Name="q_curve_series" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">Массив значений Q(t)</TranslatedText>
+        </Question>
+      </ItemDef>
+      <ItemDef OID="I.Q_CURVE_UNCERTAINTY_SERIES" Name="q_curve_uncertainty_series" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">Неопределённость σ(t) или доверие по времени</TranslatedText>
+        </Question>
+      </ItemDef>
+      <ItemDef OID="I.DEVIATION_COMMENT" Name="deviation_comment" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">Deviation comment</TranslatedText>
+        </Question>
+      </ItemDef>
+      <ItemDef OID="I.FLUSH_DETECTED" Name="flush_detected" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">Обнаружен ли смыв/посторонняя вода</TranslatedText>
+        </Question>
+        <CodeListRef CodeListOID="CL.YES_NO" />
+      </ItemDef>
+      <ItemDef OID="I.MOTION_SCORE" Name="motion_score" DataType="float">
+        <Question>
+          <TranslatedText xml:lang="ru">Оценка движения телефона</TranslatedText>
+        </Question>
+      </ItemDef>
+      <ItemDef OID="I.OVERALL_UNCERTAINTY" Name="overall_uncertainty" DataType="float">
+        <Question>
+          <TranslatedText xml:lang="ru">Неопределенность/Confidence (если реализовано)</TranslatedText>
+        </Question>
+      </ItemDef>
+      <ItemDef OID="I.PROTOCOL_DEVIATION" Name="protocol_deviation" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">SOP deviation</TranslatedText>
+        </Question>
+        <CodeListRef CodeListOID="CL.YES_NO" />
+      </ItemDef>
+      <ItemDef OID="I.QR_LOW_SNR" Name="qr_low_snr" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">Low SNR</TranslatedText>
+        </Question>
+        <CodeListRef CodeListOID="CL.YES_NO" />
+      </ItemDef>
+      <ItemDef OID="I.QR_LOW_VOLUME" Name="qr_low_volume" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">Low volume</TranslatedText>
+        </Question>
+        <CodeListRef CodeListOID="CL.YES_NO" />
+      </ItemDef>
+      <ItemDef OID="I.QR_MOTION" Name="qr_motion" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">Device motion</TranslatedText>
+        </Question>
+        <CodeListRef CodeListOID="CL.YES_NO" />
+      </ItemDef>
+      <ItemDef OID="I.QR_NOT_IN_WATER" Name="qr_not_in_water" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">Impact not in water</TranslatedText>
+        </Question>
+        <CodeListRef CodeListOID="CL.YES_NO" />
+      </ItemDef>
+      <ItemDef OID="I.QR_OTHER_TEXT" Name="qr_other_text" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">Other reason</TranslatedText>
+        </Question>
+      </ItemDef>
+      <ItemDef OID="I.QR_ROI_LOST" Name="qr_roi_lost" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">ROI lost</TranslatedText>
+        </Question>
+        <CodeListRef CodeListOID="CL.YES_NO" />
+      </ItemDef>
+      <ItemDef OID="I.QUALITY_FLAGS" Name="quality_flags" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">Причины снижения качества (multi)</TranslatedText>
+        </Question>
+        <CodeListRef CodeListOID="CL.QUALITY_FLAGS" />
+      </ItemDef>
+      <ItemDef OID="I.QUALITY_NOTES" Name="quality_notes" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">Причина невалидности (если есть)</TranslatedText>
+        </Question>
+      </ItemDef>
+      <ItemDef OID="I.QUALITY_SCORE" Name="quality_score" DataType="integer">
+        <Question>
+          <TranslatedText xml:lang="ru">Quality score (0-100)</TranslatedText>
+        </Question>
+      </ItemDef>
+      <ItemDef OID="I.QUALITY_STATUS" Name="quality_status" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">Результат невалиден (флаг)</TranslatedText>
+        </Question>
+        <CodeListRef CodeListOID="CL.QUALITY_STATUS" />
+      </ItemDef>
+      <ItemDef OID="I.REPEAT_REASON" Name="repeat_reason" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">Repeat reason</TranslatedText>
+        </Question>
+      </ItemDef>
+      <ItemDef OID="I.REPEAT_REQUIRED" Name="repeat_required" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">Repeat required</TranslatedText>
+        </Question>
+        <CodeListRef CodeListOID="CL.YES_NO" />
+      </ItemDef>
+      <ItemDef OID="I.ROI_VISIBILITY" Name="roi_visibility" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">Видимость воды/ROI</TranslatedText>
+        </Question>
+        <CodeListRef CodeListOID="CL.ROI_VISIBILITY" />
+      </ItemDef>
+      <ItemDef OID="I.PVR_AVAILABLE" Name="pvr_available" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">PVR измеряли</TranslatedText>
+        </Question>
+        <CodeListRef CodeListOID="CL.YES_NO" />
+      </ItemDef>
+      <ItemDef OID="I.PVR_DELAY_MIN" Name="pvr_delay_min" DataType="float">
+        <Question>
+          <TranslatedText xml:lang="ru">Минут после мочеиспускания</TranslatedText>
+        </Question>
+      </ItemDef>
+      <ItemDef OID="I.PVR_METHOD" Name="pvr_method" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">Метод PVR</TranslatedText>
+        </Question>
+        <CodeListRef CodeListOID="CL.PVR_METHOD" />
+      </ItemDef>
+      <ItemDef OID="I.PVR_ML" Name="pvr_ml" DataType="float">
+        <Question>
+          <TranslatedText xml:lang="ru">PVR</TranslatedText>
+        </Question>
+      </ItemDef>
+      <ItemDef OID="I.EXPORT_DESTINATION" Name="export_destination" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">Назначение экспорта</TranslatedText>
+        </Question>
+        <CodeListRef CodeListOID="CL.EXPORT_DESTINATION" />
+      </ItemDef>
+      <ItemDef OID="I.EXPORT_FORMAT" Name="export_format" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">Формат экспорта</TranslatedText>
+        </Question>
+        <CodeListRef CodeListOID="CL.EXPORT_FORMAT" />
+      </ItemDef>
+      <ItemDef OID="I.MEDIA_CONSENT" Name="media_consent" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">Согласие на сохранение медиа</TranslatedText>
+        </Question>
+        <CodeListRef CodeListOID="CL.YES_NO" />
+      </ItemDef>
+      <ItemDef OID="I.MEDIA_SAVED" Name="media_saved" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">Медиа сохранены локально</TranslatedText>
+        </Question>
+        <CodeListRef CodeListOID="CL.YES_NO" />
+      </ItemDef>
+      <ItemDef OID="I.NOTES_CLINICIAN" Name="notes_clinician" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">Комментарий врача</TranslatedText>
+        </Question>
+      </ItemDef>
+      <ItemDef OID="I.AE_DESCRIPTION" Name="ae_description" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">Описание AE</TranslatedText>
+        </Question>
+      </ItemDef>
+      <ItemDef OID="I.AE_OCCURRED" Name="ae_occurred" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">Нежелательные явления/инциденты были</TranslatedText>
+        </Question>
+        <CodeListRef CodeListOID="CL.YES_NO" />
+      </ItemDef>
+      <ItemDef OID="I.AE_RELATED" Name="ae_related" DataType="text">
+        <Question>
+          <TranslatedText xml:lang="ru">Связь с процедурой</TranslatedText>
+        </Question>
+        <CodeListRef CodeListOID="CL.YES_NO" />
+      </ItemDef>
+      <ItemDef OID="I.ABS_PCT_ERROR_QMAX" Name="abs_pct_error_qmax" DataType="float">
+        <Question>
+          <TranslatedText xml:lang="ru">MAPE</TranslatedText>
+        </Question>
+      </ItemDef>
+      <ItemDef OID="I.DELTA_QAVG" Name="delta_qavg" DataType="float">
+        <Question>
+          <TranslatedText xml:lang="ru">Bland-Altman</TranslatedText>
+        </Question>
+      </ItemDef>
+      <ItemDef OID="I.DELTA_QMAX" Name="delta_qmax" DataType="float">
+        <Question>
+          <TranslatedText xml:lang="ru">Bland-Altman</TranslatedText>
+        </Question>
+      </ItemDef>
+      <ItemDef OID="I.DELTA_VVOID" Name="delta_vvoid" DataType="float">
+        <Question>
+          <TranslatedText xml:lang="ru">Bland-Altman</TranslatedText>
+        </Question>
+      </ItemDef>
+      <CodeList OID="CL.CAPTURE_MODE" Name="CAPTURE_MODE" DataType="text">
+        <CodeListItem CodedValue="fallback_nonwater">
+          <Decode>
+            <TranslatedText xml:lang="en">Fallback non-water</TranslatedText>
+          </Decode>
+        </CodeListItem>
+        <CodeListItem CodedValue="jet_assist">
+          <Decode>
+            <TranslatedText xml:lang="en">Jet in air assist</TranslatedText>
+          </Decode>
+        </CodeListItem>
+        <CodeListItem CodedValue="water_impact">
+          <Decode>
+            <TranslatedText xml:lang="en">Water impact</TranslatedText>
+          </Decode>
+        </CodeListItem>
+      </CodeList>
+      <CodeList OID="CL.CONSENT_LEVEL" Name="CONSENT_LEVEL" DataType="text">
+        <CodeListItem CodedValue="full_recording">
+          <Decode>
+            <TranslatedText xml:lang="en">Full recording</TranslatedText>
+          </Decode>
+        </CodeListItem>
+        <CodeListItem CodedValue="metrics_only">
+          <Decode>
+            <TranslatedText xml:lang="en">Metrics only</TranslatedText>
+          </Decode>
+        </CodeListItem>
+        <CodeListItem CodedValue="roi_video_local">
+          <Decode>
+            <TranslatedText xml:lang="en">ROI video local</TranslatedText>
+          </Decode>
+        </CodeListItem>
+      </CodeList>
+      <CodeList OID="CL.DIAGNOSTIC_GROUP" Name="DIAGNOSTIC_GROUP" DataType="text">
+        <CodeListItem CodedValue="bph_luts">
+          <Decode>
+            <TranslatedText xml:lang="en">Bph Luts</TranslatedText>
+          </Decode>
+        </CodeListItem>
+        <CodeListItem CodedValue="neurogenic">
+          <Decode>
+            <TranslatedText xml:lang="en">Neurogenic</TranslatedText>
+          </Decode>
+        </CodeListItem>
+        <CodeListItem CodedValue="other">
+          <Decode>
+            <TranslatedText xml:lang="en">Other</TranslatedText>
+          </Decode>
+        </CodeListItem>
+        <CodeListItem CodedValue="postop">
+          <Decode>
+            <TranslatedText xml:lang="en">Postop</TranslatedText>
+          </Decode>
+        </CodeListItem>
+        <CodeListItem CodedValue="stricture">
+          <Decode>
+            <TranslatedText xml:lang="en">Stricture</TranslatedText>
+          </Decode>
+        </CodeListItem>
+      </CodeList>
+      <CodeList OID="CL.EXPORT_DESTINATION" Name="EXPORT_DESTINATION" DataType="text">
+        <CodeListItem CodedValue="emr">
+          <Decode>
+            <TranslatedText xml:lang="en">EMR/EHR</TranslatedText>
+          </Decode>
+        </CodeListItem>
+        <CodeListItem CodedValue="local">
+          <Decode>
+            <TranslatedText xml:lang="en">Local device</TranslatedText>
+          </Decode>
+        </CodeListItem>
+      </CodeList>
+      <CodeList OID="CL.EXPORT_FORMAT" Name="EXPORT_FORMAT" DataType="text">
+        <CodeListItem CodedValue="fhir">
+          <Decode>
+            <TranslatedText xml:lang="en">FHIR Observation</TranslatedText>
+          </Decode>
+        </CodeListItem>
+        <CodeListItem CodedValue="hl7">
+          <Decode>
+            <TranslatedText xml:lang="en">HL7 ORU^R01</TranslatedText>
+          </Decode>
+        </CodeListItem>
+        <CodeListItem CodedValue="pdf">
+          <Decode>
+            <TranslatedText xml:lang="en">PDF report</TranslatedText>
+          </Decode>
+        </CodeListItem>
+      </CodeList>
+      <CodeList OID="CL.FLOW_PATTERN" Name="FLOW_PATTERN" DataType="text">
+        <CodeListItem CodedValue="bell">
+          <Decode>
+            <TranslatedText xml:lang="en">Bell</TranslatedText>
+          </Decode>
+        </CodeListItem>
+        <CodeListItem CodedValue="intermittent">
+          <Decode>
+            <TranslatedText xml:lang="en">Intermittent</TranslatedText>
+          </Decode>
+        </CodeListItem>
+        <CodeListItem CodedValue="other">
+          <Decode>
+            <TranslatedText xml:lang="en">Other</TranslatedText>
+          </Decode>
+        </CodeListItem>
+        <CodeListItem CodedValue="plateau">
+          <Decode>
+            <TranslatedText xml:lang="en">Plateau</TranslatedText>
+          </Decode>
+        </CodeListItem>
+      </CodeList>
+      <CodeList OID="CL.LIGHTING_LEVEL" Name="LIGHTING_LEVEL" DataType="text">
+        <CodeListItem CodedValue="dim">
+          <Decode>
+            <TranslatedText xml:lang="en">Dim</TranslatedText>
+          </Decode>
+        </CodeListItem>
+        <CodeListItem CodedValue="glare">
+          <Decode>
+            <TranslatedText xml:lang="en">Glare</TranslatedText>
+          </Decode>
+        </CodeListItem>
+        <CodeListItem CodedValue="normal">
+          <Decode>
+            <TranslatedText xml:lang="en">Normal</TranslatedText>
+          </Decode>
+        </CodeListItem>
+      </CodeList>
+      <CodeList OID="CL.NOISE_LEVEL" Name="NOISE_LEVEL" DataType="text">
+        <CodeListItem CodedValue="high">
+          <Decode>
+            <TranslatedText xml:lang="en">High</TranslatedText>
+          </Decode>
+        </CodeListItem>
+        <CodeListItem CodedValue="moderate">
+          <Decode>
+            <TranslatedText xml:lang="en">Moderate</TranslatedText>
+          </Decode>
+        </CodeListItem>
+        <CodeListItem CodedValue="none">
+          <Decode>
+            <TranslatedText xml:lang="en">None</TranslatedText>
+          </Decode>
+        </CodeListItem>
+      </CodeList>
+      <CodeList OID="CL.PVR_METHOD" Name="PVR_METHOD" DataType="text">
+        <CodeListItem CodedValue="bladder_scan">
+          <Decode>
+            <TranslatedText xml:lang="en">Bladder Scan</TranslatedText>
+          </Decode>
+        </CodeListItem>
+        <CodeListItem CodedValue="ultrasound">
+          <Decode>
+            <TranslatedText xml:lang="en">Ultrasound</TranslatedText>
+          </Decode>
+        </CodeListItem>
+      </CodeList>
+      <CodeList OID="CL.QUALITY_FLAGS" Name="QUALITY_FLAGS" DataType="text">
+        <CodeListItem CodedValue="flush">
+          <Decode>
+            <TranslatedText xml:lang="en">Flush</TranslatedText>
+          </Decode>
+        </CodeListItem>
+        <CodeListItem CodedValue="low_volume">
+          <Decode>
+            <TranslatedText xml:lang="en">Low Volume</TranslatedText>
+          </Decode>
+        </CodeListItem>
+        <CodeListItem CodedValue="motion">
+          <Decode>
+            <TranslatedText xml:lang="en">Motion</TranslatedText>
+          </Decode>
+        </CodeListItem>
+        <CodeListItem CodedValue="noise">
+          <Decode>
+            <TranslatedText xml:lang="en">Noise</TranslatedText>
+          </Decode>
+        </CodeListItem>
+        <CodeListItem CodedValue="not_in_water">
+          <Decode>
+            <TranslatedText xml:lang="en">Not In Water</TranslatedText>
+          </Decode>
+        </CodeListItem>
+        <CodeListItem CodedValue="other">
+          <Decode>
+            <TranslatedText xml:lang="en">Other</TranslatedText>
+          </Decode>
+        </CodeListItem>
+        <CodeListItem CodedValue="roi_lost">
+          <Decode>
+            <TranslatedText xml:lang="en">Roi Lost</TranslatedText>
+          </Decode>
+        </CodeListItem>
+      </CodeList>
+      <CodeList OID="CL.QUALITY_STATUS" Name="QUALITY_STATUS" DataType="text">
+        <CodeListItem CodedValue="reject">
+          <Decode>
+            <TranslatedText xml:lang="en">Rejected</TranslatedText>
+          </Decode>
+        </CodeListItem>
+        <CodeListItem CodedValue="repeat">
+          <Decode>
+            <TranslatedText xml:lang="en">Repeat needed</TranslatedText>
+          </Decode>
+        </CodeListItem>
+        <CodeListItem CodedValue="valid">
+          <Decode>
+            <TranslatedText xml:lang="en">Valid</TranslatedText>
+          </Decode>
+        </CodeListItem>
+      </CodeList>
+      <CodeList OID="CL.ROI_VISIBILITY" Name="ROI_VISIBILITY" DataType="text">
+        <CodeListItem CodedValue="lost">
+          <Decode>
+            <TranslatedText xml:lang="en">ROI lost</TranslatedText>
+          </Decode>
+        </CodeListItem>
+        <CodeListItem CodedValue="ok">
+          <Decode>
+            <TranslatedText xml:lang="en">ROI visible</TranslatedText>
+          </Decode>
+        </CodeListItem>
+        <CodeListItem CodedValue="partial">
+          <Decode>
+            <TranslatedText xml:lang="en">ROI partially visible</TranslatedText>
+          </Decode>
+        </CodeListItem>
+      </CodeList>
+      <CodeList OID="CL.SEX_AT_BIRTH" Name="SEX_AT_BIRTH" DataType="text">
+        <CodeListItem CodedValue="female">
+          <Decode>
+            <TranslatedText xml:lang="en">Female</TranslatedText>
+          </Decode>
+        </CodeListItem>
+        <CodeListItem CodedValue="male">
+          <Decode>
+            <TranslatedText xml:lang="en">Male</TranslatedText>
+          </Decode>
+        </CodeListItem>
+      </CodeList>
+      <CodeList OID="CL.VOIDING_POSITION" Name="VOIDING_POSITION" DataType="text">
+        <CodeListItem CodedValue="female_sitting">
+          <Decode>
+            <TranslatedText xml:lang="en">Female Sitting</TranslatedText>
+          </Decode>
+        </CodeListItem>
+        <CodeListItem CodedValue="male_sitting">
+          <Decode>
+            <TranslatedText xml:lang="en">Male Sitting</TranslatedText>
+          </Decode>
+        </CodeListItem>
+        <CodeListItem CodedValue="male_standing">
+          <Decode>
+            <TranslatedText xml:lang="en">Male Standing</TranslatedText>
+          </Decode>
+        </CodeListItem>
+      </CodeList>
+      <CodeList OID="CL.VOID_INTO_WATER" Name="VOID_INTO_WATER" DataType="text">
+        <CodeListItem CodedValue="no">
+          <Decode>
+            <TranslatedText xml:lang="en">No</TranslatedText>
+          </Decode>
+        </CodeListItem>
+        <CodeListItem CodedValue="unsure">
+          <Decode>
+            <TranslatedText xml:lang="en">Unsure</TranslatedText>
+          </Decode>
+        </CodeListItem>
+        <CodeListItem CodedValue="yes">
+          <Decode>
+            <TranslatedText xml:lang="en">Yes</TranslatedText>
+          </Decode>
+        </CodeListItem>
+      </CodeList>
+      <CodeList OID="CL.YES_NO" Name="YES_NO" DataType="text">
+        <CodeListItem CodedValue="no">
+          <Decode>
+            <TranslatedText xml:lang="en">No</TranslatedText>
+          </Decode>
+        </CodeListItem>
+        <CodeListItem CodedValue="yes">
+          <Decode>
+            <TranslatedText xml:lang="en">Yes</TranslatedText>
+          </Decode>
+        </CodeListItem>
+      </CodeList>
+    </MetaDataVersion>
+  </Study>
+</ODM>

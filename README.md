@@ -128,11 +128,14 @@ uroflow-mobile validate-capture-contract \
 - `docs/pilot-protocol-v1.md` — pilot-протокол v1.0 сравнения с эталоном
 - `docs/edc-v1.1/` — canonical EDC schema v1.1 (dictionary/codelists/crosswalk/rules)
 - `docs/edc-v1.1/redcap/` — import-ready REDCap profile v1.1
+- `docs/edc-v1.1/openclinica/` — import-ready OpenClinica profile v1.1 (incl. ODM XML)
 - `src/uroflow_mobile/` — доменные модели и расчёт метрик
 - `tests/` — базовые тесты расчёта метрик
 - `examples/` — демо-скрипты
 - `scripts/normalize_edc_dictionary_v1_1.py` — генератор пакета `docs/edc-v1.1`
 - `scripts/generate_redcap_profile_v1_1.py` — генератор REDCap Data Dictionary из canonical EDC
+- `scripts/generate_redcap_dry_run_records_v1_1.py` — генератор REDCap dry-run импортных записей
+- `scripts/generate_openclinica_profile_v1_1.py` — генератор OpenClinica профиля из canonical EDC
 
 ## Важно
 
