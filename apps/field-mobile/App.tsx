@@ -75,9 +75,32 @@ type PendingSubmission = {
   id: string;
   created_at: string;
   payload: PairedPayload;
+  attempt_count: number;
+  last_attempt_at: string | null;
+  last_error: string | null;
+  last_status_code: number | null;
+};
+
+type AppSettings = {
+  api_base_url: string;
+  api_key: string;
+  actor_role: string;
+  site_id: string;
+  operator_id: string;
+  summary_quality_status: SummaryQualityStatus;
+  request_timeout_ms: string;
+};
+
+type SubmitAttemptResult = {
+  ok: boolean;
+  statusCode: number | null;
+  body: string;
+  retryable: boolean;
 };
 
 const PENDING_SUBMISSIONS_KEY = "uroflow_pending_submissions_v1";
+const APP_SETTINGS_KEY = "uroflow_field_settings_v1";
+const DEFAULT_REQUEST_TIMEOUT_MS = "15000";
 
 const defaultMeasuredAt = new Date().toISOString().slice(0, 19) + "Z";
 
@@ -116,6 +139,62 @@ function createPendingId(): string {
   return `PENDING-${Date.now()}-${randomPart}`;
 }
 
+function classifyRetryable(statusCode: number | null): boolean {
+  if (statusCode == null) {
+    return true;
+  }
+  if (statusCode >= 500) {
+    return true;
+  }
+  return statusCode === 408 || statusCode === 425 || statusCode === 429;
+}
+
+function clampTimeoutMs(rawValue: string): number {
+  const parsed = Number(rawValue);
+  if (!Number.isFinite(parsed)) {
+    return 15000;
+  }
+  return Math.min(120000, Math.max(2000, Math.round(parsed)));
+}
+
+function normalizePendingSubmission(raw: unknown): PendingSubmission | null {
+  if (!raw || typeof raw !== "object") {
+    return null;
+  }
+  const candidate = raw as Record<string, unknown>;
+  const payload = candidate.payload;
+  if (!payload || typeof payload !== "object") {
+    return null;
+  }
+
+  const id =
+    typeof candidate.id === "string" && candidate.id.trim()
+      ? candidate.id
+      : createPendingId();
+  const createdAt =
+    typeof candidate.created_at === "string" && candidate.created_at.trim()
+      ? candidate.created_at
+      : new Date().toISOString();
+  const attemptCountRaw = Number(candidate.attempt_count);
+  const attemptCount = Number.isFinite(attemptCountRaw)
+    ? Math.max(0, Math.round(attemptCountRaw))
+    : 0;
+
+  return {
+    id,
+    created_at: createdAt,
+    payload: payload as PairedPayload,
+    attempt_count: attemptCount,
+    last_attempt_at:
+      typeof candidate.last_attempt_at === "string" ? candidate.last_attempt_at : null,
+    last_error: typeof candidate.last_error === "string" ? candidate.last_error : null,
+    last_status_code:
+      typeof candidate.last_status_code === "number"
+        ? candidate.last_status_code
+        : null,
+  };
+}
+
 async function loadPendingSubmissions(): Promise<PendingSubmission[]> {
   const raw = await AsyncStorage.getItem(PENDING_SUBMISSIONS_KEY);
   if (!raw) {
@@ -127,7 +206,9 @@ async function loadPendingSubmissions(): Promise<PendingSubmission[]> {
     if (!Array.isArray(parsed)) {
       return [];
     }
-    return parsed as PendingSubmission[];
+    return parsed
+      .map((item) => normalizePendingSubmission(item))
+      .filter((item): item is PendingSubmission => item != null);
   } catch {
     return [];
   }
@@ -137,12 +218,54 @@ async function savePendingSubmissions(queue: PendingSubmission[]): Promise<void>
   await AsyncStorage.setItem(PENDING_SUBMISSIONS_KEY, JSON.stringify(queue));
 }
 
+async function loadAppSettings(): Promise<AppSettings | null> {
+  const raw = await AsyncStorage.getItem(APP_SETTINGS_KEY);
+  if (!raw) {
+    return null;
+  }
+  try {
+    const parsed = JSON.parse(raw) as Partial<AppSettings>;
+    if (!parsed || typeof parsed !== "object") {
+      return null;
+    }
+    const summaryQualityStatus: SummaryQualityStatus =
+      parsed.summary_quality_status === "all" ||
+      parsed.summary_quality_status === "valid" ||
+      parsed.summary_quality_status === "repeat" ||
+      parsed.summary_quality_status === "reject"
+        ? parsed.summary_quality_status
+        : "valid";
+    return {
+      api_base_url:
+        typeof parsed.api_base_url === "string" && parsed.api_base_url.trim()
+          ? parsed.api_base_url
+          : "http://127.0.0.1:8000",
+      api_key: typeof parsed.api_key === "string" ? parsed.api_key : "",
+      actor_role: typeof parsed.actor_role === "string" ? parsed.actor_role : "operator",
+      site_id: typeof parsed.site_id === "string" ? parsed.site_id : "SITE-001",
+      operator_id: typeof parsed.operator_id === "string" ? parsed.operator_id : "OP-01",
+      summary_quality_status: summaryQualityStatus,
+      request_timeout_ms:
+        typeof parsed.request_timeout_ms === "string" && parsed.request_timeout_ms.trim()
+          ? parsed.request_timeout_ms
+          : DEFAULT_REQUEST_TIMEOUT_MS,
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function saveAppSettings(settings: AppSettings): Promise<void> {
+  await AsyncStorage.setItem(APP_SETTINGS_KEY, JSON.stringify(settings));
+}
+
 export default function App() {
   const defaultPlatform = Platform.OS === "ios" ? "ios" : "android";
 
   const [apiBaseUrl, setApiBaseUrl] = useState("http://127.0.0.1:8000");
   const [apiKey, setApiKey] = useState("");
   const [actorRole, setActorRole] = useState("operator");
+  const [requestTimeoutMs, setRequestTimeoutMs] = useState(DEFAULT_REQUEST_TIMEOUT_MS);
   const [sessionId, setSessionId] = useState(createSessionId());
   const [siteId, setSiteId] = useState("SITE-001");
   const [subjectId, setSubjectId] = useState("SUBJ-001");
@@ -174,12 +297,14 @@ export default function App() {
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [lastResponse, setLastResponse] = useState<string>("");
-  const [pendingCount, setPendingCount] = useState(0);
+  const [pendingQueue, setPendingQueue] = useState<PendingSubmission[]>([]);
   const [syncingPending, setSyncingPending] = useState(false);
+  const [syncStatusMessage, setSyncStatusMessage] = useState("");
   const [summaryQualityStatus, setSummaryQualityStatus] = useState<SummaryQualityStatus>("valid");
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [summaryError, setSummaryError] = useState("");
   const [summary, setSummary] = useState<ComparisonSummaryResponse | null>(null);
+  const [settingsHydrated, setSettingsHydrated] = useState(false);
 
   const payload = useMemo<PairedPayload>(() => {
     return {
@@ -251,45 +376,99 @@ export default function App() {
 
   useEffect(() => {
     void (async () => {
-      const queue = await loadPendingSubmissions();
-      setPendingCount(queue.length);
+      const [queue, settings] = await Promise.all([
+        loadPendingSubmissions(),
+        loadAppSettings(),
+      ]);
+      setPendingQueue(queue);
+      if (settings) {
+        setApiBaseUrl(settings.api_base_url);
+        setApiKey(settings.api_key);
+        setActorRole(settings.actor_role);
+        setSiteId(settings.site_id);
+        setOperatorId(settings.operator_id);
+        setSummaryQualityStatus(settings.summary_quality_status);
+        setRequestTimeoutMs(settings.request_timeout_ms);
+      }
+      setSettingsHydrated(true);
     })();
   }, []);
 
-  async function enqueuePendingSubmission(item: PendingSubmission): Promise<void> {
-    const queue = await loadPendingSubmissions();
-    queue.push(item);
+  useEffect(() => {
+    if (!settingsHydrated) {
+      return;
+    }
+    const settings: AppSettings = {
+      api_base_url: apiBaseUrl,
+      api_key: apiKey,
+      actor_role: actorRole,
+      site_id: siteId,
+      operator_id: operatorId,
+      summary_quality_status: summaryQualityStatus,
+      request_timeout_ms: requestTimeoutMs,
+    };
+    void saveAppSettings(settings);
+  }, [
+    actorRole,
+    apiBaseUrl,
+    apiKey,
+    operatorId,
+    requestTimeoutMs,
+    settingsHydrated,
+    siteId,
+    summaryQualityStatus,
+  ]);
+
+  async function persistPendingQueue(queue: PendingSubmission[]): Promise<void> {
     await savePendingSubmissions(queue);
-    setPendingCount(queue.length);
+    setPendingQueue(queue);
   }
 
-  async function attemptSubmit(currentPayload: PairedPayload): Promise<{
-    ok: boolean;
-    statusCode: number | null;
-    body: string;
-  }> {
+  async function enqueuePendingSubmission(item: PendingSubmission): Promise<void> {
+    const queue =
+      pendingQueue.length > 0 ? [...pendingQueue] : await loadPendingSubmissions();
+    queue.push(item);
+    await persistPendingQueue(queue);
+  }
+
+  function buildRequestHeaders(includeContentType: boolean): Record<string, string> {
+    const headers: Record<string, string> = {};
+    if (includeContentType) {
+      headers["Content-Type"] = "application/json";
+    }
+    if (apiKey.trim()) {
+      headers["x-api-key"] = apiKey.trim();
+    }
+    if (operatorId.trim()) {
+      headers["x-operator-id"] = operatorId.trim();
+    }
+    if (siteId.trim()) {
+      headers["x-site-id"] = siteId.trim();
+    }
+    if (actorRole.trim()) {
+      headers["x-actor-role"] = actorRole.trim();
+    }
+    headers["x-request-id"] = createPendingId();
+    return headers;
+  }
+
+  async function fetchWithTimeout(url: string, init: RequestInit): Promise<Response> {
+    const timeoutMs = clampTimeoutMs(requestTimeoutMs);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      return await fetch(url, { ...init, signal: controller.signal });
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  async function attemptSubmit(currentPayload: PairedPayload): Promise<SubmitAttemptResult> {
     const url = `${apiBaseUrl.replace(/\/$/, "")}/api/v1/paired-measurements`;
     try {
-      const headers: Record<string, string> = {
-        "Content-Type": "application/json",
-      };
-      if (apiKey.trim()) {
-        headers["x-api-key"] = apiKey.trim();
-      }
-      if (operatorId.trim()) {
-        headers["x-operator-id"] = operatorId.trim();
-      }
-      if (siteId.trim()) {
-        headers["x-site-id"] = siteId.trim();
-      }
-      if (actorRole.trim()) {
-        headers["x-actor-role"] = actorRole.trim();
-      }
-      headers["x-request-id"] = createPendingId();
-
-      const response = await fetch(url, {
+      const response = await fetchWithTimeout(url, {
         method: "POST",
-        headers,
+        headers: buildRequestHeaders(true),
         body: JSON.stringify(currentPayload),
       });
       const body = await response.text();
@@ -297,49 +476,104 @@ export default function App() {
         ok: response.ok,
         statusCode: response.status,
         body,
+        retryable: !response.ok ? classifyRetryable(response.status) : false,
       };
     } catch (error) {
+      const message = String(error);
       return {
         ok: false,
         statusCode: null,
-        body: String(error),
+        body: message,
+        retryable: true,
       };
     }
   }
 
   async function syncPendingSubmissions(): Promise<void> {
     setSyncingPending(true);
-    setSummaryError("");
+    setSyncStatusMessage("");
     try {
       const queue = await loadPendingSubmissions();
       if (queue.length === 0) {
-        setPendingCount(0);
+        setPendingQueue([]);
+        setSyncStatusMessage("Pending queue is empty.");
         return;
       }
 
       const remaining: PendingSubmission[] = [];
       let synced = 0;
+      let droppedNonRetryable = 0;
 
       for (const item of queue) {
         const result = await attemptSubmit(item.payload);
+        const attemptedItem: PendingSubmission = {
+          ...item,
+          attempt_count: item.attempt_count + 1,
+          last_attempt_at: new Date().toISOString(),
+          last_status_code: result.statusCode,
+          last_error: result.ok ? null : result.body,
+        };
         if (result.ok) {
           synced += 1;
-        } else {
-          remaining.push(item);
+          continue;
         }
+        if (result.retryable) {
+          remaining.push(attemptedItem);
+          continue;
+        }
+        droppedNonRetryable += 1;
       }
 
-      await savePendingSubmissions(remaining);
-      setPendingCount(remaining.length);
+      await persistPendingQueue(remaining);
 
-      if (synced > 0) {
-        Alert.alert("Sync completed", `Synced: ${synced}, remaining: ${remaining.length}`);
-      }
-      if (synced === 0 && remaining.length > 0) {
-        setLastResponse("Pending queue was not synced. Check API URL and API key.");
-      }
+      const statusMessage =
+        `Sync completed. Synced: ${synced}, ` +
+        `remaining retryable: ${remaining.length}, ` +
+        `dropped non-retryable: ${droppedNonRetryable}.`;
+      setSyncStatusMessage(statusMessage);
+      setLastResponse(statusMessage);
+      Alert.alert("Sync completed", statusMessage);
     } finally {
       setSyncingPending(false);
+    }
+  }
+
+  async function clearPendingSubmissions(): Promise<void> {
+    Alert.alert(
+      "Clear pending queue",
+      "Remove all pending submissions from local storage?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Clear",
+          style: "destructive",
+          onPress: () => {
+            void persistPendingQueue([]);
+            setSyncStatusMessage("Pending queue cleared.");
+          },
+        },
+      ],
+    );
+  }
+
+  async function testApiConnection(): Promise<void> {
+    const url = `${apiBaseUrl.replace(/\/$/, "")}/health`;
+    try {
+      const response = await fetchWithTimeout(url, {
+        method: "GET",
+        headers: buildRequestHeaders(false),
+      });
+      if (!response.ok) {
+        setLastResponse(`Health check failed: HTTP ${response.status}`);
+        Alert.alert("API check failed", `HTTP ${response.status}`);
+        return;
+      }
+      setLastResponse("API health check passed.");
+      Alert.alert("API reachable", "Health check succeeded.");
+    } catch (error) {
+      const message = String(error);
+      setLastResponse(`API health check failed: ${message}`);
+      Alert.alert("API check failed", message);
     }
   }
 
@@ -384,10 +618,26 @@ export default function App() {
         return;
       }
 
+      if (!result.retryable) {
+        const nonRetryableMessage =
+          `Upload rejected and not queued. ` +
+          `${result.statusCode ? `HTTP ${result.statusCode}` : "ERROR"} ${result.body}`;
+        setLastResponse(nonRetryableMessage);
+        Alert.alert(
+          "Upload rejected",
+          "Request is non-retryable. Check payload, API key, and required fields.",
+        );
+        return;
+      }
+
       const pendingItem: PendingSubmission = {
         id: createPendingId(),
         created_at: new Date().toISOString(),
         payload,
+        attempt_count: 0,
+        last_attempt_at: null,
+        last_error: result.body,
+        last_status_code: result.statusCode,
       };
       await enqueuePendingSubmission(pendingItem);
       setLastResponse(
@@ -417,21 +667,10 @@ export default function App() {
     setSummaryError("");
 
     try {
-      const headers: Record<string, string> = {};
-      if (apiKey.trim()) {
-        headers["x-api-key"] = apiKey.trim();
-      }
-      if (operatorId.trim()) {
-        headers["x-operator-id"] = operatorId.trim();
-      }
-      if (siteId.trim()) {
-        headers["x-site-id"] = siteId.trim();
-      }
-      if (actorRole.trim()) {
-        headers["x-actor-role"] = actorRole.trim();
-      }
-      headers["x-request-id"] = createPendingId();
-      const response = await fetch(url, { headers });
+      const response = await fetchWithTimeout(url, {
+        method: "GET",
+        headers: buildRequestHeaders(false),
+      });
       const body = await response.text();
       if (!response.ok) {
         setSummary(null);
@@ -456,20 +695,64 @@ export default function App() {
 
         <Text style={styles.sectionTitle}>API</Text>
         <LabeledInput label="API Base URL" value={apiBaseUrl} onChangeText={setApiBaseUrl} />
-        <LabeledInput label="API Key (x-api-key)" value={apiKey} onChangeText={setApiKey} />
+        <LabeledInput
+          label="API Key (x-api-key)"
+          value={apiKey}
+          onChangeText={setApiKey}
+          secureTextEntry
+        />
         <LabeledInput label="Actor Role (x-actor-role)" value={actorRole} onChangeText={setActorRole} />
+        <LabeledInput
+          label="Request Timeout (ms)"
+          value={requestTimeoutMs}
+          onChangeText={setRequestTimeoutMs}
+          keyboardType="number-pad"
+        />
         <View style={styles.pendingRow}>
-          <Text style={styles.pendingText}>Pending submissions: {pendingCount}</Text>
+          <Text style={styles.pendingText}>Pending submissions: {pendingQueue.length}</Text>
         </View>
-        <Pressable
-          style={[styles.summaryButton, syncingPending && styles.submitButtonDisabled]}
-          onPress={() => void syncPendingSubmissions()}
-          disabled={syncingPending}
-        >
-          <Text style={styles.submitButtonText}>
-            {syncingPending ? "Syncing..." : "Sync Pending Queue"}
+        {pendingQueue.slice(0, 3).map((item) => (
+          <Text key={item.id} style={styles.pendingItemText}>
+            {item.id}: attempts={item.attempt_count}
+            {item.last_status_code != null ? `, last_status=${item.last_status_code}` : ""}
+            {item.last_error ? `, last_error=${item.last_error.slice(0, 80)}` : ""}
           </Text>
-        </Pressable>
+        ))}
+        {pendingQueue.length > 3 ? (
+          <Text style={styles.pendingItemText}>
+            ...and {pendingQueue.length - 3} more pending submissions
+          </Text>
+        ) : null}
+        <View style={styles.buttonRow}>
+          <Pressable
+            style={[styles.summaryButton, styles.buttonGrow]}
+            onPress={() => void testApiConnection()}
+          >
+            <Text style={styles.submitButtonText}>Test API</Text>
+          </Pressable>
+          <Pressable
+            style={[
+              styles.summaryButton,
+              styles.buttonGrow,
+              syncingPending && styles.submitButtonDisabled,
+            ]}
+            onPress={() => void syncPendingSubmissions()}
+            disabled={syncingPending}
+          >
+            <Text style={styles.submitButtonText}>
+              {syncingPending ? "Syncing..." : "Sync Queue"}
+            </Text>
+          </Pressable>
+          <Pressable
+            style={[styles.dangerButton, styles.buttonGrow]}
+            onPress={() => void clearPendingSubmissions()}
+          >
+            <Text style={styles.submitButtonText}>Clear Queue</Text>
+          </Pressable>
+        </View>
+        {syncStatusMessage ? (
+          <Text style={styles.syncStatusText}>{syncStatusMessage}</Text>
+        ) : null}
 
         <Text style={styles.sectionTitle}>Session</Text>
         <LabeledInput label="Session ID" value={sessionId} onChangeText={setSessionId} />
@@ -569,6 +852,7 @@ type InputProps = {
   onChangeText: (text: string) => void;
   keyboardType?: "default" | "number-pad" | "decimal-pad";
   multiline?: boolean;
+  secureTextEntry?: boolean;
 };
 
 function LabeledInput({
@@ -577,6 +861,7 @@ function LabeledInput({
   onChangeText,
   keyboardType = "default",
   multiline = false,
+  secureTextEntry = false,
 }: InputProps) {
   return (
     <View style={styles.inputWrap}>
@@ -587,6 +872,7 @@ function LabeledInput({
         onChangeText={onChangeText}
         keyboardType={keyboardType}
         multiline={multiline}
+        secureTextEntry={secureTextEntry}
       />
     </View>
   );
@@ -674,6 +960,21 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     alignItems: "center",
   },
+  dangerButton: {
+    marginTop: 8,
+    borderRadius: 10,
+    backgroundColor: "#b91c1c",
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  buttonRow: {
+    marginTop: 8,
+    flexDirection: "row",
+    gap: 8,
+  },
+  buttonGrow: {
+    flex: 1,
+  },
   summaryErrorText: {
     marginTop: 8,
     color: "#b91c1c",
@@ -687,6 +988,16 @@ const styles = StyleSheet.create({
     color: "#0f172a",
     fontSize: 13,
     fontWeight: "500",
+  },
+  pendingItemText: {
+    color: "#334155",
+    fontSize: 12,
+    marginTop: 2,
+  },
+  syncStatusText: {
+    marginTop: 8,
+    color: "#0f172a",
+    fontSize: 12,
   },
   summaryText: {
     color: "#0f172a",

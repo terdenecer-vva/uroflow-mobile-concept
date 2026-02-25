@@ -7,7 +7,10 @@ Cross-platform mobile client (Expo React Native) for collecting paired measureme
 - Session metadata (site/subject/operator/device)
 - Direct upload to Clinical Hub API
 - In-app comparison dashboard (`GET /api/v1/comparison-summary`)
-- Offline pending queue with manual sync (`Sync Pending Queue`)
+- Offline pending queue with manual sync (`Sync Queue`)
+- Retry policy: non-retryable API errors are not re-queued
+- Queue controls: `Test API`, `Sync Queue`, `Clear Queue`
+- Persisted local settings (`API URL`, `API Key`, `site/operator`, timeout, summary filter)
 
 ## Run
 
