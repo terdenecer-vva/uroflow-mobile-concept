@@ -170,6 +170,47 @@ def test_clinical_hub_crud_and_csv_export(tmp_path: Path) -> None:
     assert {row["app_quality_status"] for row in rows} == {"valid", "repeat"}
 
 
+def test_paired_measurement_idempotent_resubmit_returns_existing(tmp_path: Path) -> None:
+    db_path = tmp_path / "clinical_hub_idempotent.db"
+    app = create_clinical_hub_app(db_path)
+
+    with TestClient(app) as client:
+        first = client.post("/api/v1/paired-measurements", json=_payload())
+        assert first.status_code == 201
+        assert first.json()["id"] == 1
+
+        second = client.post("/api/v1/paired-measurements", json=_payload())
+        assert second.status_code == 200
+        assert second.json()["id"] == 1
+
+        listing = client.get("/api/v1/paired-measurements")
+        assert listing.status_code == 200
+        assert len(listing.json()) == 1
+
+
+def test_paired_measurement_conflict_on_same_identity_with_changed_payload(
+    tmp_path: Path,
+) -> None:
+    db_path = tmp_path / "clinical_hub_conflict.db"
+    app = create_clinical_hub_app(db_path)
+
+    with TestClient(app) as client:
+        created = client.post("/api/v1/paired-measurements", json=_payload())
+        assert created.status_code == 201
+
+        conflicting_payload = _payload()
+        conflicting_payload["app"] = {
+            **conflicting_payload["app"],  # type: ignore[index]
+            "metrics": {
+                **conflicting_payload["app"]["metrics"],  # type: ignore[index]
+                "qmax_ml_s": 25.0,
+            },
+        }
+        conflict = client.post("/api/v1/paired-measurements", json=conflicting_payload)
+        assert conflict.status_code == 409
+        assert "different payload" in conflict.json()["detail"]
+
+
 def test_clinical_hub_api_key_and_audit_export(tmp_path: Path) -> None:
     db_path = tmp_path / "clinical_hub_auth.db"
     api_key = "pilot-secret-key"

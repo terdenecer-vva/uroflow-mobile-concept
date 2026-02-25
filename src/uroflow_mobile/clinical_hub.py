@@ -615,6 +615,30 @@ def _fetch_record_by_id(connection: sqlite3.Connection, record_id: int) -> sqlit
     return cursor.fetchone()
 
 
+def _fetch_paired_measurement_by_identity(
+    connection: sqlite3.Connection,
+    *,
+    site_id: str,
+    subject_id: str,
+    session_id: str,
+    attempt_number: int,
+) -> sqlite3.Row | None:
+    cursor = connection.execute(
+        """
+        SELECT *
+        FROM paired_measurements
+        WHERE site_id = ?
+          AND subject_id = ?
+          AND session_id = ?
+          AND attempt_number = ?
+        ORDER BY id DESC
+        LIMIT 1
+        """,
+        (site_id, subject_id, session_id, attempt_number),
+    )
+    return cursor.fetchone()
+
+
 def _fetch_capture_package_by_id(
     connection: sqlite3.Connection,
     record_id: int,
@@ -1512,8 +1536,30 @@ def create_clinical_hub_app(db_path: Path, api_key: str | None = None) -> FastAP
     )
     def create_paired_measurement(
         payload: PairedMeasurementCreate,
+        response: Response,
         connection: sqlite3.Connection = Depends(get_connection),  # noqa: B008
     ) -> PairedMeasurementRecord:
+        existing_row = _fetch_paired_measurement_by_identity(
+            connection,
+            site_id=payload.session.site_id,
+            subject_id=payload.session.subject_id,
+            session_id=payload.session.session_id,
+            attempt_number=payload.session.attempt_number,
+        )
+        if existing_row is not None:
+            existing_payload = json.loads(str(existing_row["payload_json"]))
+            incoming_payload = payload.model_dump(mode="json")
+            if existing_payload != incoming_payload:
+                raise HTTPException(
+                    status_code=409,
+                    detail=(
+                        "paired measurement already exists with the same "
+                        "site/subject/session/attempt but different payload"
+                    ),
+                )
+            response.status_code = 200
+            return _row_to_record(existing_row)
+
         record_id = _insert_paired_measurement(connection, payload=payload)
         connection.commit()
         row = _fetch_record_by_id(connection, record_id)
