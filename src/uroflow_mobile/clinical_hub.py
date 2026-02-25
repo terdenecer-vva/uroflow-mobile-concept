@@ -98,6 +98,7 @@ class PairedMeasurementListItem(BaseModel):
 class MethodComparisonFilters(BaseModel):
     site_id: str | None = None
     subject_id: str | None = None
+    operator_id: str | None = None
     platform: PLATFORM | None = None
     capture_mode: CAPTURE_MODE | None = None
     quality_status: QUALITY_STATUS | None = "valid"
@@ -997,6 +998,26 @@ def _resolve_site_scope(request: Request, requested_site_id: str | None) -> str 
     return actor_site_id
 
 
+def _resolve_operator_scope(
+    request: Request,
+    requested_operator_id: str | None,
+) -> str | None:
+    normalized_requested_operator_id = _normalize_operator_id(requested_operator_id)
+    actor_role = request.state.actor_role
+    actor_operator_id = _normalize_operator_id(request.state.actor_operator_id)
+    if actor_role != "operator" or actor_operator_id is None:
+        return normalized_requested_operator_id
+    if (
+        normalized_requested_operator_id is not None
+        and normalized_requested_operator_id != actor_operator_id
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="operator scope violation: access to requested operator is not allowed",
+        )
+    return actor_operator_id
+
+
 def _enforce_payload_site_scope(request: Request, payload_site_id: str) -> None:
     actor_site_id = request.state.actor_site_id
     actor_role = request.state.actor_role
@@ -1009,6 +1030,20 @@ def _enforce_payload_site_scope(request: Request, payload_site_id: str) -> None:
         )
 
 
+def _enforce_payload_operator_scope(request: Request, payload_operator_id: str) -> None:
+    actor_role = request.state.actor_role
+    actor_operator_id = _normalize_operator_id(request.state.actor_operator_id)
+    if actor_role != "operator" or actor_operator_id is None:
+        return
+    if _normalize_operator_id(payload_operator_id) != actor_operator_id:
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                "operator scope violation: payload operator_id does not match actor operator"
+            ),
+        )
+
+
 def _enforce_row_site_scope(request: Request, row_site_id: str) -> None:
     actor_site_id = request.state.actor_site_id
     actor_role = request.state.actor_role
@@ -1018,6 +1053,18 @@ def _enforce_row_site_scope(request: Request, row_site_id: str) -> None:
         raise HTTPException(
             status_code=403,
             detail="site scope violation: record site_id does not match actor site",
+        )
+
+
+def _enforce_row_operator_scope(request: Request, row_operator_id: str) -> None:
+    actor_role = request.state.actor_role
+    actor_operator_id = _normalize_operator_id(request.state.actor_operator_id)
+    if actor_role != "operator" or actor_operator_id is None:
+        return
+    if _normalize_operator_id(row_operator_id) != actor_operator_id:
+        raise HTTPException(
+            status_code=403,
+            detail="operator scope violation: record operator_id does not match actor operator",
         )
 
 
@@ -1233,6 +1280,7 @@ def _fetch_method_comparison_rows(
     *,
     site_id: str | None = None,
     subject_id: str | None = None,
+    operator_id: str | None = None,
     platform: PLATFORM | None = None,
     capture_mode: CAPTURE_MODE | None = None,
 ) -> list[sqlite3.Row]:
@@ -1241,6 +1289,8 @@ def _fetch_method_comparison_rows(
         filter_pairs.append(("site_id", site_id))
     if subject_id:
         filter_pairs.append(("subject_id", subject_id))
+    if operator_id:
+        filter_pairs.append(("operator_id", operator_id))
     if platform:
         filter_pairs.append(("platform", platform))
     if capture_mode:
@@ -1621,6 +1671,7 @@ def build_method_comparison_summary(
     *,
     site_id: str | None = None,
     subject_id: str | None = None,
+    operator_id: str | None = None,
     platform: PLATFORM | None = None,
     capture_mode: CAPTURE_MODE | None = None,
     quality_status: QUALITY_STATUS | None = "valid",
@@ -1629,6 +1680,7 @@ def build_method_comparison_summary(
     filters = MethodComparisonFilters(
         site_id=site_id,
         subject_id=subject_id,
+        operator_id=operator_id,
         platform=platform,
         capture_mode=capture_mode,
         quality_status=quality_status,
@@ -1638,6 +1690,7 @@ def build_method_comparison_summary(
             connection,
             site_id=site_id,
             subject_id=subject_id,
+            operator_id=operator_id,
             platform=platform,
             capture_mode=capture_mode,
         )
@@ -1802,6 +1855,7 @@ def create_clinical_hub_app(
         connection: sqlite3.Connection = Depends(get_connection),  # noqa: B008
     ) -> PairedMeasurementRecord:
         _enforce_payload_site_scope(request, payload.session.site_id)
+        _enforce_payload_operator_scope(request, payload.session.operator_id)
         existing_row = _fetch_paired_measurement_by_identity(
             connection,
             site_id=payload.session.site_id,
@@ -1837,9 +1891,11 @@ def create_clinical_hub_app(
         offset: int = Query(default=0, ge=0),
         site_id: str | None = None,
         subject_id: str | None = None,
+        operator_id: str | None = None,
         connection: sqlite3.Connection = Depends(get_connection),  # noqa: B008
     ) -> list[PairedMeasurementListItem]:
         effective_site_id = _resolve_site_scope(request, site_id)
+        effective_operator_id = _resolve_operator_scope(request, operator_id)
         filters: list[str] = []
         values: list[object] = []
         if effective_site_id:
@@ -1848,6 +1904,9 @@ def create_clinical_hub_app(
         if subject_id:
             filters.append("subject_id = ?")
             values.append(subject_id)
+        if effective_operator_id:
+            filters.append("operator_id = ?")
+            values.append(effective_operator_id)
 
         where_sql = ""
         if filters:
@@ -1889,6 +1948,7 @@ def create_clinical_hub_app(
         if row is None:
             raise HTTPException(status_code=404, detail="paired measurement not found")
         _enforce_row_site_scope(request, str(row["site_id"]))
+        _enforce_row_operator_scope(request, str(row["operator_id"]))
         return _row_to_record(row)
 
     @app.post("/api/v1/capture-packages", response_model=CapturePackageRecord, status_code=201)
@@ -1899,6 +1959,7 @@ def create_clinical_hub_app(
         connection: sqlite3.Connection = Depends(get_connection),  # noqa: B008
     ) -> CapturePackageRecord:
         _enforce_payload_site_scope(request, payload.session.site_id)
+        _enforce_payload_operator_scope(request, payload.session.operator_id)
         if payload.paired_measurement_id is not None:
             paired_row = _fetch_record_by_id(connection, payload.paired_measurement_id)
             if paired_row is None:
@@ -1940,6 +2001,7 @@ def create_clinical_hub_app(
         offset: int = Query(default=0, ge=0),
         site_id: str | None = None,
         subject_id: str | None = None,
+        operator_id: str | None = None,
         session_id: str | None = None,
         package_type: (
             Literal["capture_contract_json", "feature_bundle", "media_manifest"] | None
@@ -1947,6 +2009,7 @@ def create_clinical_hub_app(
         connection: sqlite3.Connection = Depends(get_connection),  # noqa: B008
     ) -> list[CapturePackageListItem]:
         effective_site_id = _resolve_site_scope(request, site_id)
+        effective_operator_id = _resolve_operator_scope(request, operator_id)
         filters: list[str] = []
         values: list[object] = []
         if effective_site_id:
@@ -1955,6 +2018,9 @@ def create_clinical_hub_app(
         if subject_id:
             filters.append("subject_id = ?")
             values.append(subject_id)
+        if effective_operator_id:
+            filters.append("operator_id = ?")
+            values.append(effective_operator_id)
         if session_id:
             filters.append("session_id = ?")
             values.append(session_id)
@@ -2000,6 +2066,7 @@ def create_clinical_hub_app(
         if row is None:
             raise HTTPException(status_code=404, detail="capture package not found")
         _enforce_row_site_scope(request, str(row["site_id"]))
+        _enforce_row_operator_scope(request, str(row["operator_id"]))
         return _row_to_capture_package_record(row)
 
     @app.post(
@@ -2117,12 +2184,14 @@ def create_clinical_hub_app(
         request: Request,
         site_id: str | None = None,
         subject_id: str | None = None,
+        operator_id: str | None = None,
         platform: PLATFORM | None = None,
         capture_mode: CAPTURE_MODE | None = None,
         quality_status: Literal["valid", "repeat", "reject", "all"] = Query(default="valid"),
         connection: sqlite3.Connection = Depends(get_connection),  # noqa: B008
     ) -> MethodComparisonSummary:
         effective_site_id = _resolve_site_scope(request, site_id)
+        effective_operator_id = _resolve_operator_scope(request, operator_id)
         normalized_quality: QUALITY_STATUS | None = (
             None if quality_status == "all" else quality_status
         )
@@ -2131,12 +2200,14 @@ def create_clinical_hub_app(
             connection,
             site_id=effective_site_id,
             subject_id=subject_id,
+            operator_id=effective_operator_id,
             platform=platform,
             capture_mode=capture_mode,
         )
         filters = MethodComparisonFilters(
             site_id=effective_site_id,
             subject_id=subject_id,
+            operator_id=effective_operator_id,
             platform=platform,
             capture_mode=capture_mode,
             quality_status=normalized_quality,
@@ -2150,10 +2221,12 @@ def create_clinical_hub_app(
         offset: int = Query(default=0, ge=0),
         path: str | None = None,
         site_id: str | None = None,
+        operator_id: str | None = None,
         status_code: int | None = Query(default=None, ge=100, le=599),
         connection: sqlite3.Connection = Depends(get_connection),  # noqa: B008
     ) -> list[AuditEventItem]:
         effective_site_id = _resolve_site_scope(request, site_id)
+        effective_operator_id = _resolve_operator_scope(request, operator_id)
         filters: list[str] = []
         values: list[object] = []
         if path:
@@ -2162,6 +2235,9 @@ def create_clinical_hub_app(
         if effective_site_id:
             filters.append("(site_id = ? OR actor_site_id = ?)")
             values.extend((effective_site_id, effective_site_id))
+        if effective_operator_id:
+            filters.append("(operator_id = ? OR actor_operator_id = ?)")
+            values.extend((effective_operator_id, effective_operator_id))
         if status_code is not None:
             filters.append("status_code = ?")
             values.append(status_code)
@@ -2276,12 +2352,17 @@ def create_clinical_hub_app(
     def export_capture_packages_csv(
         request: Request,
         site_id: str | None = None,
+        operator_id: str | None = None,
         connection: sqlite3.Connection = Depends(get_connection),  # noqa: B008
     ) -> Response:
         effective_site_id = _resolve_site_scope(request, site_id)
-        where_sql, where_values = _build_where_clause(
-            [("site_id", effective_site_id)] if effective_site_id else []
-        )
+        effective_operator_id = _resolve_operator_scope(request, operator_id)
+        export_filters: list[tuple[str, object]] = []
+        if effective_site_id:
+            export_filters.append(("site_id", effective_site_id))
+        if effective_operator_id:
+            export_filters.append(("operator_id", effective_operator_id))
+        where_sql, where_values = _build_where_clause(export_filters)
         cursor = connection.execute(
             """
             SELECT
@@ -2366,12 +2447,17 @@ def create_clinical_hub_app(
     def export_csv(
         request: Request,
         site_id: str | None = None,
+        operator_id: str | None = None,
         connection: sqlite3.Connection = Depends(get_connection),  # noqa: B008
     ) -> Response:
         effective_site_id = _resolve_site_scope(request, site_id)
-        where_sql, where_values = _build_where_clause(
-            [("site_id", effective_site_id)] if effective_site_id else []
-        )
+        effective_operator_id = _resolve_operator_scope(request, operator_id)
+        export_filters: list[tuple[str, object]] = []
+        if effective_site_id:
+            export_filters.append(("site_id", effective_site_id))
+        if effective_operator_id:
+            export_filters.append(("operator_id", effective_operator_id))
+        where_sql, where_values = _build_where_clause(export_filters)
         cursor = connection.execute(
             """
             SELECT

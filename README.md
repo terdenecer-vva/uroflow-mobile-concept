@@ -262,6 +262,8 @@ GET /api/v1/audit-events?limit=200
 Site scope enforcement:
 - для `operator` и `investigator` доступ автоматически ограничивается `x-site-id`;
 - запрос с `site_id`, не совпадающим с `x-site-id`, возвращает `403`;
+- для `operator` с заданным `x-operator-id` (или `operator_id` из policy map) чтение/выгрузка
+  автоматически фильтруются по `operator_id`, а запись с другим `operator_id` блокируется `403`;
 - `data_manager` и `admin` могут работать кросс-сайтово.
 
 Если включён `--api-key-map-json`, роль и site scope берутся из policy map ключа

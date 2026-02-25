@@ -19,13 +19,14 @@ def _payload(
     *,
     site_id: str = "SITE-001",
     subject_id: str = "SUBJ-001",
+    operator_id: str = "OP-01",
 ) -> dict[str, object]:
     return {
         "session": {
             "session_id": session_id,
             "site_id": site_id,
             "subject_id": subject_id,
-            "operator_id": "OP-01",
+            "operator_id": operator_id,
             "attempt_number": 1,
             "measured_at": "2026-02-24T10:15:00Z",
             "platform": "ios",
@@ -81,6 +82,7 @@ def _capture_package_payload(
     session_id: str = "session-cap-001",
     site_id: str = "SITE-001",
     subject_id: str = "SUBJ-001",
+    operator_id: str = "OP-01",
     paired_measurement_id: int | None = None,
 ) -> dict[str, object]:
     return {
@@ -88,7 +90,7 @@ def _capture_package_payload(
             "session_id": session_id,
             "site_id": site_id,
             "subject_id": subject_id,
-            "operator_id": "OP-01",
+            "operator_id": operator_id,
             "attempt_number": 1,
             "measured_at": "2026-02-24T10:15:00Z",
             "platform": "ios",
@@ -517,6 +519,152 @@ def test_site_scope_filters_operator_reads_and_csv(tmp_path: Path) -> None:
         assert "SITE-002" not in csv_response.text
 
 
+def test_operator_scope_filters_same_site_data_and_blocks_cross_operator_write(
+    tmp_path: Path,
+) -> None:
+    db_path = tmp_path / "clinical_hub_operator_scope.db"
+    api_key = "pilot-secret-key"
+    app = create_clinical_hub_app(db_path, api_key=api_key)
+    data_manager_headers = {"x-api-key": api_key, "x-actor-role": "data_manager"}
+    operator_headers = {
+        "x-api-key": api_key,
+        "x-site-id": "SITE-001",
+        "x-actor-role": "operator",
+        "x-operator-id": "OP-01",
+    }
+
+    with TestClient(app) as client:
+        created_op_01 = client.post(
+            "/api/v1/paired-measurements",
+            json=_payload(
+                session_id="session-op-scope-001",
+                site_id="SITE-001",
+                subject_id="SUBJ-001",
+                operator_id="OP-01",
+            ),
+            headers=data_manager_headers,
+        )
+        assert created_op_01.status_code == 201
+        op_01_record_id = created_op_01.json()["id"]
+
+        created_op_02 = client.post(
+            "/api/v1/paired-measurements",
+            json=_payload(
+                session_id="session-op-scope-002",
+                site_id="SITE-001",
+                subject_id="SUBJ-002",
+                operator_id="OP-02",
+            ),
+            headers=data_manager_headers,
+        )
+        assert created_op_02.status_code == 201
+        op_02_record_id = created_op_02.json()["id"]
+
+        blocked_write = client.post(
+            "/api/v1/paired-measurements",
+            json=_payload(
+                session_id="session-op-scope-003",
+                site_id="SITE-001",
+                subject_id="SUBJ-003",
+                operator_id="OP-02",
+            ),
+            headers=operator_headers,
+        )
+        assert blocked_write.status_code == 403
+        assert "operator scope violation" in blocked_write.json()["detail"]
+
+        operator_listing = client.get("/api/v1/paired-measurements", headers=operator_headers)
+        assert operator_listing.status_code == 200
+        operator_items = operator_listing.json()
+        assert len(operator_items) == 1
+        assert operator_items[0]["id"] == op_01_record_id
+
+        denied_record = client.get(
+            f"/api/v1/paired-measurements/{op_02_record_id}",
+            headers=operator_headers,
+        )
+        assert denied_record.status_code == 403
+
+        summary = client.get(
+            "/api/v1/comparison-summary",
+            params={"quality_status": "all"},
+            headers=operator_headers,
+        )
+        assert summary.status_code == 200
+        summary_body = summary.json()
+        assert summary_body["records_matched_filters"] == 1
+        assert summary_body["filters"]["site_id"] == "SITE-001"
+        assert summary_body["filters"]["operator_id"] == "OP-01"
+
+        paired_csv = client.get("/api/v1/paired-measurements.csv", headers=operator_headers)
+        assert paired_csv.status_code == 200
+        assert "session-op-scope-001" in paired_csv.text
+        assert "session-op-scope-002" not in paired_csv.text
+
+        capture_op_01 = client.post(
+            "/api/v1/capture-packages",
+            json=_capture_package_payload(
+                session_id="capture-op-scope-001",
+                site_id="SITE-001",
+                subject_id="SUBJ-001",
+                operator_id="OP-01",
+                paired_measurement_id=op_01_record_id,
+            ),
+            headers=data_manager_headers,
+        )
+        assert capture_op_01.status_code == 201
+
+        capture_op_02 = client.post(
+            "/api/v1/capture-packages",
+            json=_capture_package_payload(
+                session_id="capture-op-scope-002",
+                site_id="SITE-001",
+                subject_id="SUBJ-002",
+                operator_id="OP-02",
+                paired_measurement_id=op_02_record_id,
+            ),
+            headers=data_manager_headers,
+        )
+        assert capture_op_02.status_code == 201
+        capture_op_02_record_id = capture_op_02.json()["id"]
+
+        blocked_capture_write = client.post(
+            "/api/v1/capture-packages",
+            json=_capture_package_payload(
+                session_id="capture-op-scope-003",
+                site_id="SITE-001",
+                subject_id="SUBJ-003",
+                operator_id="OP-02",
+                paired_measurement_id=op_01_record_id,
+            ),
+            headers=operator_headers,
+        )
+        assert blocked_capture_write.status_code == 403
+        assert "operator scope violation" in blocked_capture_write.json()["detail"]
+
+        capture_listing = client.get("/api/v1/capture-packages", headers=operator_headers)
+        assert capture_listing.status_code == 200
+        capture_items = capture_listing.json()
+        assert len(capture_items) == 1
+        assert capture_items[0]["operator_id"] == "OP-01"
+
+        denied_capture_record = client.get(
+            f"/api/v1/capture-packages/{capture_op_02_record_id}",
+            headers=operator_headers,
+        )
+        assert denied_capture_record.status_code == 403
+
+        capture_csv = client.get("/api/v1/capture-packages.csv", headers=operator_headers)
+        assert capture_csv.status_code == 200
+        assert "capture-op-scope-001" in capture_csv.text
+        assert "capture-op-scope-002" not in capture_csv.text
+
+        audit_events = client.get("/api/v1/audit-events", headers=operator_headers)
+        assert audit_events.status_code == 200
+        audit_items = audit_events.json()
+        assert all(item["actor_operator_id"] in {None, "OP-01"} for item in audit_items)
+
+
 def test_site_scope_blocks_cross_site_pilot_report_write(tmp_path: Path) -> None:
     db_path = tmp_path / "clinical_hub_site_scope_report.db"
     api_key = "pilot-secret-key"
@@ -557,7 +705,11 @@ def test_api_key_policy_map_enforces_site_scope_and_role(tmp_path: Path) -> None
 
         op_create = client.post(
             "/api/v1/paired-measurements",
-            json=_payload(session_id="session-policy-001", site_id="SITE-001"),
+            json=_payload(
+                session_id="session-policy-001",
+                site_id="SITE-001",
+                operator_id="OP-MAPPED",
+            ),
             headers={
                 "x-api-key": "op-site-1-key",
                 "x-site-id": "SITE-999",
