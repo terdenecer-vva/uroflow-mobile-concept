@@ -324,3 +324,34 @@ def test_load_and_select_mapping_profile(tmp_path: Path) -> None:
 
     assert name == "openclinica_v1"
     assert profile["clinical"]["value_map"]["quality_status"]["1"] == "valid"
+
+
+def test_build_gate_metrics_rejects_ambiguous_duplicate_column_targets() -> None:
+    rows = [
+        {
+            "QMAX_APP_A": "21",
+            "QMAX_APP_B": "22",
+            "QMAX_REF": "20",
+            "quality_status": "valid",
+        }
+    ]
+    mapping_profile = {
+        "clinical": {
+            "column_map": {
+                "QMAX_APP_A": "app_qmax_ml_s",
+                "QMAX_APP_B": "app_qmax_ml_s",
+                "QMAX_REF": "ref_qmax_ml_s",
+            }
+        }
+    }
+
+    with pytest.raises(ValueError, match="ambiguous duplicate targets"):
+        build_gate_metrics(clinical_rows=rows, mapping_profile=mapping_profile)
+
+
+def test_build_gate_metrics_rejects_empty_column_map_entries() -> None:
+    rows = [{"QMAX_APP": "21", "QMAX_REF": "20", "quality_status": "valid"}]
+    mapping_profile = {"clinical": {"column_map": {"QMAX_APP": "", "QMAX_REF": "ref_qmax_ml_s"}}}
+
+    with pytest.raises(ValueError, match="non-empty source and target"):
+        build_gate_metrics(clinical_rows=rows, mapping_profile=mapping_profile)

@@ -211,12 +211,22 @@ def _parse_column_map(payload: object) -> dict[str, str]:
         return {}
     if not isinstance(payload, dict):
         raise ValueError("column_map must be an object")
+
     result: dict[str, str] = {}
+    source_keys_seen: set[str] = set()
     for source_key, target_key in payload.items():
-        source = str(source_key).strip()
-        target = str(target_key).strip()
-        if source and target:
-            result[source] = target
+        if not isinstance(source_key, str) or not isinstance(target_key, str):
+            raise ValueError("column_map keys and values must be strings")
+        source = source_key.strip()
+        target = target_key.strip()
+        if not source or not target:
+            raise ValueError("column_map entries must have non-empty source and target")
+
+        source_key_normalized = source.lower()
+        if source_key_normalized in source_keys_seen:
+            raise ValueError(f"column_map contains duplicate source column '{source}'")
+        source_keys_seen.add(source_key_normalized)
+        result[source] = target
     return result
 
 
@@ -275,6 +285,19 @@ def _build_profile_mappings(
     for item in sections:
         column_map.update(_parse_column_map(item.get("column_map")))
         value_map = _merge_value_maps(value_map, _parse_value_map(item.get("value_map")))
+
+    target_to_sources: dict[str, list[str]] = {}
+    for source, target in column_map.items():
+        target_to_sources.setdefault(target.lower(), []).append(source)
+    duplicate_targets = {
+        target: sources for target, sources in target_to_sources.items() if len(sources) > 1
+    }
+    if duplicate_targets:
+        duplicates = "; ".join(
+            f"{target} <- {', '.join(sorted(sources))}"
+            for target, sources in sorted(duplicate_targets.items(), key=lambda item: item[0])
+        )
+        raise ValueError(f"column_map has ambiguous duplicate targets: {duplicates}")
     return column_map, value_map
 
 

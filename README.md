@@ -317,6 +317,10 @@ uroflow-mobile build-gate-metrics \
   --output-json /path/to/gate_metrics.json
 ```
 
+Валидация профиля стала строже: `column_map` должен быть однозначным.
+Если два source-столбца маппятся в один и тот же target, команда завершится с ошибкой,
+чтобы исключить тихие конфликты в метриках.
+
 Backfill недостающих метрик напрямую из pilot-automation артефактов:
 
 ```bash
