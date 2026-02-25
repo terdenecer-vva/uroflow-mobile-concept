@@ -217,6 +217,11 @@ GET /api/v1/audit-events?limit=200
 - `x-actor-role` — роль (`operator`, `investigator`, `data_manager`)
 - `x-request-id` — уникальный ID запроса
 
+Site scope enforcement:
+- для `operator` и `investigator` доступ автоматически ограничивается `x-site-id`;
+- запрос с `site_id`, не совпадающим с `x-site-id`, возвращает `403`;
+- `data_manager` и `admin` могут работать кросс-сайтово.
+
 ## Оценка release gates (G0/G1/G2)
 
 ```bash

@@ -14,12 +14,17 @@ from uroflow_mobile.clinical_hub import (
 )
 
 
-def _payload(session_id: str = "session-001") -> dict[str, object]:
+def _payload(
+    session_id: str = "session-001",
+    *,
+    site_id: str = "SITE-001",
+    subject_id: str = "SUBJ-001",
+) -> dict[str, object]:
     return {
         "session": {
             "session_id": session_id,
-            "site_id": "SITE-001",
-            "subject_id": "SUBJ-001",
+            "site_id": site_id,
+            "subject_id": subject_id,
             "operator_id": "OP-01",
             "attempt_number": 1,
             "measured_at": "2026-02-24T10:15:00Z",
@@ -294,3 +299,112 @@ def test_pilot_automation_reports_crud_and_csv_export(tmp_path: Path) -> None:
 
     assert len(rows) == 2
     assert {row["report_type"] for row in rows} == {"qa_summary", "g1_eval"}
+
+
+def test_site_scope_blocks_cross_site_write_for_operator(tmp_path: Path) -> None:
+    db_path = tmp_path / "clinical_hub_site_scope_write.db"
+    api_key = "pilot-secret-key"
+    app = create_clinical_hub_app(db_path, api_key=api_key)
+    headers = {
+        "x-api-key": api_key,
+        "x-site-id": "SITE-001",
+        "x-actor-role": "operator",
+    }
+
+    with TestClient(app) as client:
+        blocked = client.post(
+            "/api/v1/paired-measurements",
+            json=_payload(session_id="session-scope-001", site_id="SITE-002"),
+            headers=headers,
+        )
+        assert blocked.status_code == 403
+        assert "site scope violation" in blocked.json()["detail"]
+
+        allowed = client.post(
+            "/api/v1/paired-measurements",
+            json=_payload(session_id="session-scope-002", site_id="SITE-001"),
+            headers=headers,
+        )
+        assert allowed.status_code == 201
+
+
+def test_site_scope_filters_operator_reads_and_csv(tmp_path: Path) -> None:
+    db_path = tmp_path / "clinical_hub_site_scope_read.db"
+    api_key = "pilot-secret-key"
+    app = create_clinical_hub_app(db_path, api_key=api_key)
+    data_manager_headers = {"x-api-key": api_key, "x-actor-role": "data_manager"}
+    operator_headers = {
+        "x-api-key": api_key,
+        "x-site-id": "SITE-001",
+        "x-actor-role": "operator",
+    }
+
+    with TestClient(app) as client:
+        created_site_1 = client.post(
+            "/api/v1/paired-measurements",
+            json=_payload(session_id="session-site-001", site_id="SITE-001", subject_id="SUBJ-001"),
+            headers=data_manager_headers,
+        )
+        assert created_site_1.status_code == 201
+
+        created_site_2 = client.post(
+            "/api/v1/paired-measurements",
+            json=_payload(session_id="session-site-002", site_id="SITE-002", subject_id="SUBJ-002"),
+            headers=data_manager_headers,
+        )
+        assert created_site_2.status_code == 201
+        site_2_record_id = created_site_2.json()["id"]
+
+        scoped_listing = client.get("/api/v1/paired-measurements", headers=operator_headers)
+        assert scoped_listing.status_code == 200
+        scoped_records = scoped_listing.json()
+        assert len(scoped_records) == 1
+        assert scoped_records[0]["site_id"] == "SITE-001"
+
+        denied_filter = client.get(
+            "/api/v1/paired-measurements",
+            params={"site_id": "SITE-002"},
+            headers=operator_headers,
+        )
+        assert denied_filter.status_code == 403
+
+        denied_record = client.get(
+            f"/api/v1/paired-measurements/{site_2_record_id}",
+            headers=operator_headers,
+        )
+        assert denied_record.status_code == 403
+
+        summary = client.get(
+            "/api/v1/comparison-summary",
+            params={"quality_status": "all"},
+            headers=operator_headers,
+        )
+        assert summary.status_code == 200
+        summary_body = summary.json()
+        assert summary_body["records_matched_filters"] == 1
+        assert summary_body["filters"]["site_id"] == "SITE-001"
+
+        csv_response = client.get("/api/v1/paired-measurements.csv", headers=operator_headers)
+        assert csv_response.status_code == 200
+        assert "SITE-001" in csv_response.text
+        assert "SITE-002" not in csv_response.text
+
+
+def test_site_scope_blocks_cross_site_pilot_report_write(tmp_path: Path) -> None:
+    db_path = tmp_path / "clinical_hub_site_scope_report.db"
+    api_key = "pilot-secret-key"
+    app = create_clinical_hub_app(db_path, api_key=api_key)
+    headers = {
+        "x-api-key": api_key,
+        "x-site-id": "SITE-001",
+        "x-actor-role": "operator",
+    }
+
+    with TestClient(app) as client:
+        blocked = client.post(
+            "/api/v1/pilot-automation-reports",
+            json=_pilot_report_payload(site_id="SITE-002"),
+            headers=headers,
+        )
+        assert blocked.status_code == 403
+        assert "site scope violation" in blocked.json()["detail"]

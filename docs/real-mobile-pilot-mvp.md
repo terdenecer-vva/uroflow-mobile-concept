@@ -31,6 +31,17 @@ API endpoints:
 - `GET /api/v1/comparison-summary`
 - `GET /api/v1/audit-events`
 
+Recommended headers for pilot traceability and access scope:
+- `x-api-key`: shared pilot key
+- `x-operator-id`: operator or nurse id
+- `x-site-id`: clinic/site id (required for scoped operator workflows)
+- `x-actor-role`: `operator`, `investigator`, `data_manager`, `admin`
+- `x-request-id`: unique request id
+
+Site scope behavior:
+- `operator`/`investigator`: reads and writes are restricted to `x-site-id`;
+- `data_manager`/`admin`: cross-site access is allowed.
+
 ## 2) Run iPhone/Android app
 
 ```bash
@@ -80,7 +91,7 @@ PYTHONPATH=src python -m uroflow_mobile.cli export-audit-events \
 
 ## Next hardening targets
 
-1. Auth and role model for multi-site collection.
+1. Stronger auth model (per-site/per-role API keys instead of shared key).
 2. Immutable audit log and e-signature flow.
 3. Encrypted media upload (if raw capture retained).
 4. Site-level dashboards and discrepancy workflow.

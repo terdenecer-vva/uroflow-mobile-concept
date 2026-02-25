@@ -18,6 +18,7 @@ from pydantic import BaseModel, Field
 QUALITY_STATUS = Literal["valid", "repeat", "reject"]
 CAPTURE_MODE = Literal["water_impact", "jet_in_air_assist", "fallback_non_water"]
 PLATFORM = Literal["ios", "android"]
+ACTOR_ROLE = Literal["operator", "investigator", "data_manager", "admin"]
 PILOT_REPORT_TYPE = Literal[
     "qa_summary",
     "g1_eval",
@@ -25,6 +26,7 @@ PILOT_REPORT_TYPE = Literal[
     "drift_summary",
     "gate_summary",
 ]
+_CROSS_SITE_ALLOWED_ROLES = {"data_manager", "admin"}
 
 
 class FlowMetrics(BaseModel):
@@ -801,6 +803,58 @@ def _safe_pearson(x_values: list[float], y_values: list[float]) -> float | None:
     return float(covariance / math.sqrt(sum_x2 * sum_y2))
 
 
+def _normalize_actor_role(actor_role: str | None) -> ACTOR_ROLE | None:
+    if actor_role is None:
+        return None
+    normalized = actor_role.strip().lower()
+    if normalized in {"operator", "investigator", "data_manager", "admin"}:
+        return normalized
+    return None
+
+
+def _is_cross_site_allowed(actor_role: ACTOR_ROLE | None) -> bool:
+    if actor_role is None:
+        return False
+    return actor_role in _CROSS_SITE_ALLOWED_ROLES
+
+
+def _resolve_site_scope(request: Request, requested_site_id: str | None) -> str | None:
+    actor_site_id = request.state.actor_site_id
+    actor_role = request.state.actor_role
+    if actor_site_id is None or _is_cross_site_allowed(actor_role):
+        return requested_site_id
+    if requested_site_id is not None and requested_site_id != actor_site_id:
+        raise HTTPException(
+            status_code=403,
+            detail="site scope violation: access to requested site is not allowed",
+        )
+    return actor_site_id
+
+
+def _enforce_payload_site_scope(request: Request, payload_site_id: str) -> None:
+    actor_site_id = request.state.actor_site_id
+    actor_role = request.state.actor_role
+    if actor_site_id is None or _is_cross_site_allowed(actor_role):
+        return
+    if payload_site_id != actor_site_id:
+        raise HTTPException(
+            status_code=403,
+            detail="site scope violation: payload site_id does not match actor site",
+        )
+
+
+def _enforce_row_site_scope(request: Request, row_site_id: str) -> None:
+    actor_site_id = request.state.actor_site_id
+    actor_role = request.state.actor_role
+    if actor_site_id is None or _is_cross_site_allowed(actor_role):
+        return
+    if row_site_id != actor_site_id:
+        raise HTTPException(
+            status_code=403,
+            detail="site scope violation: record site_id does not match actor site",
+        )
+
+
 def _metric_summary(
     metric: str,
     app_values: list[float],
@@ -1453,9 +1507,11 @@ def create_clinical_hub_app(db_path: Path, api_key: str | None = None) -> FastAP
         request_api_key = request.headers.get("x-api-key")
         actor_operator_id = request.headers.get("x-operator-id") or session_meta["operator_id"]
         actor_site_id = request.headers.get("x-site-id") or session_meta["site_id"]
-        actor_role = request.headers.get("x-actor-role")
+        actor_role = _normalize_actor_role(request.headers.get("x-actor-role"))
         request_id = request.headers.get("x-request-id")
         required_api_key: str | None = app.state.api_key
+        request.state.actor_site_id = actor_site_id
+        request.state.actor_role = actor_role
 
         if required_api_key and request_api_key != required_api_key:
             response = JSONResponse(status_code=401, content={"detail": "invalid API key"})
@@ -1536,9 +1592,11 @@ def create_clinical_hub_app(db_path: Path, api_key: str | None = None) -> FastAP
     )
     def create_paired_measurement(
         payload: PairedMeasurementCreate,
+        request: Request,
         response: Response,
         connection: sqlite3.Connection = Depends(get_connection),  # noqa: B008
     ) -> PairedMeasurementRecord:
+        _enforce_payload_site_scope(request, payload.session.site_id)
         existing_row = _fetch_paired_measurement_by_identity(
             connection,
             site_id=payload.session.site_id,
@@ -1569,17 +1627,19 @@ def create_clinical_hub_app(db_path: Path, api_key: str | None = None) -> FastAP
 
     @app.get("/api/v1/paired-measurements", response_model=list[PairedMeasurementListItem])
     def list_paired_measurements(
+        request: Request,
         limit: int = Query(default=100, ge=1, le=1000),
         offset: int = Query(default=0, ge=0),
         site_id: str | None = None,
         subject_id: str | None = None,
         connection: sqlite3.Connection = Depends(get_connection),  # noqa: B008
     ) -> list[PairedMeasurementListItem]:
+        effective_site_id = _resolve_site_scope(request, site_id)
         filters: list[str] = []
         values: list[object] = []
-        if site_id:
+        if effective_site_id:
             filters.append("site_id = ?")
-            values.append(site_id)
+            values.append(effective_site_id)
         if subject_id:
             filters.append("subject_id = ?")
             values.append(subject_id)
@@ -1616,19 +1676,23 @@ def create_clinical_hub_app(db_path: Path, api_key: str | None = None) -> FastAP
 
     @app.get("/api/v1/paired-measurements/{record_id}", response_model=PairedMeasurementRecord)
     def get_paired_measurement(
+        request: Request,
         record_id: int,
         connection: sqlite3.Connection = Depends(get_connection),  # noqa: B008
     ) -> PairedMeasurementRecord:
         row = _fetch_record_by_id(connection, record_id)
         if row is None:
             raise HTTPException(status_code=404, detail="paired measurement not found")
+        _enforce_row_site_scope(request, str(row["site_id"]))
         return _row_to_record(row)
 
     @app.post("/api/v1/capture-packages", response_model=CapturePackageRecord, status_code=201)
     def create_capture_package(
         payload: CapturePackageCreate,
+        request: Request,
         connection: sqlite3.Connection = Depends(get_connection),  # noqa: B008
     ) -> CapturePackageRecord:
+        _enforce_payload_site_scope(request, payload.session.site_id)
         if payload.paired_measurement_id is not None:
             paired_row = _fetch_record_by_id(connection, payload.paired_measurement_id)
             if paired_row is None:
@@ -1645,6 +1709,7 @@ def create_clinical_hub_app(db_path: Path, api_key: str | None = None) -> FastAP
 
     @app.get("/api/v1/capture-packages", response_model=list[CapturePackageListItem])
     def list_capture_packages(
+        request: Request,
         limit: int = Query(default=100, ge=1, le=1000),
         offset: int = Query(default=0, ge=0),
         site_id: str | None = None,
@@ -1655,11 +1720,12 @@ def create_clinical_hub_app(db_path: Path, api_key: str | None = None) -> FastAP
         ) = None,
         connection: sqlite3.Connection = Depends(get_connection),  # noqa: B008
     ) -> list[CapturePackageListItem]:
+        effective_site_id = _resolve_site_scope(request, site_id)
         filters: list[str] = []
         values: list[object] = []
-        if site_id:
+        if effective_site_id:
             filters.append("site_id = ?")
-            values.append(site_id)
+            values.append(effective_site_id)
         if subject_id:
             filters.append("subject_id = ?")
             values.append(subject_id)
@@ -1700,12 +1766,14 @@ def create_clinical_hub_app(db_path: Path, api_key: str | None = None) -> FastAP
 
     @app.get("/api/v1/capture-packages/{record_id}", response_model=CapturePackageRecord)
     def get_capture_package(
+        request: Request,
         record_id: int,
         connection: sqlite3.Connection = Depends(get_connection),  # noqa: B008
     ) -> CapturePackageRecord:
         row = _fetch_capture_package_by_id(connection, record_id)
         if row is None:
             raise HTTPException(status_code=404, detail="capture package not found")
+        _enforce_row_site_scope(request, str(row["site_id"]))
         return _row_to_capture_package_record(row)
 
     @app.post(
@@ -1715,8 +1783,10 @@ def create_clinical_hub_app(db_path: Path, api_key: str | None = None) -> FastAP
     )
     def create_pilot_automation_report(
         payload: PilotAutomationReportCreate,
+        request: Request,
         connection: sqlite3.Connection = Depends(get_connection),  # noqa: B008
     ) -> PilotAutomationReportRecord:
+        _enforce_payload_site_scope(request, payload.site_id)
         record_id = _insert_pilot_automation_report(connection, payload)
         connection.commit()
         row = _fetch_pilot_automation_report_by_id(connection, record_id)
@@ -1729,6 +1799,7 @@ def create_clinical_hub_app(db_path: Path, api_key: str | None = None) -> FastAP
         response_model=list[PilotAutomationReportListItem],
     )
     def list_pilot_automation_reports(
+        request: Request,
         limit: int = Query(default=100, ge=1, le=1000),
         offset: int = Query(default=0, ge=0),
         site_id: str | None = None,
@@ -1737,11 +1808,12 @@ def create_clinical_hub_app(db_path: Path, api_key: str | None = None) -> FastAP
         report_date_to: date | None = None,
         connection: sqlite3.Connection = Depends(get_connection),  # noqa: B008
     ) -> list[PilotAutomationReportListItem]:
+        effective_site_id = _resolve_site_scope(request, site_id)
         filters: list[str] = []
         values: list[object] = []
-        if site_id:
+        if effective_site_id:
             filters.append("site_id = ?")
-            values.append(site_id)
+            values.append(effective_site_id)
         if report_type:
             filters.append("report_type = ?")
             values.append(report_type)
@@ -1782,16 +1854,19 @@ def create_clinical_hub_app(db_path: Path, api_key: str | None = None) -> FastAP
         response_model=PilotAutomationReportRecord,
     )
     def get_pilot_automation_report(
+        request: Request,
         record_id: int,
         connection: sqlite3.Connection = Depends(get_connection),  # noqa: B008
     ) -> PilotAutomationReportRecord:
         row = _fetch_pilot_automation_report_by_id(connection, record_id)
         if row is None:
             raise HTTPException(status_code=404, detail="pilot automation report not found")
+        _enforce_row_site_scope(request, str(row["site_id"]))
         return _row_to_pilot_automation_report_record(row)
 
     @app.get("/api/v1/comparison-summary", response_model=MethodComparisonSummary)
     def get_method_comparison_summary(
+        request: Request,
         site_id: str | None = None,
         subject_id: str | None = None,
         platform: PLATFORM | None = None,
@@ -1799,19 +1874,20 @@ def create_clinical_hub_app(db_path: Path, api_key: str | None = None) -> FastAP
         quality_status: Literal["valid", "repeat", "reject", "all"] = Query(default="valid"),
         connection: sqlite3.Connection = Depends(get_connection),  # noqa: B008
     ) -> MethodComparisonSummary:
+        effective_site_id = _resolve_site_scope(request, site_id)
         normalized_quality: QUALITY_STATUS | None = (
             None if quality_status == "all" else quality_status
         )
 
         rows = _fetch_method_comparison_rows(
             connection,
-            site_id=site_id,
+            site_id=effective_site_id,
             subject_id=subject_id,
             platform=platform,
             capture_mode=capture_mode,
         )
         filters = MethodComparisonFilters(
-            site_id=site_id,
+            site_id=effective_site_id,
             subject_id=subject_id,
             platform=platform,
             capture_mode=capture_mode,
@@ -1821,17 +1897,23 @@ def create_clinical_hub_app(db_path: Path, api_key: str | None = None) -> FastAP
 
     @app.get("/api/v1/audit-events", response_model=list[AuditEventItem])
     def list_audit_events(
+        request: Request,
         limit: int = Query(default=200, ge=1, le=5000),
         offset: int = Query(default=0, ge=0),
         path: str | None = None,
+        site_id: str | None = None,
         status_code: int | None = Query(default=None, ge=100, le=599),
         connection: sqlite3.Connection = Depends(get_connection),  # noqa: B008
     ) -> list[AuditEventItem]:
+        effective_site_id = _resolve_site_scope(request, site_id)
         filters: list[str] = []
         values: list[object] = []
         if path:
             filters.append("path = ?")
             values.append(path)
+        if effective_site_id:
+            filters.append("(site_id = ? OR actor_site_id = ?)")
+            values.extend((effective_site_id, effective_site_id))
         if status_code is not None:
             filters.append("status_code = ?")
             values.append(status_code)
@@ -1872,8 +1954,14 @@ def create_clinical_hub_app(db_path: Path, api_key: str | None = None) -> FastAP
 
     @app.get("/api/v1/pilot-automation-reports.csv")
     def export_pilot_automation_reports_csv(
+        request: Request,
+        site_id: str | None = None,
         connection: sqlite3.Connection = Depends(get_connection),  # noqa: B008
     ) -> Response:
+        effective_site_id = _resolve_site_scope(request, site_id)
+        where_sql, where_values = _build_where_clause(
+            [("site_id", effective_site_id)] if effective_site_id else []
+        )
         cursor = connection.execute(
             """
             SELECT
@@ -1888,8 +1976,12 @@ def create_clinical_hub_app(db_path: Path, api_key: str | None = None) -> FastAP
                 notes,
                 payload_json
             FROM pilot_automation_reports
-            ORDER BY report_date DESC, id DESC
             """
+            + f"""
+            {where_sql}
+            ORDER BY report_date DESC, id DESC
+            """,
+            tuple(where_values),
         )
         rows = cursor.fetchall()
 
@@ -1934,8 +2026,14 @@ def create_clinical_hub_app(db_path: Path, api_key: str | None = None) -> FastAP
 
     @app.get("/api/v1/capture-packages.csv")
     def export_capture_packages_csv(
+        request: Request,
+        site_id: str | None = None,
         connection: sqlite3.Connection = Depends(get_connection),  # noqa: B008
     ) -> Response:
+        effective_site_id = _resolve_site_scope(request, site_id)
+        where_sql, where_values = _build_where_clause(
+            [("site_id", effective_site_id)] if effective_site_id else []
+        )
         cursor = connection.execute(
             """
             SELECT
@@ -1956,8 +2054,12 @@ def create_clinical_hub_app(db_path: Path, api_key: str | None = None) -> FastAP
                 notes,
                 capture_payload_json
             FROM capture_packages
-            ORDER BY measured_at DESC, id DESC
             """
+            + f"""
+            {where_sql}
+            ORDER BY measured_at DESC, id DESC
+            """,
+            tuple(where_values),
         )
         rows = cursor.fetchall()
 
@@ -2014,8 +2116,14 @@ def create_clinical_hub_app(db_path: Path, api_key: str | None = None) -> FastAP
 
     @app.get("/api/v1/paired-measurements.csv")
     def export_csv(
+        request: Request,
+        site_id: str | None = None,
         connection: sqlite3.Connection = Depends(get_connection),  # noqa: B008
     ) -> Response:
+        effective_site_id = _resolve_site_scope(request, site_id)
+        where_sql, where_values = _build_where_clause(
+            [("site_id", effective_site_id)] if effective_site_id else []
+        )
         cursor = connection.execute(
             """
             SELECT
@@ -2048,8 +2156,12 @@ def create_clinical_hub_app(db_path: Path, api_key: str | None = None) -> FastAP
                 ref_device_serial,
                 notes
             FROM paired_measurements
-            ORDER BY measured_at DESC, id DESC
             """
+            + f"""
+            {where_sql}
+            ORDER BY measured_at DESC, id DESC
+            """,
+            tuple(where_values),
         )
         rows = cursor.fetchall()
 
