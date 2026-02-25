@@ -149,6 +149,7 @@ def _session_analysis_to_json(
         "input_json": str(input_json),
         "session": {
             "session_id": analysis.session_id,
+            "sync_id": analysis.sync_id,
             "mode": analysis.mode,
             "ml_per_mm": analysis.ml_per_mm,
         },
@@ -1094,6 +1095,8 @@ def _handle_analyze_capture_session(args: argparse.Namespace) -> int:
     print(f"Fusion curve CSV: {output_csv}")
     print(f"Session summary JSON: {output_json}")
     print(f"Session ID: {analysis.session_id}")
+    if analysis.sync_id is not None:
+        print(f"Sync ID: {analysis.sync_id}")
     print(
         f"Event interval: {analysis.event_detection.start_time_s:.2f}s -> "
         f"{analysis.event_detection.end_time_s:.2f}s"

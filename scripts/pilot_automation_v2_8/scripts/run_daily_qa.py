@@ -205,6 +205,9 @@ def main() -> int:
 
         rr = {
             "record_id": record_id,
+            "sync_id": (r.get("sync_id") or "").strip(),
+            "site_id": (r.get("site_id") or "").strip(),
+            "subject_id": (r.get("subject_id") or "").strip(),
             "overall_status": "PASS",
             "fail_codes": "",
             "record_folder": "",
@@ -349,6 +352,15 @@ def main() -> int:
     n_pass = sum(1 for r in record_results if r["overall_status"] == "PASS")
     n_review = sum(1 for r in record_results if r["overall_status"] == "REVIEW")
     n_fail = sum(1 for r in record_results if r["overall_status"] == "FAIL")
+    rows_with_record_id = [
+        row for row in rows if (row.get("record_id") or "").strip()
+    ]
+    sync_ids = [
+        (row.get("sync_id") or "").strip()
+        for row in rows_with_record_id
+        if (row.get("sync_id") or "").strip()
+    ]
+    unique_sync_ids = set(sync_ids)
 
     summary = {
         "date": date,
@@ -361,6 +373,10 @@ def main() -> int:
         "n_review": n_review,
         "n_fail": n_fail,
         "manifest_issue_count": len(manifest_issues),
+        "n_records_with_sync_id": len(sync_ids),
+        "n_unique_sync_id": len(unique_sync_ids),
+        "n_missing_sync_id": len(rows_with_record_id) - len(sync_ids),
+        "n_duplicate_sync_id": len(sync_ids) - len(unique_sync_ids),
     }
 
     # Save outputs

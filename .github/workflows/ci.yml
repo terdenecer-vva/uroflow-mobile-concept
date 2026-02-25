@@ -172,6 +172,7 @@ jobs:
               manifest_rows.append(
                   {
                       "record_id": record_id,
+                      "sync_id": f"SYNC-{record_id}",
                       "profile_id": "P0",
                       "subject_id": f"SUBJ-{idx:03d}",
                       "site_id": site_id,

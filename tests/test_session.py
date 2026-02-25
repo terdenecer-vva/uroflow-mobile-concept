@@ -10,6 +10,7 @@ def _base_payload() -> dict[str, object]:
         "schema_version": "ios_capture_v1",
         "session": {
             "session_id": "session-qa-001",
+            "sync_id": "sync-qa-001",
             "started_at": "2026-02-24T10:00:00Z",
             "mode": "water_impact",
             "calibration": {
@@ -114,6 +115,7 @@ def test_analyze_capture_session_returns_valid_status_for_clean_signal() -> None
     )
 
     assert analysis.session_id == "session-qa-001"
+    assert analysis.sync_id == "sync-qa-001"
     assert analysis.ml_per_mm == 10.0
     assert analysis.event_detection.detected is True
     assert analysis.event_detection.start_time_s >= 1.0

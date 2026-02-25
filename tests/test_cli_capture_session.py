@@ -11,6 +11,7 @@ def _payload() -> dict[str, object]:
         "schema_version": "ios_capture_v1",
         "session": {
             "session_id": "cli-session-001",
+            "sync_id": "sync-cli-session-001",
             "started_at": "2026-02-24T11:00:00Z",
             "mode": "water_impact",
             "calibration": {
@@ -106,6 +107,7 @@ def test_cli_analyze_capture_session_writes_outputs(tmp_path: Path) -> None:
 
     payload = json.loads(output_json.read_text(encoding="utf-8"))
     assert payload["session"]["session_id"] == "cli-session-001"
+    assert payload["session"]["sync_id"] == "sync-cli-session-001"
     assert payload["session"]["ml_per_mm"] == 10.0
     assert payload["event_detection"]["detected"] in {True, False}
     assert payload["signal_quality"]["status"] in {"valid", "repeat", "reject"}

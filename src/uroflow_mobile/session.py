@@ -75,6 +75,7 @@ class CaptureSessionAnalysis:
     """Final analysis artifacts for a validated capture payload."""
 
     session_id: str
+    sync_id: str | None
     mode: str
     ml_per_mm: float
     summary: UroflowSummary
@@ -439,6 +440,7 @@ def analyze_capture_session(
     session = payload["session"]
     return CaptureSessionAnalysis(
         session_id=str(session["session_id"]),
+        sync_id=str(session["sync_id"]) if session.get("sync_id") is not None else None,
         mode=str(session["mode"]),
         ml_per_mm=ml_per_mm,
         summary=summary,

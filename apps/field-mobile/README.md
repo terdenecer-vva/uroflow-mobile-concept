@@ -5,6 +5,7 @@ Cross-platform mobile client (Expo React Native) for collecting paired measureme
 - App measurement (Qmax/Qavg/Vvoid/...)
 - Reference uroflowmeter measurement
 - Session metadata (site/subject/operator/device)
+- Traceability `sync_id` for linkage with capture artifacts and reference uroflow export
 - Direct upload to Clinical Hub API
 - In-app comparison dashboard (`GET /api/v1/comparison-summary`)
 - Offline pending queue with manual sync (`Sync Queue`)
@@ -56,6 +57,7 @@ Examples:
 
 App sends `POST /api/v1/paired-measurements` payload aligned to backend schema.
 The `Comparison Summary` block loads `GET /api/v1/comparison-summary` with filters.
+`Sync ID` can be entered manually (or auto-generated) and used as `sync_id` filter in summary view.
 
 When backend is configured with API key policy map (`--api-key-map-json`), set in app:
 - `API Key` to the site/role key (e.g. operator key)

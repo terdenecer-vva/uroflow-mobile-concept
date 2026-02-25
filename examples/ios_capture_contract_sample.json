@@ -2,6 +2,7 @@
   "schema_version": "ios_capture_v1",
   "session": {
     "session_id": "demo-20260223-001",
+    "sync_id": "sync-demo-20260223-001",
     "started_at": "2026-02-23T20:30:00Z",
     "mode": "water_impact",
     "device": {

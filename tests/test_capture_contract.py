@@ -8,6 +8,7 @@ def _valid_payload() -> dict[str, object]:
         "schema_version": "ios_capture_v1",
         "session": {
             "session_id": "session-001",
+            "sync_id": "sync-001",
             "started_at": "2026-02-23T20:10:00Z",
             "mode": "water_impact",
             "calibration": {
@@ -71,4 +72,15 @@ def test_capture_to_level_payload_preserves_optional_null_depth() -> None:
     meta = level_payload["meta"]
     assert isinstance(meta, dict)
     assert meta["session_id"] == "session-001"
+    assert meta["sync_id"] == "sync-001"
     assert meta["ml_per_mm"] == 8.0
+
+
+def test_validate_capture_payload_rejects_empty_sync_id_when_present() -> None:
+    payload = _valid_payload()
+    payload["session"]["sync_id"] = " "  # type: ignore[index]
+
+    report = validate_capture_payload(payload)
+
+    assert report.valid is False
+    assert any("session.sync_id" in error for error in report.errors)

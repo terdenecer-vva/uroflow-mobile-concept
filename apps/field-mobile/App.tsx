@@ -43,6 +43,7 @@ type AuthContextResponse = {
 type PairedPayload = {
   session: {
     session_id: string;
+    sync_id: string | null;
     site_id: string;
     subject_id: string;
     operator_id: string;
@@ -97,6 +98,7 @@ type AppSettings = {
   site_id: string;
   operator_id: string;
   summary_quality_status: SummaryQualityStatus;
+  summary_sync_id: string;
   request_timeout_ms: string;
 };
 
@@ -142,6 +144,18 @@ function createSessionId(): string {
   const min = String(now.getUTCMinutes()).padStart(2, "0");
   const s = String(now.getUTCSeconds()).padStart(2, "0");
   return `SESSION-${y}${m}${d}-${h}${min}${s}`;
+}
+
+function createSyncId(): string {
+  const now = new Date();
+  const y = now.getUTCFullYear();
+  const m = String(now.getUTCMonth() + 1).padStart(2, "0");
+  const d = String(now.getUTCDate()).padStart(2, "0");
+  const h = String(now.getUTCHours()).padStart(2, "0");
+  const min = String(now.getUTCMinutes()).padStart(2, "0");
+  const s = String(now.getUTCSeconds()).padStart(2, "0");
+  const randomPart = Math.random().toString(36).slice(2, 8).toUpperCase();
+  return `SYNC-${y}${m}${d}-${h}${min}${s}-${randomPart}`;
 }
 
 function formatNullable(value: number | null | undefined): string {
@@ -310,6 +324,7 @@ async function loadAppSettings(): Promise<AppSettings | null> {
       site_id: typeof parsed.site_id === "string" ? parsed.site_id : "SITE-001",
       operator_id: typeof parsed.operator_id === "string" ? parsed.operator_id : "OP-01",
       summary_quality_status: summaryQualityStatus,
+      summary_sync_id: typeof parsed.summary_sync_id === "string" ? parsed.summary_sync_id : "",
       request_timeout_ms:
         typeof parsed.request_timeout_ms === "string" && parsed.request_timeout_ms.trim()
           ? parsed.request_timeout_ms
@@ -332,6 +347,7 @@ export default function App() {
   const [actorRole, setActorRole] = useState("operator");
   const [requestTimeoutMs, setRequestTimeoutMs] = useState(DEFAULT_REQUEST_TIMEOUT_MS);
   const [sessionId, setSessionId] = useState(createSessionId());
+  const [syncId, setSyncId] = useState(createSyncId());
   const [siteId, setSiteId] = useState("SITE-001");
   const [subjectId, setSubjectId] = useState("SUBJ-001");
   const [operatorId, setOperatorId] = useState("OP-01");
@@ -366,6 +382,7 @@ export default function App() {
   const [syncingPending, setSyncingPending] = useState(false);
   const [syncStatusMessage, setSyncStatusMessage] = useState("");
   const [summaryQualityStatus, setSummaryQualityStatus] = useState<SummaryQualityStatus>("valid");
+  const [summarySyncId, setSummarySyncId] = useState("");
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [summaryError, setSummaryError] = useState("");
   const [summary, setSummary] = useState<ComparisonSummaryResponse | null>(null);
@@ -375,6 +392,7 @@ export default function App() {
     return {
       session: {
         session_id: sessionId.trim(),
+        sync_id: syncId.trim() || null,
         site_id: siteId.trim(),
         subject_id: subjectId.trim(),
         operator_id: operatorId.trim(),
@@ -435,6 +453,7 @@ export default function App() {
     refTqmax,
     refVvoid,
     sessionId,
+    syncId,
     siteId,
     subjectId,
   ]);
@@ -453,6 +472,7 @@ export default function App() {
         setSiteId(settings.site_id);
         setOperatorId(settings.operator_id);
         setSummaryQualityStatus(settings.summary_quality_status);
+        setSummarySyncId(settings.summary_sync_id);
         setRequestTimeoutMs(settings.request_timeout_ms);
       }
       setSettingsHydrated(true);
@@ -470,6 +490,7 @@ export default function App() {
       site_id: siteId,
       operator_id: operatorId,
       summary_quality_status: summaryQualityStatus,
+      summary_sync_id: summarySyncId,
       request_timeout_ms: requestTimeoutMs,
     };
     void saveAppSettings(settings);
@@ -481,6 +502,7 @@ export default function App() {
     requestTimeoutMs,
     settingsHydrated,
     siteId,
+    summarySyncId,
     summaryQualityStatus,
   ]);
 
@@ -726,6 +748,7 @@ export default function App() {
         setLastResponse(result.body);
         Alert.alert("Submitted", "Paired measurement uploaded");
         setSessionId(createSessionId());
+        setSyncId(createSyncId());
         return;
       }
 
@@ -771,6 +794,9 @@ export default function App() {
     const params = new URLSearchParams();
     if (siteId.trim()) {
       params.set("site_id", siteId.trim());
+    }
+    if (summarySyncId.trim()) {
+      params.set("sync_id", summarySyncId.trim());
     }
     params.set("quality_status", summaryQualityStatus);
     const url = `${baseUrl}/api/v1/comparison-summary?${params.toString()}`;
@@ -830,6 +856,7 @@ export default function App() {
         {pendingQueue.slice(0, 3).map((item) => (
           <Text key={item.id} style={styles.pendingItemText}>
             {item.id}: attempts={item.attempt_count}
+            {item.payload.session.sync_id ? `, sync=${item.payload.session.sync_id}` : ""}
             {item.request_headers.site_id ? `, site=${item.request_headers.site_id}` : ""}
             {item.request_headers.actor_role ? `, role=${item.request_headers.actor_role}` : ""}
             {item.last_status_code != null ? `, last_status=${item.last_status_code}` : ""}
@@ -874,6 +901,7 @@ export default function App() {
 
         <Text style={styles.sectionTitle}>Session</Text>
         <LabeledInput label="Session ID" value={sessionId} onChangeText={setSessionId} />
+        <LabeledInput label="Sync ID" value={syncId} onChangeText={setSyncId} />
         <LabeledInput label="Site ID" value={siteId} onChangeText={setSiteId} />
         <LabeledInput label="Subject ID" value={subjectId} onChangeText={setSubjectId} />
         <LabeledInput label="Operator ID" value={operatorId} onChangeText={setOperatorId} />
@@ -922,6 +950,11 @@ export default function App() {
           onChangeText={(value) =>
             setSummaryQualityStatus((value as SummaryQualityStatus) || "valid")
           }
+        />
+        <LabeledInput
+          label="Summary Sync ID (optional)"
+          value={summarySyncId}
+          onChangeText={setSummarySyncId}
         />
         <Pressable
           style={[styles.summaryButton, summaryLoading && styles.submitButtonDisabled]}

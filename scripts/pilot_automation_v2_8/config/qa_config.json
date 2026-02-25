@@ -2,6 +2,7 @@
   "version": "1.0",
   "manifest_expected_columns": [
     "record_id",
+    "sync_id",
     "profile_id",
     "subject_id",
     "site_id",

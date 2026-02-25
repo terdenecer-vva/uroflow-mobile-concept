@@ -292,6 +292,7 @@ def main() -> int:
         record_id = _norm_str(r.get("record_id", ""))
         if not record_id:
             continue
+        sync_id = _norm_str(r.get("sync_id", ""))
         rec_folder = find_record_folder(dataset_root, record_id, {"record_folder_candidates": ["records/{record_id}", "{record_id}"]})
         if rec_folder is None:
             # still include row with missing flags
@@ -374,6 +375,7 @@ def main() -> int:
         # CSR template row
         csr_row = {
             "record_id": record_id,
+            "sync_id": sync_id,
             "subject_id": _norm_str(r.get("subject_id","")),
             "site_id": _norm_str(r.get("site_id","")),
             "toilet_id": _norm_str(r.get("toilet_id","")),
@@ -404,6 +406,7 @@ def main() -> int:
         # listing row (more verbose)
         listing.append({
             "record_id": record_id,
+            "sync_id": sync_id,
             "site_id": csr_row["site_id"],
             "toilet_id": csr_row["toilet_id"],
             "sex": csr_row["sex"],
@@ -448,7 +451,25 @@ def main() -> int:
             "Vvoid": ("ref_Vvoid_ml", "app_Vvoid_ml"),
             "FlowTime": ("ref_FlowTime_s", "app_FlowTime_s"),
         }
-        summary = {"version": "1.1", "n_total": int(df.shape[0]), "n_valid": int(dfv.shape[0]), "metrics": {}}
+        sync_all = df["sync_id"].fillna("").astype(str).str.strip()
+        sync_all_nonempty = sync_all[sync_all != ""]
+        sync_valid = dfv["sync_id"].fillna("").astype(str).str.strip()
+        sync_valid_nonempty = sync_valid[sync_valid != ""]
+
+        summary = {
+            "version": "1.2",
+            "n_total": int(df.shape[0]),
+            "n_valid": int(dfv.shape[0]),
+            "metrics": {},
+            "sync_id_stats": {
+                "n_records_with_sync_id": int(sync_all_nonempty.shape[0]),
+                "n_unique_sync_id": int(sync_all_nonempty.nunique()),
+                "n_missing_sync_id": int(df.shape[0] - sync_all_nonempty.shape[0]),
+                "n_duplicate_sync_id": int(sync_all_nonempty.shape[0] - sync_all_nonempty.nunique()),
+                "n_valid_with_sync_id": int(sync_valid_nonempty.shape[0]),
+                "n_valid_missing_sync_id": int(dfv.shape[0] - sync_valid_nonempty.shape[0]),
+            },
+        }
 
         plots_dir = out_dir / "ba_plots"
         plots_dir.mkdir(parents=True, exist_ok=True)

@@ -7,10 +7,17 @@ from fastapi.testclient import TestClient
 from uroflow_mobile.clinical_hub import create_clinical_hub_app
 
 
-def _payload(session_id: str, site_id: str, subject_id: str) -> dict[str, object]:
+def _payload(
+    session_id: str,
+    site_id: str,
+    subject_id: str,
+    *,
+    sync_id: str | None = None,
+) -> dict[str, object]:
     return {
         "session": {
             "session_id": session_id,
+            "sync_id": sync_id,
             "site_id": site_id,
             "subject_id": subject_id,
             "operator_id": "OP-01",
@@ -76,17 +83,32 @@ def test_mobile_queue_sync_e2e_with_policy_key_and_idempotency(tmp_path: Path) -
     queue: list[dict[str, object]] = [
         {
             "id": "PENDING-1",
-            "payload": _payload("session-mobile-001", "SITE-001", "SUBJ-001"),
+            "payload": _payload(
+                "session-mobile-001",
+                "SITE-001",
+                "SUBJ-001",
+                sync_id="sync-mobile-001",
+            ),
             "headers": {"x-api-key": "op-site-1-key"},
         },
         {
             "id": "PENDING-2",
-            "payload": _payload("session-mobile-001", "SITE-001", "SUBJ-001"),
+            "payload": _payload(
+                "session-mobile-001",
+                "SITE-001",
+                "SUBJ-001",
+                sync_id="sync-mobile-001",
+            ),
             "headers": {"x-api-key": "op-site-1-key"},
         },
         {
             "id": "PENDING-3",
-            "payload": _payload("session-mobile-002", "SITE-002", "SUBJ-002"),
+            "payload": _payload(
+                "session-mobile-002",
+                "SITE-002",
+                "SUBJ-002",
+                sync_id="sync-mobile-002",
+            ),
             "headers": {"x-api-key": "op-site-1-key"},
         },
     ]
@@ -119,11 +141,14 @@ def test_mobile_queue_sync_e2e_with_policy_key_and_idempotency(tmp_path: Path) -
         listed_rows = listing.json()
         assert len(listed_rows) == 1
         assert listed_rows[0]["site_id"] == "SITE-001"
+        assert listed_rows[0]["sync_id"] == "sync-mobile-001"
 
         summary = client.get(
             "/api/v1/comparison-summary",
-            params={"quality_status": "all"},
+            params={"quality_status": "all", "sync_id": "sync-mobile-001"},
             headers={"x-api-key": "op-site-1-key"},
         )
         assert summary.status_code == 200
-        assert summary.json()["records_considered"] == 1
+        summary_payload = summary.json()
+        assert summary_payload["records_considered"] == 1
+        assert summary_payload["filters"]["sync_id"] == "sync-mobile-001"

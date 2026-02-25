@@ -57,6 +57,7 @@
   },
   "listing_columns_preferred": [
     "record_id",
+    "sync_id",
     "site_id",
     "toilet_id",
     "sex",

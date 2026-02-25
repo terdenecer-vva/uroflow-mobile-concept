@@ -127,6 +127,8 @@ def validate_manifest_rows(rows: List[dict], config: dict) -> Tuple[List[dict], 
 
     issues = []
     clean = []
+    seen_record_ids: set[str] = set()
+    seen_sync_ids: dict[str, str] = {}
 
     # Validate columns presence
     if rows:
@@ -152,6 +154,34 @@ def validate_manifest_rows(rows: List[dict], config: dict) -> Tuple[List[dict], 
                 "severity": "FAIL",
             })
             continue
+
+        if record_id in seen_record_ids:
+            issues.append({
+                "record_id": record_id,
+                "issue_code": "DUPLICATE_RECORD_ID",
+                "field": "record_id",
+                "message": f"Duplicate record_id in manifest: {record_id}",
+                "severity": "FAIL",
+            })
+        else:
+            seen_record_ids.add(record_id)
+
+        sync_id = (r.get("sync_id") or "").strip()
+        if sync_id:
+            previous_record = seen_sync_ids.get(sync_id)
+            if previous_record is not None and previous_record != record_id:
+                issues.append({
+                    "record_id": record_id,
+                    "issue_code": "SYNC_ID_DUPLICATE",
+                    "field": "sync_id",
+                    "message": (
+                        f"sync_id '{sync_id}' is reused by multiple record_id values: "
+                        f"{previous_record}, {record_id}"
+                    ),
+                    "severity": "FAIL",
+                })
+            else:
+                seen_sync_ids[sync_id] = record_id
 
         # required non-empty fields
         for f in required_nonempty:
