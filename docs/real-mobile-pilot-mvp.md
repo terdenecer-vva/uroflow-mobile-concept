@@ -103,6 +103,18 @@ PYTHONPATH=src python -m uroflow_mobile.cli summarize-paired-measurements \
   --output-json data/method_comparison_summary.json
 ```
 
+Filtered summary for Android-only replayed session chain:
+
+```bash
+PYTHONPATH=src python -m uroflow_mobile.cli summarize-paired-measurements \
+  --db-path data/clinical_hub.db \
+  --quality-status all \
+  --platform android \
+  --sync-id SYNC-20260225-ANDROID-001 \
+  --operator-id OP-01 \
+  --output-json data/method_comparison_summary_android_sync.json
+```
+
 Export audit trail:
 
 ```bash

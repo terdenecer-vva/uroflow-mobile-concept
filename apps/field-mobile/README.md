@@ -58,6 +58,7 @@ Examples:
 App sends `POST /api/v1/paired-measurements` payload aligned to backend schema.
 The `Comparison Summary` block loads `GET /api/v1/comparison-summary` with filters.
 `Sync ID` can be entered manually (or auto-generated) and used as `sync_id` filter in summary view.
+`Platform` defaults to current OS (`ios`/`android`) and can be overridden for troubleshooting.
 
 When backend is configured with API key policy map (`--api-key-map-json`), set in app:
 - `API Key` to the site/role key (e.g. operator key)

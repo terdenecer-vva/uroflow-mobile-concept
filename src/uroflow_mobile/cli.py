@@ -733,7 +733,9 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Target JSON path for method-comparison summary.",
     )
     compare_paired_cmd.add_argument("--site-id", help="Optional site filter.")
+    compare_paired_cmd.add_argument("--sync-id", help="Optional sync_id filter.")
     compare_paired_cmd.add_argument("--subject-id", help="Optional subject filter.")
+    compare_paired_cmd.add_argument("--operator-id", help="Optional operator_id filter.")
     compare_paired_cmd.add_argument(
         "--platform",
         choices=["ios", "android"],
@@ -1440,7 +1442,9 @@ def _handle_summarize_paired_measurements(args: argparse.Namespace) -> int:
     summary = build_method_comparison_summary(
         db_path=Path(args.db_path),
         site_id=args.site_id,
+        sync_id=args.sync_id,
         subject_id=args.subject_id,
+        operator_id=args.operator_id,
         platform=args.platform,
         capture_mode=args.capture_mode,
         quality_status=quality_status,

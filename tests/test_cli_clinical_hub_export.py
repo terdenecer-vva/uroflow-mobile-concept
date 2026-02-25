@@ -13,16 +13,23 @@ from uroflow_mobile.cli import main as cli_main
 from uroflow_mobile.clinical_hub import create_clinical_hub_app
 
 
-def _payload() -> dict[str, object]:
+def _payload(
+    *,
+    session_id: str = "session-cli-001",
+    sync_id: str | None = None,
+    platform: str = "android",
+    quality_status: str = "repeat",
+) -> dict[str, object]:
     return {
         "session": {
-            "session_id": "session-cli-001",
+            "session_id": session_id,
+            "sync_id": sync_id,
             "site_id": "SITE-001",
             "subject_id": "SUBJ-002",
             "operator_id": "OP-01",
             "attempt_number": 1,
             "measured_at": "2026-02-24T10:30:00Z",
-            "platform": "android",
+            "platform": platform,
             "device_model": "Pixel 8",
             "app_version": "0.2.0",
             "capture_mode": "water_impact",
@@ -33,7 +40,7 @@ def _payload() -> dict[str, object]:
                 "qavg_ml_s": 9.2,
                 "vvoid_ml": 280.0,
             },
-            "quality_status": "repeat",
+            "quality_status": quality_status,
         },
         "reference": {
             "metrics": {
@@ -137,6 +144,63 @@ def test_cli_summarize_paired_measurements(tmp_path: Path) -> None:
     assert summary["records_considered"] == 2
     assert summary["quality_distribution"]["reject"] == 1
     assert any(metric["metric"] == "qmax_ml_s" for metric in summary["metrics"])
+
+
+def test_cli_summarize_paired_measurements_with_sync_and_platform_filters(tmp_path: Path) -> None:
+    db_path = tmp_path / "clinical_hub.db"
+    app = create_clinical_hub_app(db_path)
+
+    with TestClient(app) as client:
+        android_synced = _payload(
+            session_id="session-cli-android-001",
+            sync_id="sync-android-001",
+            platform="android",
+            quality_status="valid",
+        )
+        ios_other = _payload(
+            session_id="session-cli-ios-001",
+            sync_id="sync-ios-001",
+            platform="ios",
+            quality_status="valid",
+        )
+        android_other_sync = _payload(
+            session_id="session-cli-android-002",
+            sync_id="sync-android-002",
+            platform="android",
+            quality_status="repeat",
+        )
+        assert client.post("/api/v1/paired-measurements", json=android_synced).status_code == 201
+        assert client.post("/api/v1/paired-measurements", json=ios_other).status_code == 201
+        assert (
+            client.post("/api/v1/paired-measurements", json=android_other_sync).status_code
+            == 201
+        )
+
+    output_json = tmp_path / "summary_filtered.json"
+    exit_code = cli_main(
+        [
+            "summarize-paired-measurements",
+            "--db-path",
+            str(db_path),
+            "--quality-status",
+            "all",
+            "--platform",
+            "android",
+            "--sync-id",
+            "sync-android-001",
+            "--operator-id",
+            "OP-01",
+            "--output-json",
+            str(output_json),
+        ]
+    )
+
+    assert exit_code == 0
+    summary = json.loads(output_json.read_text(encoding="utf-8"))
+    assert summary["records_considered"] == 1
+    assert summary["filters"]["platform"] == "android"
+    assert summary["filters"]["sync_id"] == "sync-android-001"
+    assert summary["filters"]["operator_id"] == "OP-01"
 
 
 def test_cli_export_audit_events(tmp_path: Path) -> None:

@@ -13,6 +13,8 @@ def _payload(
     subject_id: str,
     *,
     sync_id: str | None = None,
+    platform: str = "ios",
+    device_model: str = "iPhone15,3",
 ) -> dict[str, object]:
     return {
         "session": {
@@ -23,8 +25,8 @@ def _payload(
             "operator_id": "OP-01",
             "attempt_number": 1,
             "measured_at": "2026-02-25T08:00:00Z",
-            "platform": "ios",
-            "device_model": "iPhone15,3",
+            "platform": platform,
+            "device_model": device_model,
             "app_version": "0.3.0",
             "capture_mode": "water_impact",
         },
@@ -152,3 +154,92 @@ def test_mobile_queue_sync_e2e_with_policy_key_and_idempotency(tmp_path: Path) -
         summary_payload = summary.json()
         assert summary_payload["records_considered"] == 1
         assert summary_payload["filters"]["sync_id"] == "sync-mobile-001"
+
+
+def test_mobile_queue_sync_e2e_android_ios_and_platform_filter(tmp_path: Path) -> None:
+    db_path = tmp_path / "clinical_hub_mobile_sync_platform.db"
+    app = create_clinical_hub_app(
+        db_path,
+        api_key_policy_map={
+            "op-site-1-key": {
+                "role": "operator",
+                "site_id": "SITE-001",
+                "operator_id": "OP-01",
+            },
+        },
+    )
+
+    queue: list[dict[str, object]] = [
+        {
+            "id": "PENDING-A1",
+            "payload": _payload(
+                "session-mobile-android-001",
+                "SITE-001",
+                "SUBJ-101",
+                sync_id="sync-android-001",
+                platform="android",
+                device_model="Pixel 8",
+            ),
+            "headers": {"x-api-key": "op-site-1-key"},
+        },
+        {
+            "id": "PENDING-A2",
+            "payload": _payload(
+                "session-mobile-android-001",
+                "SITE-001",
+                "SUBJ-101",
+                sync_id="sync-android-001",
+                platform="android",
+                device_model="Pixel 8",
+            ),
+            "headers": {"x-api-key": "op-site-1-key"},
+        },
+        {
+            "id": "PENDING-I1",
+            "payload": _payload(
+                "session-mobile-ios-001",
+                "SITE-001",
+                "SUBJ-102",
+                sync_id="sync-ios-001",
+                platform="ios",
+                device_model="iPhone15,3",
+            ),
+            "headers": {"x-api-key": "op-site-1-key"},
+        },
+    ]
+
+    with TestClient(app) as client:
+        success_codes = 0
+        for item in queue:
+            response = client.post(
+                "/api/v1/paired-measurements",
+                json=item["payload"],
+                headers=item["headers"],
+            )
+            if 200 <= response.status_code < 300:
+                success_codes += 1
+            else:
+                raise AssertionError(f"unexpected status={response.status_code}")
+
+        assert success_codes == 3
+
+        listing = client.get("/api/v1/paired-measurements", headers={"x-api-key": "op-site-1-key"})
+        assert listing.status_code == 200
+        rows = listing.json()
+        assert len(rows) == 2
+        assert {row["platform"] for row in rows} == {"android", "ios"}
+
+        android_summary = client.get(
+            "/api/v1/comparison-summary",
+            params={
+                "quality_status": "all",
+                "platform": "android",
+                "sync_id": "sync-android-001",
+            },
+            headers={"x-api-key": "op-site-1-key"},
+        )
+        assert android_summary.status_code == 200
+        android_summary_payload = android_summary.json()
+        assert android_summary_payload["records_considered"] == 1
+        assert android_summary_payload["filters"]["platform"] == "android"
+        assert android_summary_payload["filters"]["sync_id"] == "sync-android-001"
