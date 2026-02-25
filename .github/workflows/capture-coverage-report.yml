@@ -1,0 +1,519 @@
+name: Capture Coverage Report
+
+on:
+  schedule:
+    - cron: "30 2 * * *"
+  workflow_dispatch:
+    inputs:
+      site_id:
+        description: "Optional site filter (default from repository variable CLINICAL_HUB_SITE_ID)"
+        required: false
+        type: string
+      sync_id:
+        description: "Optional sync_id filter"
+        required: false
+        type: string
+      subject_id:
+        description: "Optional subject filter"
+        required: false
+        type: string
+      operator_id:
+        description: "Optional operator filter"
+        required: false
+        type: string
+      platform:
+        description: "Optional platform filter"
+        required: false
+        type: choice
+        options:
+          - ""
+          - ios
+          - android
+        default: ""
+      capture_mode:
+        description: "Optional capture mode filter"
+        required: false
+        type: choice
+        options:
+          - ""
+          - water_impact
+          - jet_in_air_assist
+          - fallback_non_water
+        default: ""
+      quality_status:
+        description: "Quality status filter"
+        required: false
+        type: choice
+        options:
+          - all
+          - valid
+          - repeat
+          - reject
+        default: all
+      targets_config:
+        description: "Path to coverage targets JSON config (repo-relative)"
+        required: false
+        type: string
+      enforce_coverage_gates:
+        description: "Fail workflow when hard gates fail"
+        required: false
+        type: boolean
+        default: false
+      db_path:
+        description: "DB path in repo/runner (used only when CLINICAL_HUB_DB_URL secret is empty)"
+        required: false
+        type: string
+
+concurrency:
+  group: capture-coverage-report-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  generate-report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+
+    env:
+      DEFAULT_SITE_ID: ${{ vars.CLINICAL_HUB_SITE_ID }}
+      DEFAULT_QUALITY_STATUS: ${{ vars.CLINICAL_HUB_QUALITY_STATUS }}
+      DEFAULT_TARGETS_CONFIG: ${{ vars.CLINICAL_HUB_COVERAGE_TARGETS_CONFIG }}
+      DEFAULT_ENFORCE_COVERAGE_GATES: ${{ vars.CLINICAL_HUB_ENFORCE_COVERAGE_GATES }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: pyproject.toml
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+          pip install reportlab
+
+      - name: Resolve filters
+        id: filters
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          site_id="${{ github.event.inputs.site_id }}"
+          sync_id="${{ github.event.inputs.sync_id }}"
+          subject_id="${{ github.event.inputs.subject_id }}"
+          operator_id="${{ github.event.inputs.operator_id }}"
+          platform="${{ github.event.inputs.platform }}"
+          capture_mode="${{ github.event.inputs.capture_mode }}"
+          quality_status="${{ github.event.inputs.quality_status }}"
+          targets_config="${{ github.event.inputs.targets_config }}"
+          enforce_coverage_gates="${{ github.event.inputs.enforce_coverage_gates }}"
+
+          if [[ -z "$site_id" ]]; then
+            site_id="${DEFAULT_SITE_ID:-}"
+          fi
+          if [[ -z "$quality_status" ]]; then
+            quality_status="${DEFAULT_QUALITY_STATUS:-all}"
+          fi
+          if [[ -z "$targets_config" ]]; then
+            targets_config="${DEFAULT_TARGETS_CONFIG:-config/coverage_targets_config.v1.json}"
+          fi
+          if [[ -z "$enforce_coverage_gates" ]]; then
+            enforce_coverage_gates="${DEFAULT_ENFORCE_COVERAGE_GATES:-false}"
+          fi
+          case "${enforce_coverage_gates,,}" in
+            true|1|yes|y)
+              enforce_coverage_gates="true"
+              ;;
+            *)
+              enforce_coverage_gates="false"
+              ;;
+          esac
+
+          echo "site_id=$site_id" >> "$GITHUB_OUTPUT"
+          echo "sync_id=$sync_id" >> "$GITHUB_OUTPUT"
+          echo "subject_id=$subject_id" >> "$GITHUB_OUTPUT"
+          echo "operator_id=$operator_id" >> "$GITHUB_OUTPUT"
+          echo "platform=$platform" >> "$GITHUB_OUTPUT"
+          echo "capture_mode=$capture_mode" >> "$GITHUB_OUTPUT"
+          echo "quality_status=$quality_status" >> "$GITHUB_OUTPUT"
+          echo "targets_config=$targets_config" >> "$GITHUB_OUTPUT"
+          echo "enforce_coverage_gates=$enforce_coverage_gates" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve data source
+        id: source
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ -n "${{ secrets.CLINICAL_HUB_URL }}" ]]; then
+            echo "Using Clinical Hub API source."
+            echo "source_mode=api" >> "$GITHUB_OUTPUT"
+            echo "api_base_url=${{ secrets.CLINICAL_HUB_URL }}" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [[ -n "${{ secrets.CLINICAL_HUB_DB_URL }}" ]]; then
+            echo "Downloading clinical hub DB from CLINICAL_HUB_DB_URL..."
+            curl --fail --location --silent --show-error \
+              "${{ secrets.CLINICAL_HUB_DB_URL }}" \
+              --output /tmp/clinical_hub.db
+            echo "source_mode=db" >> "$GITHUB_OUTPUT"
+            echo "db_path=/tmp/clinical_hub.db" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          db_path="${{ github.event.inputs.db_path }}"
+          if [[ -z "$db_path" ]]; then
+            db_path="data/clinical_hub.db"
+          fi
+
+          if [[ ! -f "$db_path" ]]; then
+            echo "Database file '$db_path' is missing."
+            echo "Set secret CLINICAL_HUB_URL or CLINICAL_HUB_DB_URL, or provide valid db_path."
+            exit 1
+          fi
+          echo "source_mode=db" >> "$GITHUB_OUTPUT"
+          echo "db_path=$db_path" >> "$GITHUB_OUTPUT"
+
+      - name: Generate coverage CSV and PDF
+        id: generate
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          report_dir="/tmp/capture-coverage-report/$(date -u +%Y%m%dT%H%M%SZ)"
+          mkdir -p "$report_dir"
+          csv_path="$report_dir/capture_coverage_summary.csv"
+          pdf_path="$report_dir/capture_coverage_summary.pdf"
+          sha_path="$csv_path.sha256"
+          export TARGET_CSV="$csv_path"
+          export TARGET_PDF="$pdf_path"
+          export TARGET_SHA="$sha_path"
+
+          if [[ "${{ steps.source.outputs.source_mode }}" == "api" ]]; then
+            if [[ -z "${SOURCE_API_BASE_URL:-}" ]]; then
+              echo "SOURCE_API_BASE_URL is empty while source_mode=api"
+              exit 1
+            fi
+            python - <<'PY'
+            import csv
+            import hashlib
+            import os
+            import urllib.parse
+            import urllib.request
+            from pathlib import Path
+
+            from reportlab.lib.pagesizes import A4
+            from reportlab.pdfgen import canvas
+
+            base_url = os.environ["SOURCE_API_BASE_URL"].rstrip("/")
+            csv_path = Path(os.environ["TARGET_CSV"])
+            pdf_path = Path(os.environ["TARGET_PDF"])
+            sha_path = Path(os.environ["TARGET_SHA"])
+
+            query = {
+                "quality_status": os.environ["FILTER_QUALITY_STATUS"] or "all",
+            }
+            optional = {
+                "site_id": os.environ["FILTER_SITE_ID"],
+                "sync_id": os.environ["FILTER_SYNC_ID"],
+                "subject_id": os.environ["FILTER_SUBJECT_ID"],
+                "operator_id": os.environ["FILTER_OPERATOR_ID"],
+                "platform": os.environ["FILTER_PLATFORM"],
+                "capture_mode": os.environ["FILTER_CAPTURE_MODE"],
+            }
+            for key, value in optional.items():
+                if value:
+                    query[key] = value
+
+            url = (
+                f"{base_url}/api/v1/capture-coverage-summary.csv?"
+                f"{urllib.parse.urlencode(query)}"
+            )
+            headers = {}
+            api_key = os.environ.get("SOURCE_API_KEY", "")
+            if api_key:
+                headers["x-api-key"] = api_key
+            request = urllib.request.Request(url, headers=headers)
+            with urllib.request.urlopen(request, timeout=30) as response:
+                payload = response.read()
+            csv_path.write_bytes(payload)
+            digest = hashlib.sha256(payload).hexdigest()
+            sha_path.write_text(f"{digest}  {csv_path.name}\n", encoding="utf-8")
+
+            with csv_path.open("r", encoding="utf-8", newline="") as handle:
+                rows = list(csv.DictReader(handle))
+            row = rows[0] if rows else {}
+
+            pdf_path.parent.mkdir(parents=True, exist_ok=True)
+            sheet = canvas.Canvas(str(pdf_path), pagesize=A4)
+            _, height = A4
+            y = height - 42
+
+            def line(text: str, step: int = 16) -> None:
+                nonlocal y
+                sheet.drawString(42, y, text)
+                y -= step
+
+            line("Capture Coverage Summary")
+            line(f"Generated at: {row.get('generated_at', '-')}")
+            line(f"Site: {row.get('site_id', '-')}")
+            line(f"Sync ID: {row.get('sync_id', '-')}")
+            line(f"Quality status: {row.get('quality_status', 'all')}")
+            y -= 6
+            line(
+                f"Paired total: {row.get('paired_total', '0')}, "
+                f"with capture: {row.get('paired_with_capture', '0')}, "
+                f"without capture: {row.get('paired_without_capture', '0')}"
+            )
+            ratio = float(row.get("coverage_ratio", "0") or "0")
+            line(f"Coverage ratio: {ratio * 100:.1f}%")
+            line(
+                "Quality distribution: "
+                f"valid={row.get('quality_valid', '0')}, "
+                f"repeat={row.get('quality_repeat', '0')}, "
+                f"reject={row.get('quality_reject', '0')}"
+            )
+            line(
+                "Match modes: "
+                f"paired_id={row.get('match_paired_id', '0')}, "
+                f"session_identity={row.get('match_session_identity', '0')}, "
+                f"none={row.get('match_none', '0')}"
+            )
+            sheet.showPage()
+            sheet.save()
+            PY
+          else
+            args=(
+              -m uroflow_mobile.cli export-capture-coverage-summary
+              --db-path "${{ steps.source.outputs.db_path }}"
+              --quality-status "${{ steps.filters.outputs.quality_status }}"
+              --output-csv "$csv_path"
+              --output-pdf "$pdf_path"
+              --sha256-file "$sha_path"
+            )
+            if [[ -n "${{ steps.filters.outputs.site_id }}" ]]; then
+              args+=(--site-id "${{ steps.filters.outputs.site_id }}")
+            fi
+            if [[ -n "${{ steps.filters.outputs.sync_id }}" ]]; then
+              args+=(--sync-id "${{ steps.filters.outputs.sync_id }}")
+            fi
+            if [[ -n "${{ steps.filters.outputs.subject_id }}" ]]; then
+              args+=(--subject-id "${{ steps.filters.outputs.subject_id }}")
+            fi
+            if [[ -n "${{ steps.filters.outputs.operator_id }}" ]]; then
+              args+=(--operator-id "${{ steps.filters.outputs.operator_id }}")
+            fi
+            if [[ -n "${{ steps.filters.outputs.platform }}" ]]; then
+              args+=(--platform "${{ steps.filters.outputs.platform }}")
+            fi
+            if [[ -n "${{ steps.filters.outputs.capture_mode }}" ]]; then
+              args+=(--capture-mode "${{ steps.filters.outputs.capture_mode }}")
+            fi
+            PYTHONPATH=src python "${args[@]}"
+          fi
+
+          echo "report_dir=$report_dir" >> "$GITHUB_OUTPUT"
+          echo "csv_path=$csv_path" >> "$GITHUB_OUTPUT"
+        env:
+          SOURCE_API_BASE_URL: ${{ steps.source.outputs.api_base_url }}
+          SOURCE_API_KEY: ${{ secrets.CLINICAL_HUB_API_KEY }}
+          FILTER_SITE_ID: ${{ steps.filters.outputs.site_id }}
+          FILTER_SYNC_ID: ${{ steps.filters.outputs.sync_id }}
+          FILTER_SUBJECT_ID: ${{ steps.filters.outputs.subject_id }}
+          FILTER_OPERATOR_ID: ${{ steps.filters.outputs.operator_id }}
+          FILTER_PLATFORM: ${{ steps.filters.outputs.platform }}
+          FILTER_CAPTURE_MODE: ${{ steps.filters.outputs.capture_mode }}
+          FILTER_QUALITY_STATUS: ${{ steps.filters.outputs.quality_status }}
+
+      - name: Evaluate coverage gates
+        id: gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import csv
+          import json
+          import math
+          import os
+          from pathlib import Path
+
+          csv_path = Path("${{ steps.generate.outputs.csv_path }}")
+          report_dir = Path("${{ steps.generate.outputs.report_dir }}")
+          config_path = Path("${{ steps.filters.outputs.targets_config }}")
+          output_path = report_dir / "coverage_gates.json"
+
+          if not csv_path.exists():
+              raise FileNotFoundError(f"coverage csv not found: {csv_path}")
+          if not config_path.exists():
+              raise FileNotFoundError(f"targets config not found: {config_path}")
+
+          with csv_path.open("r", encoding="utf-8", newline="") as handle:
+              rows = list(csv.DictReader(handle))
+          row = rows[0] if rows else {}
+
+          paired_total = float(row.get("paired_total", "0") or "0")
+          denominator = paired_total if paired_total > 0 else 1.0
+          quality_valid = float(row.get("quality_valid", "0") or "0")
+          quality_repeat = float(row.get("quality_repeat", "0") or "0")
+          quality_reject = float(row.get("quality_reject", "0") or "0")
+          match_none = float(row.get("match_none", "0") or "0")
+
+          metrics = {
+              "paired_total": paired_total,
+              "paired_with_capture": float(row.get("paired_with_capture", "0") or "0"),
+              "paired_without_capture": float(row.get("paired_without_capture", "0") or "0"),
+              "coverage_ratio": float(row.get("coverage_ratio", "0") or "0"),
+              "quality_valid_count": quality_valid,
+              "quality_repeat_count": quality_repeat,
+              "quality_reject_count": quality_reject,
+              "quality_valid_ratio": quality_valid / denominator,
+              "quality_repeat_ratio": quality_repeat / denominator,
+              "quality_reject_ratio": quality_reject / denominator,
+              "capture_match_none_count": match_none,
+              "capture_match_none_ratio": match_none / denominator,
+          }
+
+          config_payload = json.loads(config_path.read_text(encoding="utf-8"))
+          if not isinstance(config_payload, dict):
+              raise ValueError("coverage targets config must be a JSON object")
+          gates = config_payload.get("gates")
+          if not isinstance(gates, list) or len(gates) == 0:
+              raise ValueError("coverage targets config must include non-empty 'gates' list")
+
+          def evaluate(actual: float, operator: str, threshold: float) -> bool:
+              if operator == ">=":
+                  return actual >= threshold
+              if operator == ">":
+                  return actual > threshold
+              if operator == "<=":
+                  return actual <= threshold
+              if operator == "<":
+                  return actual < threshold
+              if operator == "==":
+                  return actual == threshold
+              raise ValueError(f"Unsupported gate operator: {operator}")
+
+          evaluations = []
+          hard_passed = True
+          warning_passed = True
+          for index, gate in enumerate(gates):
+              if not isinstance(gate, dict):
+                  raise ValueError(f"gates[{index}] must be object")
+              metric = gate.get("metric")
+              operator = gate.get("operator")
+              threshold = gate.get("threshold")
+              if not isinstance(metric, str) or metric not in metrics:
+                  raise ValueError(f"gates[{index}].metric is invalid: {metric!r}")
+              if not isinstance(operator, str) or operator not in {">=", ">", "<=", "<", "=="}:
+                  raise ValueError(f"gates[{index}].operator is invalid: {operator!r}")
+              if not isinstance(threshold, (int, float)) or not math.isfinite(float(threshold)):
+                  raise ValueError(f"gates[{index}].threshold must be finite number")
+              severity = str(gate.get("severity", "hard")).strip().lower()
+              if severity not in {"hard", "warning"}:
+                  raise ValueError(f"gates[{index}].severity must be 'hard' or 'warning'")
+              actual = float(metrics[metric])
+              passed = evaluate(actual, operator, float(threshold))
+              if severity == "hard" and not passed:
+                  hard_passed = False
+              if severity == "warning" and not passed:
+                  warning_passed = False
+              evaluations.append(
+                  {
+                      "id": gate.get("id") or metric,
+                      "label": gate.get("label") or metric,
+                      "metric": metric,
+                      "operator": operator,
+                      "threshold": float(threshold),
+                      "actual": actual,
+                      "severity": severity,
+                      "passed": passed,
+                  }
+              )
+
+          report = {
+              "config_path": str(config_path),
+              "config_version": config_payload.get("version"),
+              "config_name": config_payload.get("name"),
+              "metrics": metrics,
+              "gates": evaluations,
+              "hard_passed": hard_passed,
+              "warning_passed": warning_passed,
+              "overall_passed": hard_passed,
+          }
+          output_path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+          with Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as handle:
+              handle.write(f"gates_json_path={output_path}\n")
+              handle.write(f"hard_passed={'true' if hard_passed else 'false'}\n")
+              handle.write(f"warning_passed={'true' if warning_passed else 'false'}\n")
+          print(f"Coverage gates report saved: {output_path}")
+          print(f"hard_passed={hard_passed}, warning_passed={warning_passed}")
+          PY
+
+      - name: Upload coverage report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: capture-coverage-report-${{ github.run_id }}
+          path: ${{ steps.generate.outputs.report_dir }}
+          if-no-files-found: error
+
+      - name: Enforce hard coverage gates
+        if: ${{ steps.filters.outputs.enforce_coverage_gates == 'true' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${{ steps.gates.outputs.hard_passed }}" != "true" ]]; then
+            echo "Hard coverage gates failed."
+            exit 1
+          fi
+          echo "Hard coverage gates passed."
+
+      - name: Publish workflow summary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import csv
+          import os
+          from pathlib import Path
+
+          csv_path = Path("${{ steps.generate.outputs.csv_path }}")
+          with csv_path.open("r", encoding="utf-8", newline="") as handle:
+              rows = list(csv.DictReader(handle))
+          row = rows[0] if rows else {}
+
+          paired_total = int(row.get("paired_total", "0") or "0")
+          paired_with_capture = int(row.get("paired_with_capture", "0") or "0")
+          coverage_ratio = float(row.get("coverage_ratio", "0") or "0")
+          hard_passed = "${{ steps.gates.outputs.hard_passed }}" or "false"
+          warning_passed = "${{ steps.gates.outputs.warning_passed }}" or "false"
+          enforce_hard = "${{ steps.filters.outputs.enforce_coverage_gates }}" or "false"
+          gates_path = "${{ steps.gates.outputs.gates_json_path }}" or "-"
+          targets_config = "${{ steps.filters.outputs.targets_config }}" or "-"
+
+          summary_lines = [
+              "## Capture Coverage Summary",
+              f"- Source mode: `${{ steps.source.outputs.source_mode }}`",
+              f"- Paired total: `{paired_total}`",
+              f"- Paired with capture: `{paired_with_capture}`",
+              f"- Coverage ratio: `{coverage_ratio * 100:.1f}%`",
+              f"- Site: `{row.get('site_id', '') or '-'}`",
+              f"- Sync: `{row.get('sync_id', '') or '-'}`",
+              f"- Quality filter: `{row.get('quality_status', '') or 'all'}`",
+              f"- Targets config: `{targets_config}`",
+              f"- Hard gates passed: `{hard_passed}`",
+              f"- Warning gates passed: `{warning_passed}`",
+              f"- Hard gate enforcement: `{enforce_hard}`",
+              f"- Gates report: `{gates_path}`",
+          ]
+          Path(os.environ["GITHUB_STEP_SUMMARY"]).write_text(
+              "\n".join(summary_lines) + "\n",
+              encoding="utf-8",
+          )
+          PY
