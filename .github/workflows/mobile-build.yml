@@ -92,7 +92,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     needs: preflight
-    if: ${{ github.event_name == 'workflow_dispatch' && secrets.EXPO_TOKEN != '' }}
+    if: ${{ github.event_name == 'workflow_dispatch' }}
 
     defaults:
       run:
@@ -102,7 +102,23 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Check EXPO_TOKEN availability
+        id: expo
+        shell: bash
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${EXPO_TOKEN:-}" ]]; then
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "EXPO_TOKEN is not configured; EAS build steps will be skipped."
+          else
+            echo "available=true" >> "$GITHUB_OUTPUT"
+            echo "EXPO_TOKEN is configured."
+          fi
+
       - name: Set up Node.js
+        if: ${{ steps.expo.outputs.available == 'true' }}
         uses: actions/setup-node@v4
         with:
           node-version: "20"
@@ -110,12 +126,15 @@ jobs:
           cache-dependency-path: apps/field-mobile/package.json
 
       - name: Install dependencies
+        if: ${{ steps.expo.outputs.available == 'true' }}
         run: npm install --no-audit --no-fund
 
       - name: Install EAS CLI
+        if: ${{ steps.expo.outputs.available == 'true' }}
         run: npm install -g eas-cli
 
       - name: Trigger EAS build
+        if: ${{ steps.expo.outputs.available == 'true' }}
         id: eas
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
@@ -139,6 +158,7 @@ jobs:
           echo "result_json=/tmp/eas-build-result.json" >> "$GITHUB_OUTPUT"
 
       - name: Upload EAS build result artifact
+        if: ${{ steps.expo.outputs.available == 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: mobile-eas-build-result-${{ github.run_id }}
@@ -146,6 +166,7 @@ jobs:
           if-no-files-found: error
 
       - name: Publish EAS build summary
+        if: ${{ steps.expo.outputs.available == 'true' }}
         shell: bash
         env:
           RESULT_JSON: ${{ steps.eas.outputs.result_json }}
@@ -195,12 +216,12 @@ jobs:
           )
           PY
 
-  eas-build-skipped:
-    runs-on: ubuntu-latest
-    needs: preflight
-    if: ${{ github.event_name == 'workflow_dispatch' && secrets.EXPO_TOKEN == '' }}
-
-    steps:
-      - name: Missing EXPO_TOKEN
+      - name: Publish skip summary
+        if: ${{ steps.expo.outputs.available != 'true' }}
+        shell: bash
         run: |
-          echo "EXPO_TOKEN is not configured; skipping EAS build trigger."
+          {
+            echo "## Mobile EAS Build"
+            echo "- Status: \`skipped\`"
+            echo "- Reason: \`EXPO_TOKEN is not configured in repository secrets\`"
+          } >> "$GITHUB_STEP_SUMMARY"
