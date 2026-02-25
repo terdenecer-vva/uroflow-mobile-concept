@@ -223,6 +223,40 @@ def _maybe_write_sha256_manifest(
     return manifest_path
 
 
+def _load_api_key_policy_map(
+    policy_path: str | None,
+) -> dict[str, dict[str, str | None]] | None:
+    if policy_path is None:
+        return None
+    payload = json.loads(Path(policy_path).read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise ValueError("API key policy file must contain a JSON object")
+
+    normalized: dict[str, dict[str, str | None]] = {}
+    for api_key, raw_policy in payload.items():
+        if not isinstance(api_key, str):
+            raise ValueError("API key policy keys must be strings")
+        if not isinstance(raw_policy, dict):
+            raise ValueError("Each API key policy entry must be a JSON object")
+
+        role = raw_policy.get("role")
+        site_id = raw_policy.get("site_id")
+        operator_id = raw_policy.get("operator_id")
+        for field_name, field_value in (
+            ("role", role),
+            ("site_id", site_id),
+            ("operator_id", operator_id),
+        ):
+            if field_value is not None and not isinstance(field_value, str):
+                raise ValueError(f"API key policy field '{field_name}' must be a string or null")
+        normalized[api_key] = {
+            "role": role,
+            "site_id": site_id,
+            "operator_id": operator_id,
+        }
+    return normalized
+
+
 def _write_fusion_csv(path: Path, estimation: FusionEstimationResult) -> None:
     with path.open("w", newline="", encoding="utf-8") as file:
         writer = csv.writer(file)
@@ -598,6 +632,13 @@ def _build_parser() -> argparse.ArgumentParser:
     serve_hub_cmd.add_argument(
         "--api-key",
         help="Optional API key for /api/v1 endpoints. Can also use CLINICAL_HUB_API_KEY env.",
+    )
+    serve_hub_cmd.add_argument(
+        "--api-key-map-json",
+        help=(
+            "Optional JSON file with per-key role/site policy map. "
+            "Can also use CLINICAL_HUB_API_KEYS_FILE env."
+        ),
     )
 
     export_paired_cmd = subparsers.add_parser(
@@ -1314,9 +1355,19 @@ def _handle_serve_clinical_hub(args: argparse.Namespace) -> int:
 
     db_path = Path(args.db_path)
     api_key = args.api_key or os.getenv("CLINICAL_HUB_API_KEY")
-    app = create_clinical_hub_app(db_path=db_path, api_key=api_key)
-    if api_key:
-        print("Clinical Hub API key protection: enabled")
+    api_key_map_path = args.api_key_map_json or os.getenv("CLINICAL_HUB_API_KEYS_FILE")
+    api_key_policy_map = _load_api_key_policy_map(api_key_map_path)
+    app = create_clinical_hub_app(
+        db_path=db_path,
+        api_key=api_key,
+        api_key_policy_map=api_key_policy_map,
+    )
+    if api_key_policy_map and api_key:
+        print("Clinical Hub API key protection: enabled (policy map + shared fallback)")
+    elif api_key_policy_map:
+        print("Clinical Hub API key protection: enabled (policy map)")
+    elif api_key:
+        print("Clinical Hub API key protection: enabled (shared key)")
     else:
         print("Clinical Hub API key protection: disabled")
     uvicorn.run(app, host=args.host, port=args.port)

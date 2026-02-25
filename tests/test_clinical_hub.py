@@ -4,7 +4,7 @@ import csv
 from pathlib import Path
 
 from fastapi.testclient import TestClient
-from pytest import approx
+from pytest import approx, raises
 
 from uroflow_mobile.clinical_hub import (
     create_clinical_hub_app,
@@ -408,3 +408,118 @@ def test_site_scope_blocks_cross_site_pilot_report_write(tmp_path: Path) -> None
         )
         assert blocked.status_code == 403
         assert "site scope violation" in blocked.json()["detail"]
+
+
+def test_api_key_policy_map_enforces_site_scope_and_role(tmp_path: Path) -> None:
+    db_path = tmp_path / "clinical_hub_policy_map.db"
+    app = create_clinical_hub_app(
+        db_path,
+        api_key_policy_map={
+            "op-site-1-key": {
+                "role": "operator",
+                "site_id": "SITE-001",
+                "operator_id": "OP-MAPPED",
+            },
+            "dm-key": {"role": "data_manager"},
+        },
+    )
+
+    with TestClient(app) as client:
+        unauthorized = client.get("/api/v1/paired-measurements")
+        assert unauthorized.status_code == 401
+
+        op_create = client.post(
+            "/api/v1/paired-measurements",
+            json=_payload(session_id="session-policy-001", site_id="SITE-001"),
+            headers={
+                "x-api-key": "op-site-1-key",
+                "x-site-id": "SITE-999",
+                "x-actor-role": "data_manager",
+            },
+        )
+        assert op_create.status_code == 201
+
+        op_cross_site = client.post(
+            "/api/v1/paired-measurements",
+            json=_payload(session_id="session-policy-002", site_id="SITE-002"),
+            headers={"x-api-key": "op-site-1-key"},
+        )
+        assert op_cross_site.status_code == 403
+
+        dm_create = client.post(
+            "/api/v1/paired-measurements",
+            json=_payload(
+                session_id="session-policy-003",
+                site_id="SITE-002",
+                subject_id="SUBJ-900",
+            ),
+            headers={"x-api-key": "dm-key"},
+        )
+        assert dm_create.status_code == 201
+
+        op_listing = client.get(
+            "/api/v1/paired-measurements",
+            headers={"x-api-key": "op-site-1-key"},
+        )
+        assert op_listing.status_code == 200
+        op_items = op_listing.json()
+        assert len(op_items) == 1
+        assert op_items[0]["site_id"] == "SITE-001"
+
+        dm_listing = client.get("/api/v1/paired-measurements", headers={"x-api-key": "dm-key"})
+        assert dm_listing.status_code == 200
+        dm_items = dm_listing.json()
+        assert len(dm_items) == 2
+
+        summary = client.get(
+            "/api/v1/comparison-summary",
+            params={"quality_status": "all"},
+            headers={"x-api-key": "op-site-1-key"},
+        )
+        assert summary.status_code == 200
+        assert summary.json()["filters"]["site_id"] == "SITE-001"
+
+        audit_events = client.get("/api/v1/audit-events", headers={"x-api-key": "dm-key"})
+        assert audit_events.status_code == 200
+        assert any(item["auth_result"] == "valid_policy" for item in audit_events.json())
+
+
+def test_api_key_policy_map_supports_legacy_shared_key(tmp_path: Path) -> None:
+    db_path = tmp_path / "clinical_hub_policy_legacy.db"
+    app = create_clinical_hub_app(
+        db_path,
+        api_key="legacy-shared-key",
+        api_key_policy_map={"op-site-1-key": {"role": "operator", "site_id": "SITE-001"}},
+    )
+
+    with TestClient(app) as client:
+        legacy_create = client.post(
+            "/api/v1/paired-measurements",
+            json=_payload(
+                session_id="session-legacy-001",
+                site_id="SITE-003",
+                subject_id="SUBJ-003",
+            ),
+            headers={
+                "x-api-key": "legacy-shared-key",
+                "x-site-id": "SITE-003",
+                "x-actor-role": "data_manager",
+            },
+        )
+        assert legacy_create.status_code == 201
+
+        audit_events = client.get(
+            "/api/v1/audit-events",
+            headers={"x-api-key": "legacy-shared-key", "x-actor-role": "data_manager"},
+        )
+        assert audit_events.status_code == 200
+        assert any(item["auth_result"] == "valid_legacy" for item in audit_events.json())
+
+
+def test_api_key_policy_map_rejects_invalid_operator_policy(tmp_path: Path) -> None:
+    db_path = tmp_path / "clinical_hub_policy_invalid.db"
+    with raises(ValueError, match="must include site_id"):
+        create_clinical_hub_app(
+            db_path,
+            api_key_policy_map={"invalid-op-key": {"role": "operator"}},
+        )

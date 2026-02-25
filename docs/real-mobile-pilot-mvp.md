@@ -22,6 +22,16 @@ PYTHONPATH=src python -m uroflow_mobile.cli serve-clinical-hub \
   --port 8000
 ```
 
+For multi-site role-bound keys:
+
+```bash
+PYTHONPATH=src python -m uroflow_mobile.cli serve-clinical-hub \
+  --db-path data/clinical_hub.db \
+  --api-key-map-json config/clinical_hub_api_keys.json \
+  --host 0.0.0.0 \
+  --port 8000
+```
+
 API endpoints:
 - `GET /health`
 - `POST /api/v1/paired-measurements`
@@ -41,6 +51,7 @@ Recommended headers for pilot traceability and access scope:
 Site scope behavior:
 - `operator`/`investigator`: reads and writes are restricted to `x-site-id`;
 - `data_manager`/`admin`: cross-site access is allowed.
+- if API key policy map is enabled, role/site are resolved from key policy first.
 
 ## 2) Run iPhone/Android app
 

@@ -132,6 +132,26 @@ PYTHONPATH=src python -m uroflow_mobile.cli serve-clinical-hub \
   --port 8000
 ```
 
+Для более безопасного multi-site пилота можно задать policy map ключей:
+
+```bash
+PYTHONPATH=src python -m uroflow_mobile.cli serve-clinical-hub \
+  --db-path data/clinical_hub.db \
+  --api-key-map-json config/clinical_hub_api_keys.json \
+  --host 0.0.0.0 \
+  --port 8000
+```
+
+Пример `config/clinical_hub_api_keys.json`:
+
+```json
+{
+  "op-site-1-key": {"role": "operator", "site_id": "SITE-001"},
+  "inv-site-2-key": {"role": "investigator", "site_id": "SITE-002"},
+  "dm-key": {"role": "data_manager"}
+}
+```
+
 Экспорт БД в CSV:
 
 ```bash
@@ -230,6 +250,9 @@ Site scope enforcement:
 - для `operator` и `investigator` доступ автоматически ограничивается `x-site-id`;
 - запрос с `site_id`, не совпадающим с `x-site-id`, возвращает `403`;
 - `data_manager` и `admin` могут работать кросс-сайтово.
+
+Если включён `--api-key-map-json`, роль и site scope берутся из policy map ключа
+(заголовки `x-site-id`/`x-actor-role` становятся вторичными).
 
 ## Оценка release gates (G0/G1/G2)
 

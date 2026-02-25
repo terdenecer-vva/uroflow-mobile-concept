@@ -6,7 +6,9 @@ import json
 from pathlib import Path
 
 from fastapi.testclient import TestClient
+from pytest import raises
 
+from uroflow_mobile.cli import _load_api_key_policy_map
 from uroflow_mobile.cli import main as cli_main
 from uroflow_mobile.clinical_hub import create_clinical_hub_app
 
@@ -199,3 +201,32 @@ def test_cli_export_pilot_automation_reports(tmp_path: Path) -> None:
         rows = list(reader)
     assert len(rows) == 1
     assert rows[0]["report_type"] == "g1_eval"
+
+
+def test_load_api_key_policy_map_from_json(tmp_path: Path) -> None:
+    policy_path = tmp_path / "api_keys.json"
+    policy_path.write_text(
+        json.dumps(
+            {
+                "op-key": {"role": "operator", "site_id": "SITE-001"},
+                "dm-key": {"role": "data_manager"},
+            },
+            ensure_ascii=False,
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+
+    policy_map = _load_api_key_policy_map(str(policy_path))
+    assert policy_map is not None
+    assert policy_map["op-key"]["role"] == "operator"
+    assert policy_map["op-key"]["site_id"] == "SITE-001"
+    assert policy_map["dm-key"]["role"] == "data_manager"
+
+
+def test_load_api_key_policy_map_rejects_invalid_schema(tmp_path: Path) -> None:
+    policy_path = tmp_path / "api_keys_invalid.json"
+    policy_path.write_text(json.dumps({"op-key": ["bad"]}), encoding="utf-8")
+
+    with raises(ValueError, match="must be a JSON object"):
+        _load_api_key_policy_map(str(policy_path))

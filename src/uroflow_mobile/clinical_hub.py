@@ -216,6 +216,12 @@ class AuditEventItem(BaseModel):
     detail_json: str | None = None
 
 
+class ApiKeyPolicy(BaseModel):
+    role: ACTOR_ROLE
+    site_id: str | None = None
+    operator_id: str | None = None
+
+
 METRIC_COLUMNS: dict[str, tuple[str, str]] = {
     "qmax_ml_s": ("app_qmax_ml_s", "ref_qmax_ml_s"),
     "qavg_ml_s": ("app_qavg_ml_s", "ref_qavg_ml_s"),
@@ -223,6 +229,24 @@ METRIC_COLUMNS: dict[str, tuple[str, str]] = {
     "flow_time_s": ("app_flow_time_s", "ref_flow_time_s"),
     "tqmax_s": ("app_tqmax_s", "ref_tqmax_s"),
 }
+
+
+def _normalize_site_id(site_id: str | None) -> str | None:
+    if site_id is None:
+        return None
+    stripped = site_id.strip()
+    if not stripped:
+        return None
+    return stripped
+
+
+def _normalize_operator_id(operator_id: str | None) -> str | None:
+    if operator_id is None:
+        return None
+    stripped = operator_id.strip()
+    if not stripped:
+        return None
+    return stripped
 
 
 def _connect(db_path: Path) -> sqlite3.Connection:
@@ -810,6 +834,28 @@ def _normalize_actor_role(actor_role: str | None) -> ACTOR_ROLE | None:
     if normalized in {"operator", "investigator", "data_manager", "admin"}:
         return normalized
     return None
+
+
+def _validate_api_key_policy_map(
+    api_key_policy_map: dict[str, dict[str, str | None]] | None,
+) -> dict[str, ApiKeyPolicy]:
+    if api_key_policy_map is None:
+        return {}
+    validated: dict[str, ApiKeyPolicy] = {}
+    for api_key, raw_policy in api_key_policy_map.items():
+        normalized_api_key = api_key.strip()
+        if not normalized_api_key:
+            raise ValueError("api key policy map contains an empty key")
+        policy = ApiKeyPolicy.model_validate(raw_policy)
+        policy.site_id = _normalize_site_id(policy.site_id)
+        policy.operator_id = _normalize_operator_id(policy.operator_id)
+        if policy.role in {"operator", "investigator"} and policy.site_id is None:
+            raise ValueError(
+                f"api key policy for role '{policy.role}' must include site_id "
+                f"(key fingerprint={_hash_api_key(normalized_api_key)})"
+            )
+        validated[normalized_api_key] = policy
+    return validated
 
 
 def _is_cross_site_allowed(actor_role: ACTOR_ROLE | None) -> bool:
@@ -1478,7 +1524,11 @@ def build_method_comparison_summary(
     return _build_method_comparison_summary_from_rows(rows=rows, filters=filters)
 
 
-def create_clinical_hub_app(db_path: Path, api_key: str | None = None) -> FastAPI:
+def create_clinical_hub_app(
+    db_path: Path,
+    api_key: str | None = None,
+    api_key_policy_map: dict[str, dict[str, str | None]] | None = None,
+) -> FastAPI:
     @asynccontextmanager
     async def _lifespan(_: FastAPI) -> AsyncIterator[None]:
         ensure_clinical_hub_schema(db_path)
@@ -1492,6 +1542,7 @@ def create_clinical_hub_app(db_path: Path, api_key: str | None = None) -> FastAP
     )
     app.state.db_path = db_path
     app.state.api_key = api_key
+    app.state.api_key_policy_map = _validate_api_key_policy_map(api_key_policy_map)
 
     @app.middleware("http")
     async def _audit_and_auth_middleware(
@@ -1505,15 +1556,36 @@ def create_clinical_hub_app(db_path: Path, api_key: str | None = None) -> FastAP
         body_bytes = await request.body()
         session_meta = _extract_session_metadata_from_body(body_bytes)
         request_api_key = request.headers.get("x-api-key")
-        actor_operator_id = request.headers.get("x-operator-id") or session_meta["operator_id"]
-        actor_site_id = request.headers.get("x-site-id") or session_meta["site_id"]
+        actor_operator_id = _normalize_operator_id(request.headers.get("x-operator-id"))
+        if actor_operator_id is None:
+            actor_operator_id = _normalize_operator_id(session_meta["operator_id"])
+        actor_site_id = _normalize_site_id(request.headers.get("x-site-id"))
+        if actor_site_id is None:
+            actor_site_id = _normalize_site_id(session_meta["site_id"])
         actor_role = _normalize_actor_role(request.headers.get("x-actor-role"))
         request_id = request.headers.get("x-request-id")
         required_api_key: str | None = app.state.api_key
+        api_key_policy_map: dict[str, ApiKeyPolicy] = app.state.api_key_policy_map
+        api_key_policy = api_key_policy_map.get(request_api_key) if request_api_key else None
+        if api_key_policy is not None:
+            actor_role = api_key_policy.role
+            actor_site_id = api_key_policy.site_id or actor_site_id
+            actor_operator_id = api_key_policy.operator_id or actor_operator_id
+
         request.state.actor_site_id = actor_site_id
         request.state.actor_role = actor_role
+        auth_result = "not_configured"
+        if api_key_policy_map:
+            if api_key_policy is not None:
+                auth_result = "valid_policy"
+            elif required_api_key is not None and request_api_key == required_api_key:
+                auth_result = "valid_legacy"
+            else:
+                auth_result = "invalid"
+        elif required_api_key:
+            auth_result = "valid" if request_api_key == required_api_key else "invalid"
 
-        if required_api_key and request_api_key != required_api_key:
+        if auth_result == "invalid":
             response = JSONResponse(status_code=401, content={"detail": "invalid API key"})
             with _connect(app.state.db_path) as audit_connection:
                 _insert_audit_event(
@@ -1521,7 +1593,7 @@ def create_clinical_hub_app(db_path: Path, api_key: str | None = None) -> FastAP
                     method=request.method,
                     path=path,
                     status_code=401,
-                    auth_result="invalid",
+                    auth_result=auth_result,
                     api_key_fingerprint=_hash_api_key(request_api_key),
                     actor_operator_id=actor_operator_id,
                     actor_role=actor_role,
@@ -1555,7 +1627,7 @@ def create_clinical_hub_app(db_path: Path, api_key: str | None = None) -> FastAP
                 method=request.method,
                 path=path,
                 status_code=response.status_code,
-                auth_result="valid" if required_api_key else "not_configured",
+                auth_result=auth_result,
                 api_key_fingerprint=_hash_api_key(request_api_key),
                 actor_operator_id=actor_operator_id,
                 actor_role=actor_role,
