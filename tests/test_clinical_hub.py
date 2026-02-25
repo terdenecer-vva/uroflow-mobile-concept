@@ -17,6 +17,7 @@ from uroflow_mobile.clinical_hub import (
 def _payload(
     session_id: str = "session-001",
     *,
+    sync_id: str | None = None,
     site_id: str = "SITE-001",
     subject_id: str = "SUBJ-001",
     operator_id: str = "OP-01",
@@ -24,6 +25,7 @@ def _payload(
     return {
         "session": {
             "session_id": session_id,
+            "sync_id": sync_id,
             "site_id": site_id,
             "subject_id": subject_id,
             "operator_id": operator_id,
@@ -80,6 +82,7 @@ def _pilot_report_payload(
 def _capture_package_payload(
     *,
     session_id: str = "session-cap-001",
+    sync_id: str | None = None,
     site_id: str = "SITE-001",
     subject_id: str = "SUBJ-001",
     operator_id: str = "OP-01",
@@ -88,6 +91,7 @@ def _capture_package_payload(
     return {
         "session": {
             "session_id": session_id,
+            "sync_id": sync_id,
             "site_id": site_id,
             "subject_id": subject_id,
             "operator_id": operator_id,
@@ -124,11 +128,12 @@ def test_clinical_hub_crud_and_csv_export(tmp_path: Path) -> None:
         auth_context_body = auth_context.json()
         assert auth_context_body["auth_result"] == "not_configured"
 
-        created = client.post("/api/v1/paired-measurements", json=_payload())
+        created = client.post("/api/v1/paired-measurements", json=_payload(sync_id="sync-001"))
         assert created.status_code == 201
         created_body = created.json()
         assert created_body["id"] == 1
         assert created_body["session"]["session_id"] == "session-001"
+        assert created_body["session"]["sync_id"] == "sync-001"
         assert created_body["app"]["quality_status"] == "valid"
 
         listing = client.get("/api/v1/paired-measurements")
@@ -136,6 +141,7 @@ def test_clinical_hub_crud_and_csv_export(tmp_path: Path) -> None:
         listing_body = listing.json()
         assert len(listing_body) == 1
         assert listing_body[0]["session_id"] == "session-001"
+        assert listing_body[0]["sync_id"] == "sync-001"
         assert listing_body[0]["platform"] == "ios"
 
         detailed = client.get("/api/v1/paired-measurements/1")
@@ -146,12 +152,13 @@ def test_clinical_hub_crud_and_csv_export(tmp_path: Path) -> None:
         csv_response = client.get("/api/v1/paired-measurements.csv")
         assert csv_response.status_code == 200
         assert "session-001" in csv_response.text
+        assert "sync-001" in csv_response.text
         assert csv_response.headers["content-type"].startswith("text/csv")
 
         created_2 = client.post(
             "/api/v1/paired-measurements",
             json={
-                **_payload(session_id="session-002"),
+                **_payload(session_id="session-002", sync_id="sync-002"),
                 "app": {
                     **_payload()["app"],
                     "quality_status": "repeat",
@@ -199,6 +206,15 @@ def test_clinical_hub_crud_and_csv_export(tmp_path: Path) -> None:
         assert qmax_summary_all["paired_samples"] == 2
         assert qmax_summary_all["mean_absolute_error"] == approx(0.8)
 
+        summary_sync = client.get(
+            "/api/v1/comparison-summary",
+            params={"quality_status": "all", "sync_id": "sync-001"},
+        )
+        assert summary_sync.status_code == 200
+        summary_sync_body = summary_sync.json()
+        assert summary_sync_body["records_matched_filters"] == 1
+        assert summary_sync_body["filters"]["sync_id"] == "sync-001"
+
     output_csv = tmp_path / "paired_export.csv"
     exported_rows = export_paired_measurements_to_csv(db_path=db_path, output_csv=output_csv)
 
@@ -211,6 +227,7 @@ def test_clinical_hub_crud_and_csv_export(tmp_path: Path) -> None:
 
     assert len(rows) == 2
     assert {row["session_id"] for row in rows} == {"session-001", "session-002"}
+    assert {row["sync_id"] for row in rows} == {"sync-001", "sync-002"}
     assert {row["app_quality_status"] for row in rows} == {"valid", "repeat"}
 
 
@@ -260,11 +277,17 @@ def test_capture_package_idempotent_resubmit_returns_existing(tmp_path: Path) ->
     app = create_clinical_hub_app(db_path)
 
     with TestClient(app) as client:
-        paired_created = client.post("/api/v1/paired-measurements", json=_payload())
+        paired_created = client.post(
+            "/api/v1/paired-measurements",
+            json=_payload(sync_id="sync-cap-001"),
+        )
         assert paired_created.status_code == 201
         paired_id = paired_created.json()["id"]
 
-        payload = _capture_package_payload(paired_measurement_id=paired_id)
+        payload = _capture_package_payload(
+            sync_id="sync-cap-001",
+            paired_measurement_id=paired_id,
+        )
         first = client.post("/api/v1/capture-packages", json=payload)
         assert first.status_code == 201
         assert first.json()["id"] == 1
@@ -276,6 +299,7 @@ def test_capture_package_idempotent_resubmit_returns_existing(tmp_path: Path) ->
         listing = client.get("/api/v1/capture-packages")
         assert listing.status_code == 200
         assert len(listing.json()) == 1
+        assert listing.json()[0]["sync_id"] == "sync-cap-001"
 
 
 def test_capture_package_conflict_on_same_identity_with_changed_payload(
@@ -303,6 +327,94 @@ def test_capture_package_conflict_on_same_identity_with_changed_payload(
         assert "different payload" in conflict.json()["detail"]
 
 
+def test_sync_id_filters_for_paired_and_capture_endpoints(tmp_path: Path) -> None:
+    db_path = tmp_path / "clinical_hub_sync_filters.db"
+    app = create_clinical_hub_app(db_path)
+
+    with TestClient(app) as client:
+        paired_sync_1 = client.post(
+            "/api/v1/paired-measurements",
+            json=_payload(session_id="session-sync-001", sync_id="sync-001"),
+        )
+        assert paired_sync_1.status_code == 201
+        paired_sync_1_id = paired_sync_1.json()["id"]
+
+        paired_sync_2 = client.post(
+            "/api/v1/paired-measurements",
+            json=_payload(session_id="session-sync-002", sync_id="sync-002"),
+        )
+        assert paired_sync_2.status_code == 201
+        paired_sync_2_id = paired_sync_2.json()["id"]
+
+        capture_sync_1 = client.post(
+            "/api/v1/capture-packages",
+            json=_capture_package_payload(
+                session_id="capture-sync-001",
+                sync_id="sync-001",
+                paired_measurement_id=paired_sync_1_id,
+            ),
+        )
+        assert capture_sync_1.status_code == 201
+
+        capture_sync_2 = client.post(
+            "/api/v1/capture-packages",
+            json=_capture_package_payload(
+                session_id="capture-sync-002",
+                sync_id="sync-002",
+                paired_measurement_id=paired_sync_2_id,
+            ),
+        )
+        assert capture_sync_2.status_code == 201
+
+        paired_listing = client.get(
+            "/api/v1/paired-measurements",
+            params={"sync_id": "sync-001"},
+        )
+        assert paired_listing.status_code == 200
+        paired_rows = paired_listing.json()
+        assert len(paired_rows) == 1
+        assert paired_rows[0]["session_id"] == "session-sync-001"
+        assert paired_rows[0]["sync_id"] == "sync-001"
+
+        capture_listing = client.get(
+            "/api/v1/capture-packages",
+            params={"sync_id": "sync-001"},
+        )
+        assert capture_listing.status_code == 200
+        capture_rows = capture_listing.json()
+        assert len(capture_rows) == 1
+        assert capture_rows[0]["session_id"] == "capture-sync-001"
+        assert capture_rows[0]["sync_id"] == "sync-001"
+
+        summary = client.get(
+            "/api/v1/comparison-summary",
+            params={"quality_status": "all", "sync_id": "sync-001"},
+        )
+        assert summary.status_code == 200
+        summary_body = summary.json()
+        assert summary_body["records_matched_filters"] == 1
+        assert summary_body["records_considered"] == 1
+        assert summary_body["filters"]["sync_id"] == "sync-001"
+
+        paired_csv = client.get(
+            "/api/v1/paired-measurements.csv",
+            params={"sync_id": "sync-001"},
+        )
+        assert paired_csv.status_code == 200
+        assert "session-sync-001" in paired_csv.text
+        assert "session-sync-002" not in paired_csv.text
+        assert "sync-001" in paired_csv.text
+
+        capture_csv = client.get(
+            "/api/v1/capture-packages.csv",
+            params={"sync_id": "sync-001"},
+        )
+        assert capture_csv.status_code == 200
+        assert "capture-sync-001" in capture_csv.text
+        assert "capture-sync-002" not in capture_csv.text
+        assert "sync-001" in capture_csv.text
+
+
 def test_clinical_hub_api_key_and_audit_export(tmp_path: Path) -> None:
     db_path = tmp_path / "clinical_hub_auth.db"
     api_key = "pilot-secret-key"
@@ -319,7 +431,11 @@ def test_clinical_hub_api_key_and_audit_export(tmp_path: Path) -> None:
         assert auth_context_body["auth_result"] == "valid"
         assert auth_context_body["cross_site_allowed"] is False
 
-        authorized = client.post("/api/v1/paired-measurements", json=_payload(), headers=headers)
+        authorized = client.post(
+            "/api/v1/paired-measurements",
+            json=_payload(sync_id="sync-audit-001"),
+            headers=headers,
+        )
         assert authorized.status_code == 201
 
         audit_list = client.get("/api/v1/audit-events", headers=headers)
@@ -328,6 +444,17 @@ def test_clinical_hub_api_key_and_audit_export(tmp_path: Path) -> None:
         assert len(events) >= 2
         assert any(item["status_code"] == 401 for item in events)
         assert any(item["path"] == "/api/v1/paired-measurements" for item in events)
+        assert any(item["sync_id"] == "sync-audit-001" for item in events)
+
+        filtered_audit = client.get(
+            "/api/v1/audit-events",
+            params={"sync_id": "sync-audit-001"},
+            headers=headers,
+        )
+        assert filtered_audit.status_code == 200
+        filtered_events = filtered_audit.json()
+        assert filtered_events
+        assert all(item["sync_id"] == "sync-audit-001" for item in filtered_events)
 
     audit_csv = tmp_path / "audit_export.csv"
     audit_rows = export_audit_events_to_csv(db_path=db_path, output_csv=audit_csv)

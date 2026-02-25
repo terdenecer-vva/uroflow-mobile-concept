@@ -39,6 +39,7 @@ class FlowMetrics(BaseModel):
 
 class SessionMeta(BaseModel):
     session_id: str = Field(min_length=1)
+    sync_id: str | None = Field(default=None, min_length=1)
     site_id: str = Field(min_length=1)
     subject_id: str = Field(min_length=1)
     operator_id: str = Field(min_length=1)
@@ -84,6 +85,7 @@ class PairedMeasurementListItem(BaseModel):
     created_at: datetime
     measured_at: datetime
     session_id: str
+    sync_id: str | None = None
     site_id: str
     subject_id: str
     attempt_number: int
@@ -97,6 +99,7 @@ class PairedMeasurementListItem(BaseModel):
 
 class MethodComparisonFilters(BaseModel):
     site_id: str | None = None
+    sync_id: str | None = None
     subject_id: str | None = None
     operator_id: str | None = None
     platform: PLATFORM | None = None
@@ -153,6 +156,7 @@ class CapturePackageListItem(BaseModel):
     created_at: datetime
     measured_at: datetime
     session_id: str
+    sync_id: str | None = None
     site_id: str
     subject_id: str
     operator_id: str
@@ -210,6 +214,7 @@ class AuditEventItem(BaseModel):
     actor_site_id: str | None = None
     request_id: str | None = None
     session_id: str | None = None
+    sync_id: str | None = None
     site_id: str | None = None
     subject_id: str | None = None
     operator_id: str | None = None
@@ -293,6 +298,7 @@ def ensure_clinical_hub_schema(db_path: Path) -> None:
                 created_at TEXT NOT NULL,
                 measured_at TEXT NOT NULL,
                 session_id TEXT NOT NULL,
+                sync_id TEXT,
                 site_id TEXT NOT NULL,
                 subject_id TEXT NOT NULL,
                 operator_id TEXT NOT NULL,
@@ -329,6 +335,12 @@ def ensure_clinical_hub_schema(db_path: Path) -> None:
         )
         connection.execute(
             """
+            CREATE INDEX IF NOT EXISTS idx_paired_measurements_sync
+            ON paired_measurements(sync_id)
+            """
+        )
+        connection.execute(
+            """
             CREATE INDEX IF NOT EXISTS idx_paired_measurements_subject
             ON paired_measurements(site_id, subject_id)
             """
@@ -354,6 +366,7 @@ def ensure_clinical_hub_schema(db_path: Path) -> None:
                 actor_site_id TEXT,
                 request_id TEXT,
                 session_id TEXT,
+                sync_id TEXT,
                 site_id TEXT,
                 subject_id TEXT,
                 operator_id TEXT,
@@ -376,11 +389,18 @@ def ensure_clinical_hub_schema(db_path: Path) -> None:
         )
         connection.execute(
             """
+            CREATE INDEX IF NOT EXISTS idx_audit_events_sync
+            ON audit_events(sync_id)
+            """
+        )
+        connection.execute(
+            """
             CREATE TABLE IF NOT EXISTS capture_packages (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 created_at TEXT NOT NULL,
                 measured_at TEXT NOT NULL,
                 session_id TEXT NOT NULL,
+                sync_id TEXT,
                 site_id TEXT NOT NULL,
                 subject_id TEXT NOT NULL,
                 operator_id TEXT NOT NULL,
@@ -401,6 +421,12 @@ def ensure_clinical_hub_schema(db_path: Path) -> None:
             """
             CREATE INDEX IF NOT EXISTS idx_capture_packages_session
             ON capture_packages(session_id, attempt_number)
+            """
+        )
+        connection.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_capture_packages_sync
+            ON capture_packages(sync_id)
             """
         )
         connection.execute(
@@ -458,12 +484,27 @@ def ensure_clinical_hub_schema(db_path: Path) -> None:
 
         _ensure_table_columns(
             connection,
+            "paired_measurements",
+            {
+                "sync_id": "TEXT",
+            },
+        )
+        _ensure_table_columns(
+            connection,
+            "capture_packages",
+            {
+                "sync_id": "TEXT",
+            },
+        )
+        _ensure_table_columns(
+            connection,
             "audit_events",
             {
                 "actor_operator_id": "TEXT",
                 "actor_role": "TEXT",
                 "actor_site_id": "TEXT",
                 "request_id": "TEXT",
+                "sync_id": "TEXT",
             },
         )
 
@@ -496,6 +537,7 @@ def _insert_paired_measurement(
             created_at,
             measured_at,
             session_id,
+            sync_id,
             site_id,
             subject_id,
             operator_id,
@@ -522,12 +564,16 @@ def _insert_paired_measurement(
             notes,
             payload_json
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (
+            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+            ?, ?, ?, ?, ?, ?, ?, ?, ?
+        )
         """,
         (
             _dt_to_iso(created_at),
             _dt_to_iso(measured_at),
             payload.session.session_id,
+            payload.session.sync_id,
             payload.session.site_id,
             payload.session.subject_id,
             payload.session.operator_id,
@@ -571,6 +617,7 @@ def _insert_capture_package(
             created_at,
             measured_at,
             session_id,
+            sync_id,
             site_id,
             subject_id,
             operator_id,
@@ -584,12 +631,13 @@ def _insert_capture_package(
             notes,
             capture_payload_json
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             _dt_to_iso(created_at),
             _dt_to_iso(measured_at),
             payload.session.session_id,
+            payload.session.sync_id,
             payload.session.site_id,
             payload.session.subject_id,
             payload.session.operator_id,
@@ -765,6 +813,7 @@ def _capture_package_payload_matches_row(
     return (
         str(row["measured_at"]) == measured_at
         and str(row["session_id"]) == payload.session.session_id
+        and (str(row["sync_id"]) if row["sync_id"] is not None else None) == payload.session.sync_id
         and str(row["site_id"]) == payload.session.site_id
         and str(row["subject_id"]) == payload.session.subject_id
         and str(row["operator_id"]) == payload.session.operator_id
@@ -824,6 +873,7 @@ def _row_to_record(row: sqlite3.Row) -> PairedMeasurementRecord:
 def _row_to_capture_package_record(row: sqlite3.Row) -> CapturePackageRecord:
     session = SessionMeta(
         session_id=str(row["session_id"]),
+        sync_id=str(row["sync_id"]) if row["sync_id"] is not None else None,
         site_id=str(row["site_id"]),
         subject_id=str(row["subject_id"]),
         operator_id=str(row["operator_id"]),
@@ -853,6 +903,7 @@ def _row_to_list_item(row: sqlite3.Row) -> PairedMeasurementListItem:
         created_at=_dt_from_iso(str(row["created_at"])),
         measured_at=_dt_from_iso(str(row["measured_at"])),
         session_id=str(row["session_id"]),
+        sync_id=str(row["sync_id"]) if row["sync_id"] is not None else None,
         site_id=str(row["site_id"]),
         subject_id=str(row["subject_id"]),
         attempt_number=int(row["attempt_number"]),
@@ -871,6 +922,7 @@ def _row_to_capture_package_list_item(row: sqlite3.Row) -> CapturePackageListIte
         created_at=_dt_from_iso(str(row["created_at"])),
         measured_at=_dt_from_iso(str(row["measured_at"])),
         session_id=str(row["session_id"]),
+        sync_id=str(row["sync_id"]) if row["sync_id"] is not None else None,
         site_id=str(row["site_id"]),
         subject_id=str(row["subject_id"]),
         operator_id=str(row["operator_id"]),
@@ -1142,6 +1194,7 @@ def _extract_session_metadata_from_body(body: bytes) -> dict[str, str | None]:
     if not body:
         return {
             "session_id": None,
+            "sync_id": None,
             "site_id": None,
             "subject_id": None,
             "operator_id": None,
@@ -1151,6 +1204,7 @@ def _extract_session_metadata_from_body(body: bytes) -> dict[str, str | None]:
     except (UnicodeDecodeError, json.JSONDecodeError):
         return {
             "session_id": None,
+            "sync_id": None,
             "site_id": None,
             "subject_id": None,
             "operator_id": None,
@@ -1159,6 +1213,7 @@ def _extract_session_metadata_from_body(body: bytes) -> dict[str, str | None]:
     if not isinstance(payload, dict):
         return {
             "session_id": None,
+            "sync_id": None,
             "site_id": None,
             "subject_id": None,
             "operator_id": None,
@@ -1167,6 +1222,7 @@ def _extract_session_metadata_from_body(body: bytes) -> dict[str, str | None]:
     if not isinstance(session, dict):
         return {
             "session_id": _payload_value(payload, "session_id"),
+            "sync_id": _payload_value(payload, "sync_id"),
             "site_id": _payload_value(payload, "site_id"),
             "subject_id": _payload_value(payload, "subject_id"),
             "operator_id": _payload_value(payload, "operator_id"),
@@ -1174,6 +1230,7 @@ def _extract_session_metadata_from_body(body: bytes) -> dict[str, str | None]:
 
     return {
         "session_id": _session_value(session, "session_id"),
+        "sync_id": _session_value(session, "sync_id"),
         "site_id": _session_value(session, "site_id"),
         "subject_id": _session_value(session, "subject_id"),
         "operator_id": _session_value(session, "operator_id"),
@@ -1193,6 +1250,7 @@ def _insert_audit_event(
     actor_site_id: str | None,
     request_id: str | None,
     session_id: str | None,
+    sync_id: str | None,
     site_id: str | None,
     subject_id: str | None,
     operator_id: str | None,
@@ -1213,13 +1271,14 @@ def _insert_audit_event(
             actor_site_id,
             request_id,
             session_id,
+            sync_id,
             site_id,
             subject_id,
             operator_id,
             remote_addr,
             detail_json
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             _dt_to_iso(_utc_now()),
@@ -1233,6 +1292,7 @@ def _insert_audit_event(
             actor_site_id,
             request_id,
             session_id,
+            sync_id,
             site_id,
             subject_id,
             operator_id,
@@ -1284,6 +1344,7 @@ def _fetch_method_comparison_rows(
     connection: sqlite3.Connection,
     *,
     site_id: str | None = None,
+    sync_id: str | None = None,
     subject_id: str | None = None,
     operator_id: str | None = None,
     platform: PLATFORM | None = None,
@@ -1292,6 +1353,8 @@ def _fetch_method_comparison_rows(
     filter_pairs: list[tuple[str, object]] = []
     if site_id:
         filter_pairs.append(("site_id", site_id))
+    if sync_id:
+        filter_pairs.append(("sync_id", sync_id))
     if subject_id:
         filter_pairs.append(("subject_id", subject_id))
     if operator_id:
@@ -1342,6 +1405,7 @@ def _row_to_audit_item(row: sqlite3.Row) -> AuditEventItem:
         actor_site_id=str(row["actor_site_id"]) if row["actor_site_id"] is not None else None,
         request_id=str(row["request_id"]) if row["request_id"] is not None else None,
         session_id=str(row["session_id"]) if row["session_id"] is not None else None,
+        sync_id=str(row["sync_id"]) if row["sync_id"] is not None else None,
         site_id=str(row["site_id"]) if row["site_id"] is not None else None,
         subject_id=str(row["subject_id"]) if row["subject_id"] is not None else None,
         operator_id=str(row["operator_id"]) if row["operator_id"] is not None else None,
@@ -1360,6 +1424,7 @@ def export_paired_measurements_to_csv(db_path: Path, output_csv: Path) -> int:
                 created_at,
                 measured_at,
                 session_id,
+                sync_id,
                 site_id,
                 subject_id,
                 operator_id,
@@ -1399,6 +1464,7 @@ def export_paired_measurements_to_csv(db_path: Path, output_csv: Path) -> int:
                 "created_at",
                 "measured_at",
                 "session_id",
+                "sync_id",
                 "site_id",
                 "subject_id",
                 "operator_id",
@@ -1432,6 +1498,7 @@ def export_paired_measurements_to_csv(db_path: Path, output_csv: Path) -> int:
                     row["created_at"],
                     row["measured_at"],
                     row["session_id"],
+                    row["sync_id"],
                     row["site_id"],
                     row["subject_id"],
                     row["operator_id"],
@@ -1479,6 +1546,7 @@ def export_audit_events_to_csv(db_path: Path, output_csv: Path) -> int:
                 actor_site_id,
                 request_id,
                 session_id,
+                sync_id,
                 site_id,
                 subject_id,
                 operator_id,
@@ -1507,6 +1575,7 @@ def export_audit_events_to_csv(db_path: Path, output_csv: Path) -> int:
                 "actor_site_id",
                 "request_id",
                 "session_id",
+                "sync_id",
                 "site_id",
                 "subject_id",
                 "operator_id",
@@ -1529,6 +1598,7 @@ def export_audit_events_to_csv(db_path: Path, output_csv: Path) -> int:
                     row["actor_site_id"],
                     row["request_id"],
                     row["session_id"],
+                    row["sync_id"],
                     row["site_id"],
                     row["subject_id"],
                     row["operator_id"],
@@ -1549,6 +1619,7 @@ def export_capture_packages_to_csv(db_path: Path, output_csv: Path) -> int:
                 created_at,
                 measured_at,
                 session_id,
+                sync_id,
                 site_id,
                 subject_id,
                 operator_id,
@@ -1576,6 +1647,7 @@ def export_capture_packages_to_csv(db_path: Path, output_csv: Path) -> int:
                 "created_at",
                 "measured_at",
                 "session_id",
+                "sync_id",
                 "site_id",
                 "subject_id",
                 "operator_id",
@@ -1597,6 +1669,7 @@ def export_capture_packages_to_csv(db_path: Path, output_csv: Path) -> int:
                     row["created_at"],
                     row["measured_at"],
                     row["session_id"],
+                    row["sync_id"],
                     row["site_id"],
                     row["subject_id"],
                     row["operator_id"],
@@ -1675,6 +1748,7 @@ def build_method_comparison_summary(
     db_path: Path,
     *,
     site_id: str | None = None,
+    sync_id: str | None = None,
     subject_id: str | None = None,
     operator_id: str | None = None,
     platform: PLATFORM | None = None,
@@ -1684,6 +1758,7 @@ def build_method_comparison_summary(
     ensure_clinical_hub_schema(db_path)
     filters = MethodComparisonFilters(
         site_id=site_id,
+        sync_id=sync_id,
         subject_id=subject_id,
         operator_id=operator_id,
         platform=platform,
@@ -1694,6 +1769,7 @@ def build_method_comparison_summary(
         rows = _fetch_method_comparison_rows(
             connection,
             site_id=site_id,
+            sync_id=sync_id,
             subject_id=subject_id,
             operator_id=operator_id,
             platform=platform,
@@ -1780,6 +1856,7 @@ def create_clinical_hub_app(
                     actor_site_id=actor_site_id,
                     request_id=request_id,
                     session_id=session_meta["session_id"],
+                    sync_id=session_meta["sync_id"],
                     site_id=session_meta["site_id"],
                     subject_id=session_meta["subject_id"],
                     operator_id=session_meta["operator_id"],
@@ -1817,6 +1894,7 @@ def create_clinical_hub_app(
                     actor_site_id=actor_site_id,
                     request_id=request_id,
                     session_id=session_meta["session_id"],
+                    sync_id=session_meta["sync_id"],
                     site_id=session_meta["site_id"],
                     subject_id=session_meta["subject_id"],
                     operator_id=session_meta["operator_id"],
@@ -1851,6 +1929,7 @@ def create_clinical_hub_app(
                 actor_site_id=actor_site_id,
                 request_id=request_id,
                 session_id=session_meta["session_id"],
+                sync_id=session_meta["sync_id"],
                 site_id=session_meta["site_id"],
                 subject_id=session_meta["subject_id"],
                 operator_id=session_meta["operator_id"],
@@ -1932,6 +2011,7 @@ def create_clinical_hub_app(
         limit: int = Query(default=100, ge=1, le=1000),
         offset: int = Query(default=0, ge=0),
         site_id: str | None = None,
+        sync_id: str | None = None,
         subject_id: str | None = None,
         operator_id: str | None = None,
         connection: sqlite3.Connection = Depends(get_connection),  # noqa: B008
@@ -1943,6 +2023,9 @@ def create_clinical_hub_app(
         if effective_site_id:
             filters.append("site_id = ?")
             values.append(effective_site_id)
+        if sync_id:
+            filters.append("sync_id = ?")
+            values.append(sync_id)
         if subject_id:
             filters.append("subject_id = ?")
             values.append(subject_id)
@@ -1961,6 +2044,7 @@ def create_clinical_hub_app(
                 created_at,
                 measured_at,
                 session_id,
+                sync_id,
                 site_id,
                 subject_id,
                 attempt_number,
@@ -2042,6 +2126,7 @@ def create_clinical_hub_app(
         limit: int = Query(default=100, ge=1, le=1000),
         offset: int = Query(default=0, ge=0),
         site_id: str | None = None,
+        sync_id: str | None = None,
         subject_id: str | None = None,
         operator_id: str | None = None,
         session_id: str | None = None,
@@ -2057,6 +2142,9 @@ def create_clinical_hub_app(
         if effective_site_id:
             filters.append("site_id = ?")
             values.append(effective_site_id)
+        if sync_id:
+            filters.append("sync_id = ?")
+            values.append(sync_id)
         if subject_id:
             filters.append("subject_id = ?")
             values.append(subject_id)
@@ -2081,6 +2169,7 @@ def create_clinical_hub_app(
                 created_at,
                 measured_at,
                 session_id,
+                sync_id,
                 site_id,
                 subject_id,
                 operator_id,
@@ -2225,6 +2314,7 @@ def create_clinical_hub_app(
     def get_method_comparison_summary(
         request: Request,
         site_id: str | None = None,
+        sync_id: str | None = None,
         subject_id: str | None = None,
         operator_id: str | None = None,
         platform: PLATFORM | None = None,
@@ -2241,6 +2331,7 @@ def create_clinical_hub_app(
         rows = _fetch_method_comparison_rows(
             connection,
             site_id=effective_site_id,
+            sync_id=sync_id,
             subject_id=subject_id,
             operator_id=effective_operator_id,
             platform=platform,
@@ -2248,6 +2339,7 @@ def create_clinical_hub_app(
         )
         filters = MethodComparisonFilters(
             site_id=effective_site_id,
+            sync_id=sync_id,
             subject_id=subject_id,
             operator_id=effective_operator_id,
             platform=platform,
@@ -2262,6 +2354,7 @@ def create_clinical_hub_app(
         limit: int = Query(default=200, ge=1, le=5000),
         offset: int = Query(default=0, ge=0),
         path: str | None = None,
+        sync_id: str | None = None,
         site_id: str | None = None,
         operator_id: str | None = None,
         status_code: int | None = Query(default=None, ge=100, le=599),
@@ -2274,6 +2367,9 @@ def create_clinical_hub_app(
         if path:
             filters.append("path = ?")
             values.append(path)
+        if sync_id:
+            filters.append("sync_id = ?")
+            values.append(sync_id)
         if effective_site_id:
             filters.append("(site_id = ? OR actor_site_id = ?)")
             values.extend((effective_site_id, effective_site_id))
@@ -2303,6 +2399,7 @@ def create_clinical_hub_app(
                 actor_site_id,
                 request_id,
                 session_id,
+                sync_id,
                 site_id,
                 subject_id,
                 operator_id,
@@ -2394,6 +2491,7 @@ def create_clinical_hub_app(
     def export_capture_packages_csv(
         request: Request,
         site_id: str | None = None,
+        sync_id: str | None = None,
         operator_id: str | None = None,
         connection: sqlite3.Connection = Depends(get_connection),  # noqa: B008
     ) -> Response:
@@ -2402,6 +2500,8 @@ def create_clinical_hub_app(
         export_filters: list[tuple[str, object]] = []
         if effective_site_id:
             export_filters.append(("site_id", effective_site_id))
+        if sync_id:
+            export_filters.append(("sync_id", sync_id))
         if effective_operator_id:
             export_filters.append(("operator_id", effective_operator_id))
         where_sql, where_values = _build_where_clause(export_filters)
@@ -2412,6 +2512,7 @@ def create_clinical_hub_app(
                 created_at,
                 measured_at,
                 session_id,
+                sync_id,
                 site_id,
                 subject_id,
                 operator_id,
@@ -2444,6 +2545,7 @@ def create_clinical_hub_app(
                 "created_at",
                 "measured_at",
                 "session_id",
+                "sync_id",
                 "site_id",
                 "subject_id",
                 "operator_id",
@@ -2465,6 +2567,7 @@ def create_clinical_hub_app(
                     row["created_at"],
                     row["measured_at"],
                     row["session_id"],
+                    row["sync_id"],
                     row["site_id"],
                     row["subject_id"],
                     row["operator_id"],
@@ -2489,6 +2592,7 @@ def create_clinical_hub_app(
     def export_csv(
         request: Request,
         site_id: str | None = None,
+        sync_id: str | None = None,
         operator_id: str | None = None,
         connection: sqlite3.Connection = Depends(get_connection),  # noqa: B008
     ) -> Response:
@@ -2497,6 +2601,8 @@ def create_clinical_hub_app(
         export_filters: list[tuple[str, object]] = []
         if effective_site_id:
             export_filters.append(("site_id", effective_site_id))
+        if sync_id:
+            export_filters.append(("sync_id", sync_id))
         if effective_operator_id:
             export_filters.append(("operator_id", effective_operator_id))
         where_sql, where_values = _build_where_clause(export_filters)
@@ -2507,6 +2613,7 @@ def create_clinical_hub_app(
                 created_at,
                 measured_at,
                 session_id,
+                sync_id,
                 site_id,
                 subject_id,
                 operator_id,
@@ -2551,6 +2658,7 @@ def create_clinical_hub_app(
                 "created_at",
                 "measured_at",
                 "session_id",
+                "sync_id",
                 "site_id",
                 "subject_id",
                 "operator_id",
@@ -2584,6 +2692,7 @@ def create_clinical_hub_app(
                     row["created_at"],
                     row["measured_at"],
                     row["session_id"],
+                    row["sync_id"],
                     row["site_id"],
                     row["subject_id"],
                     row["operator_id"],
