@@ -248,6 +248,7 @@ GET /api/v1/pilot-automation-reports.csv
 Audit endpoint:
 
 ```bash
+GET /api/v1/auth-context
 GET /api/v1/audit-events?limit=200
 ```
 

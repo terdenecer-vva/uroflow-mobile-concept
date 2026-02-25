@@ -117,6 +117,11 @@ def test_clinical_hub_crud_and_csv_export(tmp_path: Path) -> None:
         assert health.status_code == 200
         assert health.json()["status"] == "ok"
 
+        auth_context = client.get("/api/v1/auth-context")
+        assert auth_context.status_code == 200
+        auth_context_body = auth_context.json()
+        assert auth_context_body["auth_result"] == "not_configured"
+
         created = client.post("/api/v1/paired-measurements", json=_payload())
         assert created.status_code == 201
         created_body = created.json()
@@ -306,6 +311,12 @@ def test_clinical_hub_api_key_and_audit_export(tmp_path: Path) -> None:
         assert unauthorized.status_code == 401
 
         headers = {"x-api-key": api_key}
+        auth_context = client.get("/api/v1/auth-context", headers=headers)
+        assert auth_context.status_code == 200
+        auth_context_body = auth_context.json()
+        assert auth_context_body["auth_result"] == "valid"
+        assert auth_context_body["cross_site_allowed"] is False
+
         authorized = client.post("/api/v1/paired-measurements", json=_payload(), headers=headers)
         assert authorized.status_code == 201
 
@@ -555,6 +566,21 @@ def test_api_key_policy_map_enforces_site_scope_and_role(tmp_path: Path) -> None
         )
         assert op_create.status_code == 201
 
+        op_auth_context = client.get("/api/v1/auth-context", headers={"x-api-key": "op-site-1-key"})
+        assert op_auth_context.status_code == 200
+        op_auth_body = op_auth_context.json()
+        assert op_auth_body["auth_result"] == "valid_policy"
+        assert op_auth_body["actor_role"] == "operator"
+        assert op_auth_body["actor_site_id"] == "SITE-001"
+        assert op_auth_body["cross_site_allowed"] is False
+
+        dm_auth_context = client.get("/api/v1/auth-context", headers={"x-api-key": "dm-key"})
+        assert dm_auth_context.status_code == 200
+        dm_auth_body = dm_auth_context.json()
+        assert dm_auth_body["auth_result"] == "valid_policy"
+        assert dm_auth_body["actor_role"] == "data_manager"
+        assert dm_auth_body["cross_site_allowed"] is True
+
         op_cross_site = client.post(
             "/api/v1/paired-measurements",
             json=_payload(session_id="session-policy-002", site_id="SITE-002"),
@@ -609,6 +635,14 @@ def test_api_key_policy_map_supports_legacy_shared_key(tmp_path: Path) -> None:
     )
 
     with TestClient(app) as client:
+        auth_context = client.get(
+            "/api/v1/auth-context",
+            headers={"x-api-key": "legacy-shared-key"},
+        )
+        assert auth_context.status_code == 200
+        auth_context_body = auth_context.json()
+        assert auth_context_body["auth_result"] == "valid_legacy"
+
         legacy_create = client.post(
             "/api/v1/paired-measurements",
             json=_payload(

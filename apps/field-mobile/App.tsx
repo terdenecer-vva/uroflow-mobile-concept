@@ -32,6 +32,14 @@ type ComparisonSummaryResponse = {
   metrics: ComparisonMetricSummary[];
 };
 
+type AuthContextResponse = {
+  auth_result: string;
+  actor_role: string | null;
+  actor_site_id: string | null;
+  actor_operator_id: string | null;
+  cross_site_allowed: boolean;
+};
+
 type PairedPayload = {
   session: {
     session_id: string;
@@ -637,22 +645,44 @@ export default function App() {
   }
 
   async function testApiConnection(): Promise<void> {
-    const url = `${apiBaseUrl.replace(/\/$/, "")}/health`;
+    const baseUrl = apiBaseUrl.replace(/\/$/, "");
+    const authContextUrl = `${baseUrl}/api/v1/auth-context`;
     try {
-      const response = await fetchWithTimeout(url, {
+      const response = await fetchWithTimeout(authContextUrl, {
         method: "GET",
         headers: buildRequestHeaders(false),
       });
+      if (response.status === 404) {
+        const healthResponse = await fetchWithTimeout(`${baseUrl}/health`, {
+          method: "GET",
+          headers: buildRequestHeaders(false),
+        });
+        if (!healthResponse.ok) {
+          setLastResponse(`Health check failed: HTTP ${healthResponse.status}`);
+          Alert.alert("API check failed", `HTTP ${healthResponse.status}`);
+          return;
+        }
+        setLastResponse("API reachable (health endpoint).");
+        Alert.alert("API reachable", "Health check succeeded.");
+        return;
+      }
       if (!response.ok) {
-        setLastResponse(`Health check failed: HTTP ${response.status}`);
+        const body = await response.text();
+        setLastResponse(`Auth-context check failed: HTTP ${response.status} ${body}`);
         Alert.alert("API check failed", `HTTP ${response.status}`);
         return;
       }
-      setLastResponse("API health check passed.");
-      Alert.alert("API reachable", "Health check succeeded.");
+      const body = await response.text();
+      const authContext = JSON.parse(body) as AuthContextResponse;
+      const message =
+        `Auth context OK: auth=${authContext.auth_result}, ` +
+        `role=${authContext.actor_role ?? "n/a"}, ` +
+        `site=${authContext.actor_site_id ?? "n/a"}`;
+      setLastResponse(message);
+      Alert.alert("API reachable", message);
     } catch (error) {
       const message = String(error);
-      setLastResponse(`API health check failed: ${message}`);
+      setLastResponse(`API check failed: ${message}`);
       Alert.alert("API check failed", message);
     }
   }

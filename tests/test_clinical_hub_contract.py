@@ -26,6 +26,7 @@ def test_clinical_hub_openapi_contract_contains_core_paths(tmp_path: Path) -> No
     assert "/api/v1/pilot-automation-reports" in paths
     assert "/api/v1/comparison-summary" in paths
     assert "/api/v1/audit-events" in paths
+    assert "/api/v1/auth-context" in paths
 
 
 def test_clinical_hub_openapi_contract_contains_core_schemas(tmp_path: Path) -> None:

@@ -216,6 +216,14 @@ class AuditEventItem(BaseModel):
     detail_json: str | None = None
 
 
+class AuthContextResponse(BaseModel):
+    auth_result: str
+    actor_role: ACTOR_ROLE | None = None
+    actor_site_id: str | None = None
+    actor_operator_id: str | None = None
+    cross_site_allowed: bool
+
+
 class ApiKeyPolicy(BaseModel):
     role: ACTOR_ROLE
     site_id: str | None = None
@@ -1686,6 +1694,7 @@ def create_clinical_hub_app(
 
         request.state.actor_site_id = actor_site_id
         request.state.actor_role = actor_role
+        request.state.actor_operator_id = actor_operator_id
         auth_result = "not_configured"
         if api_key_policy_map:
             if api_key_policy is not None:
@@ -1696,6 +1705,7 @@ def create_clinical_hub_app(
                 auth_result = "invalid"
         elif required_api_key:
             auth_result = "valid" if request_api_key == required_api_key else "invalid"
+        request.state.auth_result = auth_result
 
         if auth_result == "invalid":
             response = JSONResponse(status_code=401, content={"detail": "invalid API key"})
@@ -1768,6 +1778,17 @@ def create_clinical_hub_app(
     @app.get("/health")
     def health() -> dict[str, str]:
         return {"status": "ok"}
+
+    @app.get("/api/v1/auth-context", response_model=AuthContextResponse)
+    def get_auth_context(request: Request) -> AuthContextResponse:
+        actor_role = request.state.actor_role
+        return AuthContextResponse(
+            auth_result=str(request.state.auth_result),
+            actor_role=actor_role,
+            actor_site_id=request.state.actor_site_id,
+            actor_operator_id=request.state.actor_operator_id,
+            cross_site_allowed=_is_cross_site_allowed(actor_role),
+        )
 
     @app.post(
         "/api/v1/paired-measurements",

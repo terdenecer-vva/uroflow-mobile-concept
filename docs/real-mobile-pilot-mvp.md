@@ -34,6 +34,7 @@ PYTHONPATH=src python -m uroflow_mobile.cli serve-clinical-hub \
 
 API endpoints:
 - `GET /health`
+- `GET /api/v1/auth-context`
 - `POST /api/v1/paired-measurements`
 - `GET /api/v1/paired-measurements`
 - `GET /api/v1/paired-measurements/{id}`
