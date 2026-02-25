@@ -106,8 +106,9 @@ PYTHONPATH=src python -m uroflow_mobile.cli export-audit-events \
 2. Operator runs reference uroflowmeter measurement.
 3. Operator enters both in mobile app and submits one paired record.
 4. If network/API unavailable, app stores the record in local pending queue.
-5. Operator syncs pending queue after connectivity is restored.
-6. Data manager exports CSV + summary JSON + audit CSV daily for QA/statistics.
+5. Pending item keeps its request header context (`x-api-key`, `x-site-id`, `x-actor-role`, `x-operator-id`).
+6. Operator syncs pending queue after connectivity is restored.
+7. Data manager exports CSV + summary JSON + audit CSV daily for QA/statistics.
 
 ## Next hardening targets
 

@@ -75,6 +75,7 @@ type PendingSubmission = {
   id: string;
   created_at: string;
   payload: PairedPayload;
+  request_headers: RequestHeaderContext;
   attempt_count: number;
   last_attempt_at: string | null;
   last_error: string | null;
@@ -98,9 +99,17 @@ type SubmitAttemptResult = {
   retryable: boolean;
 };
 
+type RequestHeaderContext = {
+  api_key: string;
+  actor_role: string;
+  site_id: string;
+  operator_id: string;
+};
+
 const PENDING_SUBMISSIONS_KEY = "uroflow_pending_submissions_v1";
 const APP_SETTINGS_KEY = "uroflow_field_settings_v1";
 const DEFAULT_REQUEST_TIMEOUT_MS = "15000";
+const ALLOWED_ACTOR_ROLES = ["operator", "investigator", "data_manager", "admin"] as const;
 
 const defaultMeasuredAt = new Date().toISOString().slice(0, 19) + "Z";
 
@@ -149,6 +158,51 @@ function classifyRetryable(statusCode: number | null): boolean {
   return statusCode === 408 || statusCode === 425 || statusCode === 429;
 }
 
+function normalizeActorRoleInput(rawValue: string | null | undefined): string {
+  const normalized = (rawValue ?? "").trim().toLowerCase();
+  if (ALLOWED_ACTOR_ROLES.includes(normalized as (typeof ALLOWED_ACTOR_ROLES)[number])) {
+    return normalized;
+  }
+  return "operator";
+}
+
+function buildHeaderContextFromValues(
+  apiKey: string,
+  actorRole: string,
+  siteId: string,
+  operatorId: string,
+): RequestHeaderContext {
+  return {
+    api_key: apiKey.trim(),
+    actor_role: normalizeActorRoleInput(actorRole),
+    site_id: siteId.trim(),
+    operator_id: operatorId.trim(),
+  };
+}
+
+function normalizeRequestHeaderContext(
+  raw: unknown,
+  payload: PairedPayload,
+): RequestHeaderContext {
+  if (!raw || typeof raw !== "object") {
+    return buildHeaderContextFromValues(
+      "",
+      "operator",
+      payload.session.site_id ?? "",
+      payload.session.operator_id ?? "",
+    );
+  }
+  const candidate = raw as Record<string, unknown>;
+  return buildHeaderContextFromValues(
+    typeof candidate.api_key === "string" ? candidate.api_key : "",
+    typeof candidate.actor_role === "string" ? candidate.actor_role : "operator",
+    typeof candidate.site_id === "string" ? candidate.site_id : payload.session.site_id ?? "",
+    typeof candidate.operator_id === "string"
+      ? candidate.operator_id
+      : payload.session.operator_id ?? "",
+  );
+}
+
 function clampTimeoutMs(rawValue: string): number {
   const parsed = Number(rawValue);
   if (!Number.isFinite(parsed)) {
@@ -184,6 +238,7 @@ function normalizePendingSubmission(raw: unknown): PendingSubmission | null {
     id,
     created_at: createdAt,
     payload: payload as PairedPayload,
+    request_headers: normalizeRequestHeaderContext(candidate.request_headers, payload as PairedPayload),
     attempt_count: attemptCount,
     last_attempt_at:
       typeof candidate.last_attempt_at === "string" ? candidate.last_attempt_at : null,
@@ -241,7 +296,9 @@ async function loadAppSettings(): Promise<AppSettings | null> {
           ? parsed.api_base_url
           : "http://127.0.0.1:8000",
       api_key: typeof parsed.api_key === "string" ? parsed.api_key : "",
-      actor_role: typeof parsed.actor_role === "string" ? parsed.actor_role : "operator",
+      actor_role: normalizeActorRoleInput(
+        typeof parsed.actor_role === "string" ? parsed.actor_role : "operator",
+      ),
       site_id: typeof parsed.site_id === "string" ? parsed.site_id : "SITE-001",
       operator_id: typeof parsed.operator_id === "string" ? parsed.operator_id : "OP-01",
       summary_quality_status: summaryQualityStatus,
@@ -431,22 +488,30 @@ export default function App() {
     await persistPendingQueue(queue);
   }
 
-  function buildRequestHeaders(includeContentType: boolean): Record<string, string> {
+  function createCurrentRequestHeaderContext(): RequestHeaderContext {
+    return buildHeaderContextFromValues(apiKey, actorRole, siteId, operatorId);
+  }
+
+  function buildRequestHeaders(
+    includeContentType: boolean,
+    headerContext?: RequestHeaderContext,
+  ): Record<string, string> {
+    const context = headerContext ?? createCurrentRequestHeaderContext();
     const headers: Record<string, string> = {};
     if (includeContentType) {
       headers["Content-Type"] = "application/json";
     }
-    if (apiKey.trim()) {
-      headers["x-api-key"] = apiKey.trim();
+    if (context.api_key) {
+      headers["x-api-key"] = context.api_key;
     }
-    if (operatorId.trim()) {
-      headers["x-operator-id"] = operatorId.trim();
+    if (context.operator_id) {
+      headers["x-operator-id"] = context.operator_id;
     }
-    if (siteId.trim()) {
-      headers["x-site-id"] = siteId.trim();
+    if (context.site_id) {
+      headers["x-site-id"] = context.site_id;
     }
-    if (actorRole.trim()) {
-      headers["x-actor-role"] = actorRole.trim();
+    if (context.actor_role) {
+      headers["x-actor-role"] = context.actor_role;
     }
     headers["x-request-id"] = createPendingId();
     return headers;
@@ -463,12 +528,25 @@ export default function App() {
     }
   }
 
-  async function attemptSubmit(currentPayload: PairedPayload): Promise<SubmitAttemptResult> {
+  function resolvePendingHeaderContext(item: PendingSubmission): RequestHeaderContext {
+    const current = createCurrentRequestHeaderContext();
+    return {
+      api_key: item.request_headers.api_key || current.api_key,
+      actor_role: item.request_headers.actor_role || current.actor_role,
+      site_id: item.request_headers.site_id || current.site_id,
+      operator_id: item.request_headers.operator_id || current.operator_id,
+    };
+  }
+
+  async function attemptSubmit(
+    currentPayload: PairedPayload,
+    headerContext?: RequestHeaderContext,
+  ): Promise<SubmitAttemptResult> {
     const url = `${apiBaseUrl.replace(/\/$/, "")}/api/v1/paired-measurements`;
     try {
       const response = await fetchWithTimeout(url, {
         method: "POST",
-        headers: buildRequestHeaders(true),
+        headers: buildRequestHeaders(true, headerContext),
         body: JSON.stringify(currentPayload),
       });
       const body = await response.text();
@@ -505,9 +583,11 @@ export default function App() {
       let droppedNonRetryable = 0;
 
       for (const item of queue) {
-        const result = await attemptSubmit(item.payload);
+        const headerContext = resolvePendingHeaderContext(item);
+        const result = await attemptSubmit(item.payload, headerContext);
         const attemptedItem: PendingSubmission = {
           ...item,
+          request_headers: headerContext,
           attempt_count: item.attempt_count + 1,
           last_attempt_at: new Date().toISOString(),
           last_status_code: result.statusCode,
@@ -610,7 +690,8 @@ export default function App() {
     setLastResponse("");
 
     try {
-      const result = await attemptSubmit(payload);
+      const requestHeaderContext = createCurrentRequestHeaderContext();
+      const result = await attemptSubmit(payload, requestHeaderContext);
       if (result.ok) {
         setLastResponse(result.body);
         Alert.alert("Submitted", "Paired measurement uploaded");
@@ -634,6 +715,7 @@ export default function App() {
         id: createPendingId(),
         created_at: new Date().toISOString(),
         payload,
+        request_headers: requestHeaderContext,
         attempt_count: 0,
         last_attempt_at: null,
         last_error: result.body,
@@ -701,7 +783,11 @@ export default function App() {
           onChangeText={setApiKey}
           secureTextEntry
         />
-        <LabeledInput label="Actor Role (x-actor-role)" value={actorRole} onChangeText={setActorRole} />
+        <LabeledInput
+          label="Actor Role (x-actor-role)"
+          value={actorRole}
+          onChangeText={(value) => setActorRole(normalizeActorRoleInput(value))}
+        />
         <LabeledInput
           label="Request Timeout (ms)"
           value={requestTimeoutMs}
@@ -714,6 +800,8 @@ export default function App() {
         {pendingQueue.slice(0, 3).map((item) => (
           <Text key={item.id} style={styles.pendingItemText}>
             {item.id}: attempts={item.attempt_count}
+            {item.request_headers.site_id ? `, site=${item.request_headers.site_id}` : ""}
+            {item.request_headers.actor_role ? `, role=${item.request_headers.actor_role}` : ""}
             {item.last_status_code != null ? `, last_status=${item.last_status_code}` : ""}
             {item.last_error ? `, last_error=${item.last_error.slice(0, 80)}` : ""}
           </Text>

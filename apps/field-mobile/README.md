@@ -9,6 +9,8 @@ Cross-platform mobile client (Expo React Native) for collecting paired measureme
 - In-app comparison dashboard (`GET /api/v1/comparison-summary`)
 - Offline pending queue with manual sync (`Sync Queue`)
 - Retry policy: non-retryable API errors are not re-queued
+- Pending items store request header context (`x-api-key`, `x-site-id`, `x-actor-role`, `x-operator-id`)
+- Sync reuses stored header context per item (prevents wrong-site replay after settings change)
 - Queue controls: `Test API`, `Sync Queue`, `Clear Queue`
 - Persisted local settings (`API URL`, `API Key`, `site/operator`, timeout, summary filter)
 
@@ -48,3 +50,8 @@ Examples:
 
 App sends `POST /api/v1/paired-measurements` payload aligned to backend schema.
 The `Comparison Summary` block loads `GET /api/v1/comparison-summary` with filters.
+
+When backend is configured with API key policy map (`--api-key-map-json`), set in app:
+- `API Key` to the site/role key (e.g. operator key)
+- `Site ID` to the same site as key policy
+- `Actor Role` to policy role (`operator`, `investigator`, `data_manager`, `admin`)
