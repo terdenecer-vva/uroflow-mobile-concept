@@ -1,0 +1,4 @@
+# Minimal Python requirements for Pilot Automation scripts
+pandas>=1.5
+openpyxl>=3.1
+numpy>=1.23

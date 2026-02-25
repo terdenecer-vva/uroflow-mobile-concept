@@ -1,0 +1,8 @@
+TC_ID,Category,Scenario,Steps,Expected Result,Severity,Evidence Required
+PCG2-001,FACE,Face appears in ROI (reflection / leak),Provide ROI video with a visible face for >=1 frame.,Result=FAIL; face_hits>=1; evidence thumbnail generated if enabled.,High,Yes
+PCG2-002,PERSON,Partial body enters ROI,Provide ROI video with a person silhouette entering ROI.,Result=FAIL; person_hits>=1.,High,Yes
+PCG2-003,SKIN,Large skin-colored area in ROI,Provide ROI video with a hand near ROI border.,Result=FAIL if max_skin_frac exceeds threshold.,Medium,Yes
+PCG2-004,BORDER,ROI drift outside bowl,Provide ROI video where ROI includes bathroom background.,Result=REVIEW or FAIL based on border_leak policy.,Medium,Yes
+PCG2-005,NO_VIDEO,ROI video not stored (expected),Run on dataset where ROI video is absent by profile.,Result=NO_VIDEO; not counted as FAIL.,Low,No
+PCG2-006,DECODE,Video decode error,Corrupt roi_video.mp4 or unsupported codec.,Result=REVIEW; reason=VIDEO_DECODE_ERROR.,Low,Yes
+PCG2-007,FALSE_POS,Water texture false positive,Provide normal ROI water video with strong highlights.,Result=PASS (or REVIEW if thresholds too strict).,Low,Optional

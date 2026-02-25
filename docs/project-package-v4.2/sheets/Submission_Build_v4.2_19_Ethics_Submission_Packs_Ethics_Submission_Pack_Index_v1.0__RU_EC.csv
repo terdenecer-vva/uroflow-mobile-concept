@@ -1,0 +1,10 @@
+Doc_ID,Document name,Region,Required,Include_in_pack,Status,Build relative path,Notes
+RU-CL-001,Cover Letter (RU),RU,Y,Y,READY,05_Clinical/Uroflow_Ethics_Submission_Cover_Letter_v1.0_RU.docx,Update site/PI fields
+RU-PR-001,Study Protocol (RU),RU,Y,Y,READY,18_Golden_Dataset_MultiSite/Protocol/Uroflow_Golden_Dataset_MultiSite_Protocol_v1.0_RU.docx,Use locked claims wording
+RU-SY-001,Study Synopsis (RU),RU,Y,Y,READY,05_Clinical/Uroflow_GoldenDataset_Study_Synopsis_v1.0_RU.docx,
+RU-ICF-001,Participant Info + Consent (RU),RU,Y,Y,READY,05_Clinical/Uroflow_PIS_ICF_GoldenDataset_v1.0_RU.docx,Local legal review recommended
+RU-RC-001,Recruitment Flyer (RU),RU,N,Y,READY,05_Clinical/Uroflow_Recruitment_Flyer_GoldenDataset_v1.0_RU.docx,Optional - per site rules
+RU-PRIV-001,Privacy Addendum (RU),RU,Y,Y,READY,05_Clinical/Uroflow_Ethics_Privacy_Addendum_Multimodal_v1.0_RU.docx,Reference data profile/retention
+RU-DMP-001,DMP Summary (RU),RU,Y,Y,READY,05_Clinical/Uroflow_DMP_Summary_GoldenDataset_v1.0_RU.docx,
+RU-SOP-001,Onsite SOP (RU),RU,Y,Y,READY,05_Clinical/Uroflow_Onsite_SOP_GoldenDataset_v1.0_RU.docx,Operator training required
+RU-RISK-001,Risk Summary (RU),RU,Y,Y,READY,05_Clinical/Uroflow_Participant_Risk_Assessment_Summary_v1.0_RU.docx,

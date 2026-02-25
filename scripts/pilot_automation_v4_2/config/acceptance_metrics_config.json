@@ -1,0 +1,30 @@
+{
+  "outputs_dirname": "outputs/accuracy_acceptance",
+  "flow_threshold_ml_s": 0.2,
+  "min_quality_score": 70,
+  "allowed_quality_class": [
+    "VALID"
+  ],
+  "min_valid_rate": 0.8,
+  "thresholds": {
+    "Qmax_mae_ml_s": 3.0,
+    "Qavg_mae_ml_s": 2.5,
+    "Vvoid_mae_ml": 25.0,
+    "FlowTime_mae_s": 4.0,
+    "Qmax_loa_halfwidth_ml_s": 6.0
+  },
+  "pred_sources": [
+    {
+      "type": "csv",
+      "filename": "Q_pred.csv"
+    },
+    {
+      "type": "json",
+      "filename": "app_result.json"
+    },
+    {
+      "type": "json_meta",
+      "path": "results_summary"
+    }
+  ]
+}

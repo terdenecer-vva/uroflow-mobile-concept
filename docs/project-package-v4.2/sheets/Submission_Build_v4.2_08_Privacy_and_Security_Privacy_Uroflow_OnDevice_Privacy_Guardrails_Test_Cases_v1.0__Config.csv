@@ -1,0 +1,6 @@
+Key,Value,Notes
+live_check_fps,2,Sampling rate during recording
+skin_fraction_border_max,0.25,Fail threshold
+reflection_risk_max,0.35,Fail threshold
+consecutive_fail_samples,2,Abort after N consecutive failures
+evidence_thumbnails_default,false,Must be disabled by default

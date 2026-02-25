@@ -1,0 +1,13 @@
+Uroflow Ethics/IRB Submission Pack Index v1.0
+""
+How to use
+"1) Review each region sheet (RU_EC, EU_Ethics, US_IRB)."
+"2) Update site-specific fields in DOCX templates (PI, site, contacts)."
+"3) Mark Status as READY / TBD, and Include_in_pack as Y/N."
+4) Optional: run the builder script to assemble a region ZIP.
+""
+Important guardrails
+Use Claim Set A only (no diagnostic claims). Full-frame video is not collected by default.
+""
+Build root
+Submission_Build_v4.2

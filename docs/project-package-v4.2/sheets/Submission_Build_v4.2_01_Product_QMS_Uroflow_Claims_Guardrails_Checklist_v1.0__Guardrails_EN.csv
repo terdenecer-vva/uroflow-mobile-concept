@@ -1,0 +1,10 @@
+Region,Context,Phrase / Wording,Status (ALLOWED/DISALLOWED/REVIEW),Rationale,Owner,Last reviewed,Link to source doc
+Russia,UI/Report,"""Not intended for standalone diagnosis. Interpretation by a clinician.""",ALLOWED,Avoids diagnostic claims.,RA/Clinical,,01_Product_QMS/Uroflow_IntendedUse_Claims_ByRegion_Lock_v2.0_EN.docx
+EU,Marketing,"""Measurement of voiding parameters for monitoring""",ALLOWED,Monitoring wording.,RA,,01_Product_QMS/Uroflow_IntendedUse_Claims_ByRegion_Lock_v2.0_EN.docx
+US,Marketing,"""Helps track voiding parameters over time""",ALLOWED,Monitoring/trend wording.,RA,,01_Product_QMS/Uroflow_IntendedUse_Claims_ByRegion_Lock_v2.0_EN.docx
+China,Privacy,"""Data stored locally by default; no transfer unless configured""",ALLOWED,Align with PIPL/data minimization.,DPO/RA,,11_Region_Packs/CN_NMPA/*
+All,Marketing,"""Diagnoses obstruction / BPH""",DISALLOWED,Diagnostic claim – class escalation.,RA,,
+All,UI,"""We recommend starting treatment""",DISALLOWED,Therapeutic decision.,RA,,
+All,Marketing,"""Replaces clinical uroflowmetry""",DISALLOWED,Replacement claim without limitations.,RA,,
+All,Marketing,"""Predicts complications""",DISALLOWED,Predictive claim.,RA,,
+EU,Marketing,"""Clinical decision support""",REVIEW,May trigger Rule 11 decision claims; RA review required.,RA,,

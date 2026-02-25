@@ -1,0 +1,7 @@
+{
+  "outputs_dirname": "outputs/privacy_live_guardrails",
+  "thresholds": {
+    "skin_fraction_border_max": 0.25,
+    "reflection_risk_max": 0.35
+  }
+}

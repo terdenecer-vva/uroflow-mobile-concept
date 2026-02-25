@@ -95,7 +95,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
-          pip install pandas
+          pip install pandas jsonschema
 
       - name: Generate pilot fixture dataset
         run: |
@@ -258,6 +258,39 @@ jobs:
           python scripts/pilot_automation_v2_8/scripts/build_eu_master_index.py --help >/dev/null
           python scripts/pilot_automation_v2_8/scripts/build_g2_submission_bundle.py --help >/dev/null
           python scripts/pilot_automation_v2_8/scripts/validate_artifacts_by_profile.py --help >/dev/null
+
+      - name: Smoke-check v4.2 pilot automation scripts
+        run: |
+          SAMPLE_ROOT=scripts/pilot_automation_v4_2/sample/golden_record_contract_v1
+          SAMPLE_MANIFEST=$SAMPLE_ROOT/manifest.csv
+
+          python scripts/pilot_automation_v4_2/scripts/build_dataset_release_bundle_guarded.py --help >/dev/null
+          python scripts/pilot_automation_v4_2/scripts/build_pilot_freeze_kit.py --help >/dev/null
+          python scripts/pilot_automation_v4_2/scripts/build_ethics_submission_pack.py --help >/dev/null
+          python scripts/pilot_automation_v4_2/scripts/compute_accuracy_acceptance.py --help >/dev/null
+
+          python scripts/pilot_automation_v4_2/scripts/run_sync_validation_minimal.py \
+            --dataset_root "$SAMPLE_ROOT" \
+            --manifest "$SAMPLE_MANIFEST"
+
+          python scripts/pilot_automation_v4_2/scripts/run_daily_qa_minimal.py \
+            --dataset_root "$SAMPLE_ROOT" \
+            --manifest "$SAMPLE_MANIFEST"
+
+          python scripts/pilot_automation_v4_2/scripts/validate_ios_capture_contract.py \
+            --dataset_root "$SAMPLE_ROOT" \
+            --manifest "$SAMPLE_MANIFEST" \
+            --schema scripts/pilot_automation_v4_2/schemas/ios_capture_contract_schema_v1.0.json
+
+          python scripts/pilot_automation_v4_2/scripts/compute_record_level_gates.py \
+            --dataset_root "$SAMPLE_ROOT" \
+            --manifest "$SAMPLE_MANIFEST" \
+            --config scripts/pilot_automation_v4_2/config/record_level_gates_config.json
+
+          python scripts/pilot_automation_v4_2/scripts/run_pre_freeze_gates.py \
+            --dataset_root "$SAMPLE_ROOT" \
+            --manifest "$SAMPLE_MANIFEST" \
+            --config scripts/pilot_automation_v4_2/config/pre_freeze_gates_config.json
 
       - name: Build gate metrics from automation artifacts
         run: |

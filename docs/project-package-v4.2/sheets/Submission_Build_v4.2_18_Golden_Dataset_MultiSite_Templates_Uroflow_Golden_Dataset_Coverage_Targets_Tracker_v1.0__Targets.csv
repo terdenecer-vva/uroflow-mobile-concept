@@ -1,0 +1,9 @@
+Stratum,Definition,Target N,Current N,Gap,Notes
+TOTAL,All records,200,,,Adjust per project phase
+SEX,M,100,,,
+SEX,F,100,,,
+SEX|POSTURE,M|standing,60,,,
+SEX|POSTURE,M|sitting,40,,,
+SEX|POSTURE,F|sitting,100,,,
+SITE,Each site min,50,,,
+TOILET,Each toilet min,30,,,

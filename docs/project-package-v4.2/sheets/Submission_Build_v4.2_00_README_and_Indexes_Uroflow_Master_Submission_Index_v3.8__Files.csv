@@ -1,0 +1,51 @@
+Relative path,Type,Description
+00_README_and_Indexes/00_README_Submission_Build_v3.8.txt,TXT,Patch overview and entry points.
+00_README_and_Indexes/Uroflow_Master_Submission_Index_v3.8.xlsx,XLSX,
+02_Algorithm_and_ML/Uroflow_OnDevice_Privacy_Guardrails_Spec_v1.0_EN.docx,DOCX,LIVE on-device privacy guardrails specification (EN).
+02_Algorithm_and_ML/Uroflow_OnDevice_Privacy_Guardrails_Spec_v1.0_RU.docx,DOCX,LIVE on-device privacy guardrails specification (RU).
+02_Algorithm_and_ML/Uroflow_PreFreeze_Gates_Spec_v1.0_EN.docx,DOCX,Pre-freeze gate specification (EN).
+02_Algorithm_and_ML/Uroflow_PreFreeze_Gates_Spec_v1.0_RU.docx,DOCX,
+02_Algorithm_and_ML/Uroflow_PreFreeze_Gates_Spec_v1.1_EN.docx,DOCX,Pre-freeze gate specification incl. PRIV_LIVE (EN).
+02_Algorithm_and_ML/Uroflow_PreFreeze_Gates_Spec_v1.1_RU.docx,DOCX,Pre-freeze gate specification incl. PRIV_LIVE (RU).
+02_Algorithm_and_ML/Uroflow_Privacy_ContentGuardrails_v2_Spec_v1.0_EN.docx,DOCX,Content-level privacy guardrails v2 specification (EN).
+02_Algorithm_and_ML/Uroflow_Privacy_ContentGuardrails_v2_Spec_v1.0_RU.docx,DOCX,Content-level privacy guardrails v2 specification (RU).
+02_Algorithm_and_ML/Uroflow_StandPose_Drift_Dashboard_Spec_v1.0_EN.docx,DOCX,StandPose drift dashboard specification (EN).
+02_Algorithm_and_ML/Uroflow_StandPose_Drift_Dashboard_Spec_v1.0_RU.docx,DOCX,
+02_Algorithm_and_ML/Uroflow_StandPose_QualityScore_Integration_Addendum_v1.0_EN.docx,DOCX,Formal mapping StandPose KPI to Quality Score (EN).
+02_Algorithm_and_ML/Uroflow_StandPose_QualityScore_Integration_Addendum_v1.0_RU.docx,DOCX,Formal mapping StandPose KPI to Quality Score (RU).
+08_Privacy_and_Security/Privacy/Uroflow_OnDevice_Privacy_Guardrails_Test_Cases_v1.0.xlsx,XLSX,Test cases for LIVE privacy guardrails + config.
+08_Privacy_and_Security/Privacy/Uroflow_OnDevice_Privacy_Guardrails_Test_Suite_v1.0_EN.docx,DOCX,How to execute LIVE privacy guardrails test suite (EN).
+08_Privacy_and_Security/Privacy/Uroflow_OnDevice_Privacy_Guardrails_Test_Suite_v1.0_RU.docx,DOCX,How to execute LIVE privacy guardrails test suite (RU).
+08_Privacy_and_Security/Privacy/Uroflow_Privacy_ContentGuardrails_v2_Test_Cases_v1.0.xlsx,XLSX,Test cases + default config sheet.
+08_Privacy_and_Security/Privacy/Uroflow_Privacy_ContentGuardrails_v2_Test_Suite_v1.0_EN.docx,DOCX,How to execute the guardrails during pilot / pre-freeze.
+08_Privacy_and_Security/Privacy/Uroflow_Privacy_ContentGuardrails_v2_Test_Suite_v1.0_RU.docx,DOCX,
+10_Pilot_Automation/README_Pilot_Automation_v1.8.txt,TXT,Automation entry points for v3.8 patch.
+10_Pilot_Automation/config/pre_freeze_gates_config.json,JSON,Which gates are required and policy.
+10_Pilot_Automation/config/privacy_content_guardrails_v2_config.json,JSON,Thresholds and sampling policy.
+10_Pilot_Automation/config/privacy_live_guardrails_config.json,JSON,Thresholds/config for LIVE privacy guardrails validation.
+10_Pilot_Automation/config/stand_pose_drift_config.json,JSON,Drift thresholds for grouping.
+10_Pilot_Automation/run_dataset_release_guarded_oneclick.bat,BAT,One-click guarded DatasetRelease builder (Windows).
+10_Pilot_Automation/run_dataset_release_guarded_oneclick.sh,SH,One-click guarded DatasetRelease builder (Linux/macOS).
+10_Pilot_Automation/run_pre_freeze_gates_oneclick.bat,BAT,
+10_Pilot_Automation/run_pre_freeze_gates_oneclick.sh,SH,One-click runner.
+10_Pilot_Automation/run_privacy_content_guardrails_v2_oneclick.bat,BAT,One-click runner (Windows).
+10_Pilot_Automation/run_privacy_content_guardrails_v2_oneclick.sh,SH,One-click runner (Linux/macOS).
+10_Pilot_Automation/run_privacy_live_guardrails_oneclick.bat,BAT,One-click runner (Windows) for LIVE privacy validation.
+10_Pilot_Automation/run_privacy_live_guardrails_oneclick.sh,SH,One-click runner (Linux/macOS) for LIVE privacy validation.
+10_Pilot_Automation/run_stand_pose_drift_dashboard_oneclick.bat,BAT,
+10_Pilot_Automation/run_stand_pose_drift_dashboard_oneclick.sh,SH,One-click runner.
+10_Pilot_Automation/scripts/build_dataset_release_bundle_guarded.py,PY,Creates DatasetRelease only if pre-freeze gates PASS; logs freeze event.
+10_Pilot_Automation/scripts/log_freeze_event_to_dhf.py,PY,Helper: append freeze event to DHF freeze log.
+10_Pilot_Automation/scripts/run_pre_freeze_gates.py,PY,Produces gate report: privacy+standpose+sync+QA.
+10_Pilot_Automation/scripts/run_stand_pose_drift_dashboard.py,PY,Aggregates StandPose KPI and flags drift.
+10_Pilot_Automation/scripts/validate_privacy_content_guardrails_v2.py,PY,Content-level privacy checker (face/person/skin/border).
+10_Pilot_Automation/scripts/validate_privacy_live_guardrails.py,PY,Validates LIVE privacy guardrails metadata for each record.
+11_Region_Packs/CN_NMPA/Uroflow_CN_Multimodal_Data_Profile_Addendum_v1.0_EN.docx,DOCX,CN addendum: artifact handling notes.
+11_Region_Packs/RU_Roszdravnadzor/Uroflow_RU_Multimodal_Data_Profile_Addendum_v1.0_RU.docx,DOCX,RU addendum: recommended artifact profile.
+15_Dataset_Model_Release/Uroflow_DHF_Freeze_Event_Log_Template_v1.0.xlsx,XLSX,DHF Freeze Event Log template (XLSX).
+15_Dataset_Model_Release/Uroflow_DatasetRelease_Guarded_Builder_Spec_v1.0_EN.docx,DOCX,Guarded DatasetRelease builder specification (EN).
+15_Dataset_Model_Release/Uroflow_DatasetRelease_Guarded_Builder_Spec_v1.0_RU.docx,DOCX,Guarded DatasetRelease builder specification (RU).
+15_Dataset_Model_Release/Uroflow_DatasetRelease_PreFreeze_Gates_Checklist_v1.0_EN.docx,DOCX,Operational checklist for dataset freeze.
+15_Dataset_Model_Release/Uroflow_DatasetRelease_PreFreeze_Gates_Checklist_v1.0_RU.docx,DOCX,
+15_Dataset_Model_Release/Uroflow_DatasetRelease_PreFreeze_Gates_Checklist_v1.1_EN.docx,DOCX,Operational checklist for dataset freeze incl. PRIV_LIVE (EN).
+15_Dataset_Model_Release/Uroflow_DatasetRelease_PreFreeze_Gates_Checklist_v1.1_RU.docx,DOCX,Операционный чек‑лист freeze dataset_id с PRIV_LIVE (RU).

@@ -1,0 +1,21 @@
+{
+  "min_total_records": 200,
+  "min_by_sex": {
+    "M": 100,
+    "F": 100
+  },
+  "min_by_sex_posture": {
+    "M|standing": 60,
+    "M|sitting": 40,
+    "F|sitting": 100
+  },
+  "min_sites": 2,
+  "min_records_per_site": 50,
+  "min_records_per_toilet": 30,
+  "required_columns": [
+    "site_id",
+    "toilet_id",
+    "sex",
+    "posture"
+  ]
+}
