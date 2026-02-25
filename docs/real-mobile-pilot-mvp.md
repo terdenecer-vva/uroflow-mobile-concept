@@ -41,6 +41,11 @@ API endpoints:
 - `GET /api/v1/comparison-summary`
 - `GET /api/v1/audit-events`
 
+Idempotency notes:
+- `POST /api/v1/paired-measurements`: identity replay returns `200`, conflict returns `409`.
+- `POST /api/v1/capture-packages`: identity replay returns `200`, conflict returns `409`.
+- `POST /api/v1/pilot-automation-reports`: identity replay returns `200`, conflict returns `409`.
+
 Recommended headers for pilot traceability and access scope:
 - `x-api-key`: shared pilot key
 - `x-operator-id`: operator or nurse id

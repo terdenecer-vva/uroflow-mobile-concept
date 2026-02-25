@@ -676,6 +676,32 @@ def _fetch_capture_package_by_id(
     return cursor.fetchone()
 
 
+def _fetch_capture_package_by_identity(
+    connection: sqlite3.Connection,
+    *,
+    site_id: str,
+    subject_id: str,
+    session_id: str,
+    attempt_number: int,
+    package_type: str,
+) -> sqlite3.Row | None:
+    cursor = connection.execute(
+        """
+        SELECT *
+        FROM capture_packages
+        WHERE site_id = ?
+          AND subject_id = ?
+          AND session_id = ?
+          AND attempt_number = ?
+          AND package_type = ?
+        ORDER BY id DESC
+        LIMIT 1
+        """,
+        (site_id, subject_id, session_id, attempt_number, package_type),
+    )
+    return cursor.fetchone()
+
+
 def _fetch_pilot_automation_report_by_id(
     connection: sqlite3.Connection,
     record_id: int,
@@ -685,6 +711,92 @@ def _fetch_pilot_automation_report_by_id(
         (record_id,),
     )
     return cursor.fetchone()
+
+
+def _fetch_pilot_automation_report_by_identity(
+    connection: sqlite3.Connection,
+    *,
+    site_id: str,
+    report_date: date,
+    report_type: str,
+    package_version: str | None,
+    model_id: str | None,
+    dataset_id: str | None,
+) -> sqlite3.Row | None:
+    cursor = connection.execute(
+        """
+        SELECT *
+        FROM pilot_automation_reports
+        WHERE site_id = ?
+          AND report_date = ?
+          AND report_type = ?
+          AND IFNULL(package_version, '') = IFNULL(?, '')
+          AND IFNULL(model_id, '') = IFNULL(?, '')
+          AND IFNULL(dataset_id, '') = IFNULL(?, '')
+        ORDER BY id DESC
+        LIMIT 1
+        """,
+        (
+            site_id,
+            report_date.isoformat(),
+            report_type,
+            package_version,
+            model_id,
+            dataset_id,
+        ),
+    )
+    return cursor.fetchone()
+
+
+def _capture_package_payload_matches_row(
+    row: sqlite3.Row,
+    payload: CapturePackageCreate,
+) -> bool:
+    measured_at = _dt_to_iso(payload.session.measured_at.astimezone(UTC))
+    return (
+        str(row["measured_at"]) == measured_at
+        and str(row["session_id"]) == payload.session.session_id
+        and str(row["site_id"]) == payload.session.site_id
+        and str(row["subject_id"]) == payload.session.subject_id
+        and str(row["operator_id"]) == payload.session.operator_id
+        and int(row["attempt_number"]) == payload.session.attempt_number
+        and str(row["platform"]) == payload.session.platform
+        and (
+            str(row["device_model"]) if row["device_model"] is not None else None
+        ) == payload.session.device_model
+        and (str(row["app_version"]) if row["app_version"] is not None else None)
+        == payload.session.app_version
+        and str(row["capture_mode"]) == payload.session.capture_mode
+        and str(row["package_type"]) == payload.package_type
+        and (
+            int(row["paired_measurement_id"])
+            if row["paired_measurement_id"] is not None
+            else None
+        )
+        == payload.paired_measurement_id
+        and (str(row["notes"]) if row["notes"] is not None else None) == payload.notes
+        and json.loads(str(row["capture_payload_json"])) == payload.capture_payload
+    )
+
+
+def _pilot_automation_report_payload_matches_row(
+    row: sqlite3.Row,
+    payload: PilotAutomationReportCreate,
+) -> bool:
+    return (
+        str(row["site_id"]) == payload.site_id
+        and str(row["report_date"]) == payload.report_date.isoformat()
+        and str(row["report_type"]) == payload.report_type
+        and (
+            str(row["package_version"]) if row["package_version"] is not None else None
+        )
+        == payload.package_version
+        and (str(row["model_id"]) if row["model_id"] is not None else None) == payload.model_id
+        and (str(row["dataset_id"]) if row["dataset_id"] is not None else None)
+        == payload.dataset_id
+        and (str(row["notes"]) if row["notes"] is not None else None) == payload.notes
+        and json.loads(str(row["payload_json"])) == payload.payload
+    )
 
 
 def _row_to_record(row: sqlite3.Row) -> PairedMeasurementRecord:
@@ -1762,6 +1874,7 @@ def create_clinical_hub_app(
     def create_capture_package(
         payload: CapturePackageCreate,
         request: Request,
+        response: Response,
         connection: sqlite3.Connection = Depends(get_connection),  # noqa: B008
     ) -> CapturePackageRecord:
         _enforce_payload_site_scope(request, payload.session.site_id)
@@ -1772,6 +1885,26 @@ def create_clinical_hub_app(
                     status_code=400,
                     detail="paired_measurement_id does not exist",
                 )
+        existing_row = _fetch_capture_package_by_identity(
+            connection,
+            site_id=payload.session.site_id,
+            subject_id=payload.session.subject_id,
+            session_id=payload.session.session_id,
+            attempt_number=payload.session.attempt_number,
+            package_type=payload.package_type,
+        )
+        if existing_row is not None:
+            if not _capture_package_payload_matches_row(existing_row, payload):
+                raise HTTPException(
+                    status_code=409,
+                    detail=(
+                        "capture package already exists with the same "
+                        "site/subject/session/attempt/package_type but different payload"
+                    ),
+                )
+            response.status_code = 200
+            return _row_to_capture_package_record(existing_row)
+
         record_id = _insert_capture_package(connection, payload)
         connection.commit()
         row = _fetch_capture_package_by_id(connection, record_id)
@@ -1856,9 +1989,31 @@ def create_clinical_hub_app(
     def create_pilot_automation_report(
         payload: PilotAutomationReportCreate,
         request: Request,
+        response: Response,
         connection: sqlite3.Connection = Depends(get_connection),  # noqa: B008
     ) -> PilotAutomationReportRecord:
         _enforce_payload_site_scope(request, payload.site_id)
+        existing_row = _fetch_pilot_automation_report_by_identity(
+            connection,
+            site_id=payload.site_id,
+            report_date=payload.report_date,
+            report_type=payload.report_type,
+            package_version=payload.package_version,
+            model_id=payload.model_id,
+            dataset_id=payload.dataset_id,
+        )
+        if existing_row is not None:
+            if not _pilot_automation_report_payload_matches_row(existing_row, payload):
+                raise HTTPException(
+                    status_code=409,
+                    detail=(
+                        "pilot automation report already exists with the same "
+                        "site/date/type/version/model/dataset but different payload"
+                    ),
+                )
+            response.status_code = 200
+            return _row_to_pilot_automation_report_record(existing_row)
+
         record_id = _insert_pilot_automation_report(connection, payload)
         connection.commit()
         row = _fetch_pilot_automation_report_by_id(connection, record_id)

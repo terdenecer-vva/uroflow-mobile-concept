@@ -217,6 +217,11 @@ GET /api/v1/capture-packages/{id}
 GET /api/v1/capture-packages.csv
 ```
 
+`POST /api/v1/capture-packages` идемпотентен по
+`site_id + subject_id + session_id + attempt_number + package_type`:
+- тот же payload → `200` с существующей записью;
+- другой payload при той же identity → `409`.
+
 Pilot automation endpoints:
 
 ```bash
@@ -225,6 +230,11 @@ GET /api/v1/pilot-automation-reports
 GET /api/v1/pilot-automation-reports/{id}
 GET /api/v1/pilot-automation-reports.csv
 ```
+
+`POST /api/v1/pilot-automation-reports` идемпотентен по
+`site_id + report_date + report_type + package_version + model_id + dataset_id`:
+- тот же payload → `200` с существующей записью;
+- другой payload при той же identity → `409`.
 
 Автозагрузка отчётов из CI в Clinical Hub:
 - workflow `pilot-automation-smoke` использует

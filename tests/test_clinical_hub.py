@@ -76,6 +76,38 @@ def _pilot_report_payload(
     }
 
 
+def _capture_package_payload(
+    *,
+    session_id: str = "session-cap-001",
+    site_id: str = "SITE-001",
+    subject_id: str = "SUBJ-001",
+    paired_measurement_id: int | None = None,
+) -> dict[str, object]:
+    return {
+        "session": {
+            "session_id": session_id,
+            "site_id": site_id,
+            "subject_id": subject_id,
+            "operator_id": "OP-01",
+            "attempt_number": 1,
+            "measured_at": "2026-02-24T10:15:00Z",
+            "platform": "ios",
+            "device_model": "iPhone15,3",
+            "app_version": "0.2.0",
+            "capture_mode": "water_impact",
+        },
+        "package_type": "capture_contract_json",
+        "capture_payload": {
+            "frame_count": 612,
+            "roi_valid_ratio": 0.94,
+            "duration_s": 22.4,
+            "audio_snr_db": 18.7,
+        },
+        "paired_measurement_id": paired_measurement_id,
+        "notes": "capture package baseline",
+    }
+
+
 def test_clinical_hub_crud_and_csv_export(tmp_path: Path) -> None:
     db_path = tmp_path / "clinical_hub.db"
     app = create_clinical_hub_app(db_path)
@@ -216,6 +248,54 @@ def test_paired_measurement_conflict_on_same_identity_with_changed_payload(
         assert "different payload" in conflict.json()["detail"]
 
 
+def test_capture_package_idempotent_resubmit_returns_existing(tmp_path: Path) -> None:
+    db_path = tmp_path / "clinical_hub_capture_idempotent.db"
+    app = create_clinical_hub_app(db_path)
+
+    with TestClient(app) as client:
+        paired_created = client.post("/api/v1/paired-measurements", json=_payload())
+        assert paired_created.status_code == 201
+        paired_id = paired_created.json()["id"]
+
+        payload = _capture_package_payload(paired_measurement_id=paired_id)
+        first = client.post("/api/v1/capture-packages", json=payload)
+        assert first.status_code == 201
+        assert first.json()["id"] == 1
+
+        second = client.post("/api/v1/capture-packages", json=payload)
+        assert second.status_code == 200
+        assert second.json()["id"] == 1
+
+        listing = client.get("/api/v1/capture-packages")
+        assert listing.status_code == 200
+        assert len(listing.json()) == 1
+
+
+def test_capture_package_conflict_on_same_identity_with_changed_payload(
+    tmp_path: Path,
+) -> None:
+    db_path = tmp_path / "clinical_hub_capture_conflict.db"
+    app = create_clinical_hub_app(db_path)
+
+    with TestClient(app) as client:
+        paired_created = client.post("/api/v1/paired-measurements", json=_payload())
+        assert paired_created.status_code == 201
+        paired_id = paired_created.json()["id"]
+
+        payload = _capture_package_payload(paired_measurement_id=paired_id)
+        created = client.post("/api/v1/capture-packages", json=payload)
+        assert created.status_code == 201
+
+        conflicting_payload = _capture_package_payload(paired_measurement_id=paired_id)
+        conflicting_payload["capture_payload"] = {
+            **conflicting_payload["capture_payload"],  # type: ignore[index]
+            "roi_valid_ratio": 0.74,
+        }
+        conflict = client.post("/api/v1/capture-packages", json=conflicting_payload)
+        assert conflict.status_code == 409
+        assert "different payload" in conflict.json()["detail"]
+
+
 def test_clinical_hub_api_key_and_audit_export(tmp_path: Path) -> None:
     db_path = tmp_path / "clinical_hub_auth.db"
     api_key = "pilot-secret-key"
@@ -299,6 +379,42 @@ def test_pilot_automation_reports_crud_and_csv_export(tmp_path: Path) -> None:
 
     assert len(rows) == 2
     assert {row["report_type"] for row in rows} == {"qa_summary", "g1_eval"}
+
+
+def test_pilot_report_idempotent_resubmit_returns_existing(tmp_path: Path) -> None:
+    db_path = tmp_path / "clinical_hub_report_idempotent.db"
+    app = create_clinical_hub_app(db_path)
+
+    with TestClient(app) as client:
+        first = client.post("/api/v1/pilot-automation-reports", json=_pilot_report_payload())
+        assert first.status_code == 201
+        assert first.json()["id"] == 1
+
+        second = client.post("/api/v1/pilot-automation-reports", json=_pilot_report_payload())
+        assert second.status_code == 200
+        assert second.json()["id"] == 1
+
+        listing = client.get("/api/v1/pilot-automation-reports")
+        assert listing.status_code == 200
+        assert len(listing.json()) == 1
+
+
+def test_pilot_report_conflict_on_same_identity_with_changed_payload(tmp_path: Path) -> None:
+    db_path = tmp_path / "clinical_hub_report_conflict.db"
+    app = create_clinical_hub_app(db_path)
+
+    with TestClient(app) as client:
+        created = client.post("/api/v1/pilot-automation-reports", json=_pilot_report_payload())
+        assert created.status_code == 201
+
+        conflicting_payload = _pilot_report_payload()
+        conflicting_payload["payload"] = {
+            **conflicting_payload["payload"],  # type: ignore[index]
+            "valid_rate": 0.83,
+        }
+        conflict = client.post("/api/v1/pilot-automation-reports", json=conflicting_payload)
+        assert conflict.status_code == 409
+        assert "different payload" in conflict.json()["detail"]
 
 
 def test_site_scope_blocks_cross_site_write_for_operator(tmp_path: Path) -> None:
