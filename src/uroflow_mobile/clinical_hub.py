@@ -975,6 +975,11 @@ def _validate_api_key_policy_map(
                 f"api key policy for role '{policy.role}' must include site_id "
                 f"(key fingerprint={_hash_api_key(normalized_api_key)})"
             )
+        if policy.role == "operator" and policy.operator_id is None:
+            raise ValueError(
+                "api key policy for role 'operator' must include operator_id "
+                f"(key fingerprint={_hash_api_key(normalized_api_key)})"
+            )
         validated[normalized_api_key] = policy
     return validated
 
@@ -1783,6 +1788,43 @@ def create_clinical_hub_app(
                         {
                             "query": str(request.url.query),
                             "reason": "missing_or_invalid_api_key",
+                        },
+                        ensure_ascii=False,
+                    ),
+                )
+                audit_connection.commit()
+            return response
+
+        if actor_role == "operator" and actor_operator_id is None:
+            response = JSONResponse(
+                status_code=403,
+                content={
+                    "detail": (
+                        "operator scope violation: actor operator_id is required for operator role"
+                    )
+                },
+            )
+            with _connect(app.state.db_path) as audit_connection:
+                _insert_audit_event(
+                    audit_connection,
+                    method=request.method,
+                    path=path,
+                    status_code=403,
+                    auth_result=auth_result,
+                    api_key_fingerprint=_hash_api_key(request_api_key),
+                    actor_operator_id=actor_operator_id,
+                    actor_role=actor_role,
+                    actor_site_id=actor_site_id,
+                    request_id=request_id,
+                    session_id=session_meta["session_id"],
+                    site_id=session_meta["site_id"],
+                    subject_id=session_meta["subject_id"],
+                    operator_id=session_meta["operator_id"],
+                    remote_addr=request.client.host if request.client else None,
+                    detail_json=json.dumps(
+                        {
+                            "query": str(request.url.query),
+                            "reason": "missing_actor_operator_id_for_operator_role",
                         },
                         ensure_ascii=False,
                     ),

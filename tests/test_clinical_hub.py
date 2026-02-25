@@ -466,6 +466,7 @@ def test_site_scope_filters_operator_reads_and_csv(tmp_path: Path) -> None:
         "x-api-key": api_key,
         "x-site-id": "SITE-001",
         "x-actor-role": "operator",
+        "x-operator-id": "OP-01",
     }
 
     with TestClient(app) as client:
@@ -673,6 +674,7 @@ def test_site_scope_blocks_cross_site_pilot_report_write(tmp_path: Path) -> None
         "x-api-key": api_key,
         "x-site-id": "SITE-001",
         "x-actor-role": "operator",
+        "x-operator-id": "OP-01",
     }
 
     with TestClient(app) as client:
@@ -783,7 +785,13 @@ def test_api_key_policy_map_supports_legacy_shared_key(tmp_path: Path) -> None:
     app = create_clinical_hub_app(
         db_path,
         api_key="legacy-shared-key",
-        api_key_policy_map={"op-site-1-key": {"role": "operator", "site_id": "SITE-001"}},
+        api_key_policy_map={
+            "op-site-1-key": {
+                "role": "operator",
+                "site_id": "SITE-001",
+                "operator_id": "OP-001",
+            }
+        },
     )
 
     with TestClient(app) as client:
@@ -825,3 +833,36 @@ def test_api_key_policy_map_rejects_invalid_operator_policy(tmp_path: Path) -> N
             db_path,
             api_key_policy_map={"invalid-op-key": {"role": "operator"}},
         )
+
+
+def test_api_key_policy_map_rejects_operator_policy_without_operator_id(tmp_path: Path) -> None:
+    db_path = tmp_path / "clinical_hub_policy_invalid_operator_id.db"
+    with raises(ValueError, match="must include operator_id"):
+        create_clinical_hub_app(
+            db_path,
+            api_key_policy_map={"invalid-op-key": {"role": "operator", "site_id": "SITE-001"}},
+        )
+
+
+def test_operator_role_requires_operator_identity_for_non_session_requests(tmp_path: Path) -> None:
+    db_path = tmp_path / "clinical_hub_operator_identity_required.db"
+    api_key = "pilot-secret-key"
+    app = create_clinical_hub_app(db_path, api_key=api_key)
+    missing_operator_headers = {
+        "x-api-key": api_key,
+        "x-site-id": "SITE-001",
+        "x-actor-role": "operator",
+    }
+
+    with TestClient(app) as client:
+        auth_context = client.get("/api/v1/auth-context", headers=missing_operator_headers)
+        assert auth_context.status_code == 403
+        assert "actor operator_id is required" in auth_context.json()["detail"]
+
+        listing = client.get("/api/v1/paired-measurements", headers=missing_operator_headers)
+        assert listing.status_code == 403
+        assert "actor operator_id is required" in listing.json()["detail"]
+
+        valid_operator_headers = {**missing_operator_headers, "x-operator-id": "OP-01"}
+        auth_context_ok = client.get("/api/v1/auth-context", headers=valid_operator_headers)
+        assert auth_context_ok.status_code == 200

@@ -61,7 +61,11 @@ def test_mobile_queue_sync_e2e_with_policy_key_and_idempotency(tmp_path: Path) -
     app = create_clinical_hub_app(
         db_path,
         api_key_policy_map={
-            "op-site-1-key": {"role": "operator", "site_id": "SITE-001"},
+            "op-site-1-key": {
+                "role": "operator",
+                "site_id": "SITE-001",
+                "operator_id": "OP-01",
+            },
         },
     )
 

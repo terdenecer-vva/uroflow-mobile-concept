@@ -59,8 +59,8 @@ Recommended headers for pilot traceability and access scope:
 
 Site scope behavior:
 - `operator`/`investigator`: reads and writes are restricted to `x-site-id`;
-- `operator` with `x-operator-id` (or mapped `operator_id`) is additionally restricted to own operator scope:
-  list/read/summary/csv are auto-filtered by operator and cross-operator writes are rejected with `403`;
+- `operator`: actor `operator_id` is mandatory (`x-operator-id`, session payload, or mapped policy value), otherwise request is rejected with `403`;
+- `operator`: list/read/summary/csv are auto-filtered by operator and cross-operator writes are rejected with `403`;
 - `data_manager`/`admin`: cross-site access is allowed.
 - if API key policy map is enabled, role/site are resolved from key policy first.
 

@@ -11,7 +11,13 @@ def test_clinical_hub_openapi_contract_contains_core_paths(tmp_path: Path) -> No
     db_path = tmp_path / "clinical_hub_contract_openapi.db"
     app = create_clinical_hub_app(
         db_path,
-        api_key_policy_map={"op-site-1-key": {"role": "operator", "site_id": "SITE-001"}},
+        api_key_policy_map={
+            "op-site-1-key": {
+                "role": "operator",
+                "site_id": "SITE-001",
+                "operator_id": "OP-001",
+            }
+        },
     )
 
     with TestClient(app) as client:

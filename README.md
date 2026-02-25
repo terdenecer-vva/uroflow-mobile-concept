@@ -148,7 +148,7 @@ PYTHONPATH=src python -m uroflow_mobile.cli serve-clinical-hub \
 
 ```json
 {
-  "op-site-1-key": {"role": "operator", "site_id": "SITE-001"},
+  "op-site-1-key": {"role": "operator", "site_id": "SITE-001", "operator_id": "OP-001"},
   "inv-site-2-key": {"role": "investigator", "site_id": "SITE-002"},
   "dm-key": {"role": "data_manager"}
 }
@@ -262,8 +262,10 @@ GET /api/v1/audit-events?limit=200
 Site scope enforcement:
 - для `operator` и `investigator` доступ автоматически ограничивается `x-site-id`;
 - запрос с `site_id`, не совпадающим с `x-site-id`, возвращает `403`;
-- для `operator` с заданным `x-operator-id` (или `operator_id` из policy map) чтение/выгрузка
-  автоматически фильтруются по `operator_id`, а запись с другим `operator_id` блокируется `403`;
+- для `operator` обязательно должен быть определён actor `operator_id` (через `x-operator-id`,
+  session payload или `operator_id` из policy map), иначе запрос отклоняется `403`;
+- для `operator` чтение/выгрузка автоматически фильтруются по `operator_id`,
+  а запись с другим `operator_id` блокируется `403`;
 - `data_manager` и `admin` могут работать кросс-сайтово.
 
 Если включён `--api-key-map-json`, роль и site scope берутся из policy map ключа
