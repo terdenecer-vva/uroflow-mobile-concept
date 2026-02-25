@@ -2,6 +2,7 @@
   "version": "1.0",
   "manifest_expected_columns": [
     "record_id",
+    "profile_id",
     "subject_id",
     "site_id",
     "toilet_id",
@@ -59,6 +60,12 @@
     "overall_record_valid"
   ],
   "codelists": {
+    "profile_id": [
+      "P0",
+      "P1",
+      "P2",
+      "P3"
+    ],
     "sex": [
       "M",
       "F"

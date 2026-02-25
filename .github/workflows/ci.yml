@@ -157,6 +157,10 @@ jobs:
                   json.dumps({"quality_score": 78.0 + idx * 0.5}),
                   encoding="utf-8",
               )
+              (rec / "app_result.json").write_text(
+                  json.dumps({"status": "ok", "model_id": "ci-smoke"}),
+                  encoding="utf-8",
+              )
 
               qmax_ref = max(q_ref)
               qavg_ref = sum(q_ref) / len(q_ref)
@@ -168,6 +172,7 @@ jobs:
               manifest_rows.append(
                   {
                       "record_id": record_id,
+                      "profile_id": "P0",
                       "subject_id": f"SUBJ-{idx:03d}",
                       "site_id": site_id,
                       "toilet_id": toilet_id,
@@ -203,6 +208,15 @@ jobs:
               writer.writerows(manifest_rows)
           PY
 
+      - name: Validate artifact profile (daily QA gate)
+        run: |
+          python scripts/pilot_automation_v2_8/scripts/validate_artifacts_by_profile.py \
+            --dataset_root /tmp/pilot_ds \
+            --manifest /tmp/pilot_ds/manifest.csv \
+            --use_manifest_profile \
+            --config scripts/pilot_automation_v2_8/config/data_artifact_profile_config.json \
+            --out_dir /tmp/pilot_automation_smoke/artifact_profile_daily_qa
+
       - name: Run pilot automation scripts
         run: |
           python scripts/pilot_automation_v2_8/scripts/run_daily_qa.py \
@@ -222,6 +236,13 @@ jobs:
             --out_dir /tmp/pilot_automation_smoke/drift \
             --g1_config scripts/pilot_automation_v2_8/config/g1_acceptance_config.json
 
+          python scripts/pilot_automation_v2_8/scripts/validate_artifacts_by_profile.py \
+            --dataset_root /tmp/pilot_ds \
+            --manifest /tmp/pilot_ds/manifest.csv \
+            --profile P0 \
+            --config scripts/pilot_automation_v2_8/config/data_artifact_profile_config.json \
+            --out_dir /tmp/pilot_automation_smoke/artifact_profile_prefreeze
+
           python scripts/pilot_automation_v2_8/scripts/build_g1_evidence_bundle.py \
             --dataset_root /tmp/pilot_ds \
             --manifest /tmp/pilot_ds/manifest.csv \
@@ -235,6 +256,7 @@ jobs:
           python scripts/pilot_automation_v2_8/scripts/update_dhf_status.py --help >/dev/null
           python scripts/pilot_automation_v2_8/scripts/build_eu_master_index.py --help >/dev/null
           python scripts/pilot_automation_v2_8/scripts/build_g2_submission_bundle.py --help >/dev/null
+          python scripts/pilot_automation_v2_8/scripts/validate_artifacts_by_profile.py --help >/dev/null
 
       - name: Build gate metrics from automation artifacts
         run: |

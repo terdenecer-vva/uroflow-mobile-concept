@@ -1,5 +1,6 @@
 [
   "record_id",
+  "profile_id",
   "subject_id",
   "site_id",
   "toilet_id",

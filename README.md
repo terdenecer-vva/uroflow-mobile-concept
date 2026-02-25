@@ -378,12 +378,23 @@ npm run start
 Краткий smoke для pilot automation:
 
 ```bash
+.venv/bin/python scripts/pilot_automation_v2_8/scripts/validate_artifacts_by_profile.py \
+  --dataset_root /path/to/sample_dataset_v1.1 \
+  --manifest /path/to/sample_dataset_v1.1/manifest.csv \
+  --profile P0 \
+  --config scripts/pilot_automation_v2_8/config/data_artifact_profile_config.json \
+  --out_dir docs/project-package-v2.8/automation_smoke/artifact_profile
+
 .venv/bin/python scripts/pilot_automation_v2_8/scripts/run_daily_qa.py \
   --dataset_root /path/to/sample_dataset_v1.1 \
   --manifest /path/to/sample_dataset_v1.1/manifest.csv \
   --out docs/project-package-v2.8/automation_smoke \
   --write_checksums
 ```
+
+Для профильно-ориентированных наборов в манифест добавлено поле `profile_id` (`P0..P3`).
+Если использовать `--use_manifest_profile`, пустое/отсутствующее `profile_id` падает на `default_profile` из
+`scripts/pilot_automation_v2_8/config/data_artifact_profile_config.json`.
 
 Примечание: `scripts/pilot_automation_v2_8/scripts/` импортирован как внешний vendor-пакет,
 поэтому исключён из `ruff`-проверок проекта. Пакет `v2.5` сохранён в репозитории для ретроспективной сверки.

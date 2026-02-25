@@ -27,9 +27,23 @@ What's new (v1.2)
        * EXECUTED indexes with Present/SHA256/Bundle path
        * MISSING items reports
 
+4) Data artifact profile validator (v3.4 integration)
+   - Script: scripts/validate_artifacts_by_profile.py
+   - Config: config/data_artifact_profile_config.json
+   - Runner: run_validate_artifacts_by_profile_oneclick.sh / .bat
+   - Supports:
+       * fixed profile: --profile P0|P1|P2|P3
+       * per-record profile: --use_manifest_profile (reads profile_id; falls back to config.default_profile)
+   - Output:
+       * outputs/validate_artifacts/artifact_profile_validation.json
+       * outputs/validate_artifacts/artifact_profile_validation.csv
+
 Core workflow (recommended)
 A) Daily QA:
    run_daily_qa_oneclick.sh <DATASET_ROOT> <MANIFEST_PATH>
+
+A2) Artifact profile gate:
+   run_validate_artifacts_by_profile_oneclick.sh <DATASET_ROOT> <MANIFEST_PATH> [P0|P1|P2|P3]
 
 B) TFL + plots:
    run_tfl_oneclick.sh <DATASET_ROOT> <MANIFEST_PATH>
@@ -43,4 +57,3 @@ D) G2 bundle (from submission build):
 Notes
 - Everything is offline by design (important for Russia / on-prem).
 - For clinical datasets, do not store raw video/audio unless explicitly approved (privacy-by-default).
-

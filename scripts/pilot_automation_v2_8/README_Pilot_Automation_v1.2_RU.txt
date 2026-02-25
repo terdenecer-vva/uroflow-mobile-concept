@@ -27,9 +27,23 @@ Uroflow Pilot Automation Pack v1.2 (OFFLINE)
        * EXECUTED индексы (Present/SHA256/Bundle path)
        * отчёт по отсутствующим файлам (MISSING)
 
+4) Валидатор профилей data artifacts (интеграция v3.4)
+   - Скрипт: scripts/validate_artifacts_by_profile.py
+   - Конфиг: config/data_artifact_profile_config.json
+   - Запуск: run_validate_artifacts_by_profile_oneclick.sh / .bat
+   - Режимы:
+       * фиксированный профиль: --profile P0|P1|P2|P3
+       * профиль из манифеста: --use_manifest_profile (берёт profile_id, при пустом значении использует config.default_profile)
+   - Выход:
+       * outputs/validate_artifacts/artifact_profile_validation.json
+       * outputs/validate_artifacts/artifact_profile_validation.csv
+
 Рекомендуемый цикл работы
 A) Ежедневный QA:
    run_daily_qa_oneclick.sh <DATASET_ROOT> <MANIFEST_PATH>
+
+A2) Гейт профиля артефактов:
+   run_validate_artifacts_by_profile_oneclick.sh <DATASET_ROOT> <MANIFEST_PATH> [P0|P1|P2|P3]
 
 B) TFL + графики:
    run_tfl_oneclick.sh <DATASET_ROOT> <MANIFEST_PATH>
@@ -43,4 +57,3 @@ D) G2 bundle (из корня submission build):
 Примечания
 - Пакет рассчитан на полностью офлайн-режим (важно для РФ / on-prem).
 - Для клинических данных: сырые видео/аудио не хранить без явного одобрения (privacy-by-default).
-

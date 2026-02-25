@@ -1,0 +1,78 @@
+{
+  "generated_at": "2026-02-25T02:26:13.589338",
+  "default_profile": "P0",
+  "profiles": {
+    "P0": {
+      "required": [
+        "meta.json",
+        "app_result.json",
+        "quality.json",
+        "Q_pred.csv",
+        "Q_ref.csv"
+      ],
+      "recommended": [
+        "Q_ref_aligned.csv",
+        "features_*_10hz.csv"
+      ],
+      "forbidden": [
+        "audio.*",
+        "roi_video.*",
+        "roi_frames/**",
+        "depth_frames/**"
+      ]
+    },
+    "P1": {
+      "required": [
+        "meta.json",
+        "app_result.json",
+        "quality.json",
+        "Q_pred.csv",
+        "Q_ref.csv",
+        "audio.*"
+      ],
+      "recommended": [
+        "Q_ref_aligned.csv",
+        "features_audio_10hz.csv"
+      ],
+      "forbidden": [
+        "roi_video.*",
+        "roi_frames/**",
+        "depth_frames/**"
+      ]
+    },
+    "P2": {
+      "required": [
+        "meta.json",
+        "app_result.json",
+        "quality.json",
+        "Q_pred.csv",
+        "Q_ref.csv",
+        "features_*_10hz.csv"
+      ],
+      "recommended": [
+        "Q_ref_aligned.csv",
+        "roi_video.*"
+      ],
+      "forbidden": [
+        "depth_frames/**"
+      ]
+    },
+    "P3": {
+      "required": [
+        "meta.json",
+        "app_result.json",
+        "quality.json",
+        "Q_pred.csv",
+        "Q_ref.csv"
+      ],
+      "recommended": [
+        "Q_ref_aligned.csv",
+        "features_*_10hz.csv",
+        "audio.*",
+        "roi_video.*",
+        "depth_frames/**"
+      ],
+      "forbidden": []
+    }
+  }
+}
