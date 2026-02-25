@@ -1,6 +1,7 @@
 # Mobile Uroflow Concept
 [![CI](https://github.com/terdenecer-vva/uroflow-mobile-concept/actions/workflows/ci.yml/badge.svg)](https://github.com/terdenecer-vva/uroflow-mobile-concept/actions/workflows/ci.yml)
 [![Mobile CI](https://github.com/terdenecer-vva/uroflow-mobile-concept/actions/workflows/mobile-ci.yml/badge.svg)](https://github.com/terdenecer-vva/uroflow-mobile-concept/actions/workflows/mobile-ci.yml)
+[![Clinical Hub Contract](https://github.com/terdenecer-vva/uroflow-mobile-concept/actions/workflows/clinical-hub-contract.yml/badge.svg)](https://github.com/terdenecer-vva/uroflow-mobile-concept/actions/workflows/clinical-hub-contract.yml)
 
 Концептуальный репозиторий для разработки программного обеспечения мобильного урофлоуметра.
 
