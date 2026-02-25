@@ -29,6 +29,12 @@ npm install
 npm run start
 ```
 
+Optional local check:
+
+```bash
+npm run typecheck
+```
+
 3. Open on iPhone/Android via Expo Go (QR code), or run native:
 
 ```bash
@@ -55,3 +61,6 @@ When backend is configured with API key policy map (`--api-key-map-json`), set i
 - `API Key` to the site/role key (e.g. operator key)
 - `Site ID` to the same site as key policy
 - `Actor Role` to policy role (`operator`, `investigator`, `data_manager`, `admin`)
+
+CI:
+- `.github/workflows/mobile-ci.yml` runs TypeScript typecheck for `apps/field-mobile/**` changes.
