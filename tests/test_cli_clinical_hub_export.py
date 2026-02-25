@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import hashlib
 import json
 from pathlib import Path
 
@@ -54,6 +55,10 @@ def _pilot_report_payload() -> dict[str, object]:
     }
 
 
+def _sha256_hex(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
 def test_cli_export_paired_measurements(tmp_path: Path) -> None:
     db_path = tmp_path / "clinical_hub.db"
     app = create_clinical_hub_app(db_path)
@@ -63,6 +68,7 @@ def test_cli_export_paired_measurements(tmp_path: Path) -> None:
         assert response.status_code == 201
 
     output_csv = tmp_path / "paired.csv"
+    sha256_file = tmp_path / "paired.csv.sha256"
     exit_code = cli_main(
         [
             "export-paired-measurements",
@@ -70,6 +76,8 @@ def test_cli_export_paired_measurements(tmp_path: Path) -> None:
             str(db_path),
             "--output-csv",
             str(output_csv),
+            "--sha256-file",
+            str(sha256_file),
         ]
     )
 
@@ -83,6 +91,9 @@ def test_cli_export_paired_measurements(tmp_path: Path) -> None:
     assert len(rows) == 1
     assert rows[0]["session_id"] == "session-cli-001"
     assert rows[0]["platform"] == "android"
+    assert sha256_file.exists()
+    manifest_line = sha256_file.read_text(encoding="utf-8").strip()
+    assert manifest_line == f"{_sha256_hex(output_csv)}  {output_csv.name}"
 
 
 def test_cli_summarize_paired_measurements(tmp_path: Path) -> None:

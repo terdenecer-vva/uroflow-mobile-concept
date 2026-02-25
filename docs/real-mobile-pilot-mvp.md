@@ -63,6 +63,15 @@ PYTHONPATH=src python -m uroflow_mobile.cli export-paired-measurements \
   --output-csv data/paired_measurements_export.csv
 ```
 
+Optional integrity manifest:
+
+```bash
+PYTHONPATH=src python -m uroflow_mobile.cli export-paired-measurements \
+  --db-path data/clinical_hub.db \
+  --output-csv data/paired_measurements_export.csv \
+  --sha256-file data/paired_measurements_export.csv.sha256
+```
+
 Generate method-comparison summary (`app vs reference`):
 
 ```bash

@@ -140,6 +140,15 @@ PYTHONPATH=src python -m uroflow_mobile.cli export-paired-measurements \
   --output-csv data/paired_measurements_export.csv
 ```
 
+Для проверки целостности выгрузки можно сразу записать SHA-256 manifest:
+
+```bash
+PYTHONPATH=src python -m uroflow_mobile.cli export-paired-measurements \
+  --db-path data/clinical_hub.db \
+  --output-csv data/paired_measurements_export.csv \
+  --sha256-file data/paired_measurements_export.csv.sha256
+```
+
 Экспорт audit trail:
 
 ```bash

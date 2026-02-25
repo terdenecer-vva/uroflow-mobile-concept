@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 import math
 import os
@@ -207,6 +208,19 @@ def _write_curve_csv(path: Path, timestamps_s: list[float], flow_ml_s: list[floa
         writer.writerow(["timestamp_s", "flow_ml_s"])
         for timestamp, flow in zip(timestamps_s, flow_ml_s, strict=True):
             writer.writerow([f"{timestamp:.6f}", f"{flow:.6f}"])
+
+
+def _maybe_write_sha256_manifest(
+    output_file: Path,
+    sha256_file_arg: str | None,
+) -> Path | None:
+    if sha256_file_arg is None:
+        return None
+    manifest_path = Path(sha256_file_arg)
+    digest = hashlib.sha256(output_file.read_bytes()).hexdigest()
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    manifest_path.write_text(f"{digest}  {output_file.name}\n", encoding="utf-8")
+    return manifest_path
 
 
 def _write_fusion_csv(path: Path, estimation: FusionEstimationResult) -> None:
@@ -600,6 +614,10 @@ def _build_parser() -> argparse.ArgumentParser:
         required=True,
         help="Target CSV path.",
     )
+    export_paired_cmd.add_argument(
+        "--sha256-file",
+        help="Optional output path for SHA-256 manifest of exported CSV.",
+    )
 
     export_audit_cmd = subparsers.add_parser(
         "export-audit-events",
@@ -614,6 +632,10 @@ def _build_parser() -> argparse.ArgumentParser:
         "--output-csv",
         required=True,
         help="Target CSV path for audit events.",
+    )
+    export_audit_cmd.add_argument(
+        "--sha256-file",
+        help="Optional output path for SHA-256 manifest of exported CSV.",
     )
 
     export_capture_cmd = subparsers.add_parser(
@@ -630,6 +652,10 @@ def _build_parser() -> argparse.ArgumentParser:
         required=True,
         help="Target CSV path for capture packages.",
     )
+    export_capture_cmd.add_argument(
+        "--sha256-file",
+        help="Optional output path for SHA-256 manifest of exported CSV.",
+    )
 
     export_pilot_reports_cmd = subparsers.add_parser(
         "export-pilot-automation-reports",
@@ -644,6 +670,10 @@ def _build_parser() -> argparse.ArgumentParser:
         "--output-csv",
         required=True,
         help="Target CSV path for pilot automation reports.",
+    )
+    export_pilot_reports_cmd.add_argument(
+        "--sha256-file",
+        help="Optional output path for SHA-256 manifest of exported CSV.",
     )
 
     compare_paired_cmd = subparsers.add_parser(
@@ -1299,8 +1329,11 @@ def _handle_export_paired_measurements(args: argparse.Namespace) -> int:
     db_path = Path(args.db_path)
     output_csv = Path(args.output_csv)
     row_count = export_paired_measurements_to_csv(db_path=db_path, output_csv=output_csv)
+    manifest_path = _maybe_write_sha256_manifest(output_csv, args.sha256_file)
     print(f"Paired measurements exported: {output_csv}")
     print(f"Rows exported: {row_count}")
+    if manifest_path is not None:
+        print(f"SHA-256 manifest: {manifest_path}")
     return 0
 
 
@@ -1310,8 +1343,11 @@ def _handle_export_audit_events(args: argparse.Namespace) -> int:
     db_path = Path(args.db_path)
     output_csv = Path(args.output_csv)
     row_count = export_audit_events_to_csv(db_path=db_path, output_csv=output_csv)
+    manifest_path = _maybe_write_sha256_manifest(output_csv, args.sha256_file)
     print(f"Audit events exported: {output_csv}")
     print(f"Rows exported: {row_count}")
+    if manifest_path is not None:
+        print(f"SHA-256 manifest: {manifest_path}")
     return 0
 
 
@@ -1321,8 +1357,11 @@ def _handle_export_capture_packages(args: argparse.Namespace) -> int:
     db_path = Path(args.db_path)
     output_csv = Path(args.output_csv)
     row_count = export_capture_packages_to_csv(db_path=db_path, output_csv=output_csv)
+    manifest_path = _maybe_write_sha256_manifest(output_csv, args.sha256_file)
     print(f"Capture packages exported: {output_csv}")
     print(f"Rows exported: {row_count}")
+    if manifest_path is not None:
+        print(f"SHA-256 manifest: {manifest_path}")
     return 0
 
 
@@ -1332,8 +1371,11 @@ def _handle_export_pilot_automation_reports(args: argparse.Namespace) -> int:
     db_path = Path(args.db_path)
     output_csv = Path(args.output_csv)
     row_count = export_pilot_automation_reports_to_csv(db_path=db_path, output_csv=output_csv)
+    manifest_path = _maybe_write_sha256_manifest(output_csv, args.sha256_file)
     print(f"Pilot automation reports exported: {output_csv}")
     print(f"Rows exported: {row_count}")
+    if manifest_path is not None:
+        print(f"SHA-256 manifest: {manifest_path}")
     return 0
 
 
