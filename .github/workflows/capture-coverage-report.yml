@@ -410,17 +410,6 @@ jobs:
           path: ${{ steps.generate.outputs.report_dir }}
           if-no-files-found: error
 
-      - name: Enforce hard coverage gates
-        if: ${{ steps.filters.outputs.enforce_coverage_gates == 'true' }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          if [[ "${{ steps.gates.outputs.hard_passed }}" != "true" ]]; then
-            echo "Hard coverage gates failed."
-            exit 1
-          fi
-          echo "Hard coverage gates passed."
-
       - name: Publish workflow summary
         shell: bash
         run: |
@@ -766,3 +755,14 @@ jobs:
               --body-file "$body_path")"
             echo "Created incident issue: $new_url"
           fi
+
+      - name: Enforce hard coverage gates
+        if: ${{ always() && steps.filters.outputs.enforce_coverage_gates == 'true' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${{ steps.gates.outputs.hard_passed }}" != "true" ]]; then
+            echo "Hard coverage gates failed."
+            exit 1
+          fi
+          echo "Hard coverage gates passed."
