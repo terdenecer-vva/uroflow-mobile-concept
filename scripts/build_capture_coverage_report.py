@@ -56,10 +56,10 @@ def _paired_matches_filters(row: dict[str, Any], filters: CoverageFilters) -> bo
         return False
     if filters.capture_mode and _norm(row.get("capture_mode")) != filters.capture_mode:
         return False
-    if filters.quality_status != "all":
-        if _norm(row.get("app_quality_status")).lower() != filters.quality_status:
-            return False
-    return True
+    return not (
+        filters.quality_status != "all"
+        and _norm(row.get("app_quality_status")).lower() != filters.quality_status
+    )
 
 
 def _capture_matches_filters(row: dict[str, Any], filters: CoverageFilters) -> bool:
@@ -73,9 +73,9 @@ def _capture_matches_filters(row: dict[str, Any], filters: CoverageFilters) -> b
         return False
     if filters.platform and _norm(row.get("platform")) != filters.platform:
         return False
-    if filters.capture_mode and _norm(row.get("capture_mode")) != filters.capture_mode:
-        return False
-    return True
+    return not (
+        filters.capture_mode and _norm(row.get("capture_mode")) != filters.capture_mode
+    )
 
 
 def _fetch_csv_rows(url: str, headers: dict[str, str]) -> list[dict[str, Any]]:
@@ -230,8 +230,15 @@ def build_summary_row(
     paired_with_capture = paired_total - paired_without_capture
     coverage_ratio = (paired_with_capture / paired_total) if paired_total > 0 else 0.0
 
+    generated_at = (
+        datetime.now(timezone.utc)
+        .replace(microsecond=0)
+        .isoformat()
+        .replace("+00:00", "Z")
+    )
+
     return {
-        "generated_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
+        "generated_at": generated_at,
         "site_id": filters.site_id,
         "sync_id": filters.sync_id,
         "subject_id": filters.subject_id,
@@ -343,7 +350,11 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--operator-id", default="")
     parser.add_argument("--platform", default="")
     parser.add_argument("--capture-mode", default="")
-    parser.add_argument("--quality-status", choices=["all", "valid", "repeat", "reject"], default="all")
+    parser.add_argument(
+        "--quality-status",
+        choices=["all", "valid", "repeat", "reject"],
+        default="all",
+    )
 
     parser.add_argument("--output-csv", required=True)
     parser.add_argument("--output-pdf", required=True)
