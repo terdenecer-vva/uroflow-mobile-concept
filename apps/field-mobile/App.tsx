@@ -384,7 +384,7 @@ export default function App() {
   const [attemptNumber, setAttemptNumber] = useState("1");
   const [measuredAt, setMeasuredAt] = useState(defaultMeasuredAt);
   const [platform, setPlatform] = useState<SessionPlatform>(defaultPlatform);
-  const [deviceModel, setDeviceModel] = useState(Platform.OS);
+  const [deviceModel, setDeviceModel] = useState<string>(Platform.OS);
   const [appVersion, setAppVersion] = useState("0.1.0");
   const [captureMode, setCaptureMode] = useState("water_impact");
 
