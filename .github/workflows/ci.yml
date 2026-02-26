@@ -311,12 +311,16 @@ jobs:
             --output-json /tmp/pilot_automation_smoke/gate_summary.json
 
       - name: Push pilot reports to Clinical Hub (optional)
-        if: ${{ secrets.CLINICAL_HUB_URL != '' && secrets.CLINICAL_HUB_API_KEY != '' }}
         env:
           CLINICAL_HUB_URL: ${{ secrets.CLINICAL_HUB_URL }}
           CLINICAL_HUB_API_KEY: ${{ secrets.CLINICAL_HUB_API_KEY }}
           CLINICAL_HUB_SITE_ID: ${{ vars.CLINICAL_HUB_SITE_ID }}
         run: |
+          if [[ -z "${CLINICAL_HUB_URL:-}" || -z "${CLINICAL_HUB_API_KEY:-}" ]]; then
+            echo "Skipping Clinical Hub report push: required secrets are not configured."
+            exit 0
+          fi
+
           QA_SUMMARY=$(find /tmp/pilot_automation_smoke -name qa_summary.json | head -n 1)
           test -n "$QA_SUMMARY"
           REPORT_DATE=$(basename "$(dirname "$QA_SUMMARY")")
