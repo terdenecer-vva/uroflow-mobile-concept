@@ -1,6 +1,9 @@
 name: Capture Coverage Report
 
 on:
+  push:
+    branches:
+      - codex/uroflow-v2-8-integration
   schedule:
     - cron: "30 2 * * *"
   workflow_dispatch:
