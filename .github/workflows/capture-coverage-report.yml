@@ -76,6 +76,19 @@ on:
         description: "DB path in repo/runner (used only when CLINICAL_HUB_DB_URL secret is empty)"
         required: false
         type: string
+      tracking_issue_number:
+        description: "Issue number for coverage progress comments (default from repo variable)"
+        required: false
+        type: string
+      post_tracking_comment:
+        description: "Post tracking comment (schedule defaults to true)"
+        required: false
+        type: choice
+        options:
+          - ""
+          - "true"
+          - "false"
+        default: ""
 
 concurrency:
   group: capture-coverage-report-${{ github.workflow }}-${{ github.ref }}
@@ -87,12 +100,14 @@ jobs:
     timeout-minutes: 20
     permissions:
       contents: read
+      issues: write
 
     env:
       DEFAULT_SITE_ID: ${{ vars.CLINICAL_HUB_SITE_ID }}
       DEFAULT_QUALITY_STATUS: ${{ vars.CLINICAL_HUB_QUALITY_STATUS }}
       DEFAULT_TARGETS_CONFIG: ${{ vars.CLINICAL_HUB_COVERAGE_TARGETS_CONFIG }}
       DEFAULT_ENFORCE_COVERAGE_GATES: ${{ vars.CLINICAL_HUB_ENFORCE_COVERAGE_GATES }}
+      DEFAULT_TRACKING_ISSUE_NUMBER: ${{ vars.CLINICAL_HUB_COVERAGE_TRACKING_ISSUE }}
 
     steps:
       - name: Checkout
@@ -449,3 +464,125 @@ jobs:
               encoding="utf-8",
           )
           PY
+
+      - name: Resolve tracking comment settings
+        id: tracking
+        if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          post_tracking_comment="${{ github.event.inputs.post_tracking_comment }}"
+          if [[ -z "$post_tracking_comment" ]]; then
+            if [[ "${{ github.event_name }}" == "schedule" ]]; then
+              post_tracking_comment="true"
+            else
+              post_tracking_comment="false"
+            fi
+          fi
+          case "${post_tracking_comment,,}" in
+            true|1|yes|y)
+              post_tracking_comment="true"
+              ;;
+            *)
+              post_tracking_comment="false"
+              ;;
+          esac
+
+          issue_number="${{ github.event.inputs.tracking_issue_number }}"
+          if [[ -z "$issue_number" ]]; then
+            issue_number="${DEFAULT_TRACKING_ISSUE_NUMBER:-20}"
+          fi
+          if [[ -n "$issue_number" && ! "$issue_number" =~ ^[0-9]+$ ]]; then
+            echo "Tracking issue number is not numeric: '$issue_number'. Commenting disabled."
+            issue_number=""
+            post_tracking_comment="false"
+          fi
+
+          echo "issue_number=$issue_number" >> "$GITHUB_OUTPUT"
+          echo "post_tracking_comment=$post_tracking_comment" >> "$GITHUB_OUTPUT"
+
+      - name: Build tracking issue comment
+        id: tracking_comment
+        if: ${{ steps.tracking.outputs.post_tracking_comment == 'true' && steps.tracking.outputs.issue_number != '' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import csv
+          import json
+          import os
+          from pathlib import Path
+
+          csv_path = Path("${{ steps.generate.outputs.csv_path }}")
+          gates_path = Path("${{ steps.gates.outputs.gates_json_path }}")
+          comment_path = Path("${{ steps.generate.outputs.report_dir }}") / "coverage_tracking_comment.md"
+
+          with csv_path.open("r", encoding="utf-8", newline="") as handle:
+              rows = list(csv.DictReader(handle))
+          row = rows[0] if rows else {}
+
+          paired_total = int(float(row.get("paired_total", "0") or "0"))
+          paired_with_capture = int(float(row.get("paired_with_capture", "0") or "0"))
+          paired_without_capture = int(float(row.get("paired_without_capture", "0") or "0"))
+          coverage_ratio = float(row.get("coverage_ratio", "0") or "0")
+          hard_passed = "${{ steps.gates.outputs.hard_passed }}" == "true"
+          warning_passed = "${{ steps.gates.outputs.warning_passed }}" == "true"
+
+          failing = []
+          if gates_path.exists():
+              payload = json.loads(gates_path.read_text(encoding="utf-8"))
+              for gate in payload.get("gates", []):
+                  if not gate.get("passed", False):
+                      label = gate.get("label") or gate.get("id") or gate.get("metric", "gate")
+                      actual = gate.get("actual")
+                      operator = gate.get("operator")
+                      threshold = gate.get("threshold")
+                      severity = gate.get("severity", "hard")
+                      failing.append(
+                          f"- `{severity}`: {label} (`{actual}` {operator} `{threshold}`)"
+                      )
+
+          run_url = (
+              f"https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          )
+          source_mode = "${{ steps.source.outputs.source_mode }}"
+          site_id = row.get("site_id", "") or "-"
+          quality_status = row.get("quality_status", "") or "all"
+          generated_at = row.get("generated_at", "") or "${{ github.run_started_at }}"
+
+          lines = [
+              "### Capture coverage daily update",
+              f"- Run: {run_url}",
+              f"- Generated at (UTC): `{generated_at}`",
+              f"- Source mode: `{source_mode}`",
+              f"- Site: `{site_id}`",
+              f"- Quality filter: `{quality_status}`",
+              f"- Paired total: `{paired_total}`",
+              f"- Paired with capture: `{paired_with_capture}`",
+              f"- Paired without capture: `{paired_without_capture}`",
+              f"- Coverage ratio: `{coverage_ratio * 100:.1f}%`",
+              f"- Hard gates passed: `{str(hard_passed).lower()}`",
+              f"- Warning gates passed: `{str(warning_passed).lower()}`",
+          ]
+          if failing:
+              lines.append("- Failing gates:")
+              lines.extend(failing)
+          else:
+              lines.append("- Failing gates: none")
+
+          comment_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+          with Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as handle:
+              handle.write(f"comment_path={comment_path}\n")
+          PY
+
+      - name: Post tracking issue comment
+        if: ${{ steps.tracking.outputs.post_tracking_comment == 'true' && steps.tracking.outputs.issue_number != '' }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh issue comment "${{ steps.tracking.outputs.issue_number }}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --body-file "${{ steps.tracking_comment.outputs.comment_path }}"
