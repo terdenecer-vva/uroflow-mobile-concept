@@ -607,7 +607,7 @@ jobs:
                   paired_match = re.search(r"- Paired total: `([0-9]+)`", previous_body)
                   if paired_match:
                       previous_paired_total = int(paired_match.group(1))
-                  coverage_match = re.search(r"- Coverage ratio: `([0-9]+(?:\\.[0-9]+)?)%`", previous_body)
+                  coverage_match = re.search(r"- Coverage ratio: `([0-9]+(?:\.[0-9]+)?)%`", previous_body)
                   if coverage_match:
                       previous_coverage_ratio_pct = float(coverage_match.group(1))
 
