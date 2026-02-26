@@ -3,7 +3,13 @@ name: Capture Coverage Report
 on:
   push:
     branches:
-      - codex/uroflow-v2-8-integration
+      - main
+    paths:
+      - "scripts/build_capture_coverage_report.py"
+      - "scripts/build_capture_coverage_fixture_db.py"
+      - "config/coverage_targets_config.v1.json"
+      - "src/uroflow_mobile/clinical_hub.py"
+      - ".github/workflows/capture-coverage-report.yml"
   schedule:
     - cron: "30 2 * * *"
   workflow_dispatch:
