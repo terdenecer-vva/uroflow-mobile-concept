@@ -459,8 +459,8 @@ export default function App() {
   const [operatorId, setOperatorId] = useState("OP-01");
   const [attemptNumber, setAttemptNumber] = useState("1");
   const [measuredAt, setMeasuredAt] = useState(defaultMeasuredAt);
-  const [platform, setPlatform] = useState(defaultPlatform);
-  const [deviceModel, setDeviceModel] = useState(Platform.OS);
+  const [platform, setPlatform] = useState<string>(defaultPlatform);
+  const [deviceModel, setDeviceModel] = useState<string>(Platform.OS);
   const [appVersion, setAppVersion] = useState("0.1.0");
   const [captureMode, setCaptureMode] = useState("water_impact");
 
@@ -736,11 +736,12 @@ export default function App() {
           quality: 0.08,
           skipProcessing: true,
         });
-        if (!photo.base64) {
+        const frameBase64 = photo?.base64;
+        if (!frameBase64) {
           return;
         }
         const signal = estimateRoiSignalFromBase64({
-          frameBase64: photo.base64,
+          frameBase64,
           prevHash: roiFrameStateRef.current.prevHash,
           prevLength: roiFrameStateRef.current.prevLength,
         });
@@ -960,8 +961,9 @@ export default function App() {
   ): CapturePackagePayload {
     let captureContractPayload: Record<string, unknown>;
     let notes = "mobile_scaffold_capture_contract_v0.1";
-    if (runtimeCaptureMatchesSession(runtimeCaptureContractPayload, currentPayload.session)) {
-      captureContractPayload = runtimeCaptureContractPayload;
+    const runtimePayload = runtimeCaptureContractPayload;
+    if (runtimePayload && runtimeCaptureMatchesSession(runtimePayload, currentPayload.session)) {
+      captureContractPayload = runtimePayload;
       notes = "mobile_runtime_capture_contract_audio_imu_v0.1";
     } else {
       captureContractPayload = buildCaptureContractPayload({
@@ -1620,7 +1622,7 @@ export default function App() {
         <LabeledInput
           label="Platform (ios/android)"
           value={platform}
-          onChangeText={(value) => setPlatform(value as typeof platform)}
+          onChangeText={setPlatform}
         />
         <LabeledInput label="Device Model" value={deviceModel} onChangeText={setDeviceModel} />
         <LabeledInput label="App Version" value={appVersion} onChangeText={setAppVersion} />

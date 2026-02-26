@@ -172,9 +172,11 @@ export class RuntimeCaptureSession {
       ...preset,
       ios: {
         ...(preset.ios ?? {}),
-        isMeteringEnabled: true,
       },
     };
+    (
+      recordingOptions as Audio.RecordingOptions & { isMeteringEnabled?: boolean }
+    ).isMeteringEnabled = true;
 
     await Audio.setAudioModeAsync({
       allowsRecordingIOS: true,
