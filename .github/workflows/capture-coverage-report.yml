@@ -502,6 +502,50 @@ jobs:
           echo "issue_number=$issue_number" >> "$GITHUB_OUTPUT"
           echo "post_tracking_comment=$post_tracking_comment" >> "$GITHUB_OUTPUT"
 
+      - name: Resolve existing tracking issue comment
+        id: tracking_existing
+        if: ${{ steps.tracking.outputs.post_tracking_comment == 'true' && steps.tracking.outputs.issue_number != '' }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          comments_json_path="/tmp/issue-comments-${{ steps.tracking.outputs.issue_number }}.json"
+          gh api "repos/${GITHUB_REPOSITORY}/issues/${{ steps.tracking.outputs.issue_number }}/comments?per_page=100" > "$comments_json_path"
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          comments = json.loads(
+              Path("/tmp/issue-comments-${{ steps.tracking.outputs.issue_number }}.json").read_text(
+                  encoding="utf-8"
+              )
+          )
+          output_path = Path(os.environ["GITHUB_OUTPUT"])
+          existing_comment_id = ""
+          existing_comment_body = ""
+          marker = "<!-- coverage-tracking-comment:v1 -->"
+          legacy_heading = "### Capture coverage daily update"
+
+          for comment in reversed(comments):
+              user = (comment.get("user") or {}).get("login", "")
+              body = comment.get("body") or ""
+              if user not in {"github-actions[bot]", "github-actions"}:
+                  continue
+              if marker in body or body.lstrip().startswith(legacy_heading):
+                  existing_comment_id = str(comment.get("id") or "")
+                  existing_comment_body = body
+                  break
+
+          if existing_comment_id:
+              body_path = Path("/tmp/coverage-tracking-existing-comment.md")
+              body_path.write_text(existing_comment_body, encoding="utf-8")
+              with output_path.open("a", encoding="utf-8") as handle:
+                  handle.write(f"existing_comment_id={existing_comment_id}\n")
+                  handle.write(f"existing_comment_body_path={body_path}\n")
+          PY
+
       - name: Build tracking issue comment
         id: tracking_comment
         if: ${{ steps.tracking.outputs.post_tracking_comment == 'true' && steps.tracking.outputs.issue_number != '' }}
@@ -512,11 +556,13 @@ jobs:
           import csv
           import json
           import os
+          import re
           from pathlib import Path
 
           csv_path = Path("${{ steps.generate.outputs.csv_path }}")
           gates_path = Path("${{ steps.gates.outputs.gates_json_path }}")
           comment_path = Path("${{ steps.generate.outputs.report_dir }}") / "coverage_tracking_comment.md"
+          previous_comment_path = "${{ steps.tracking_existing.outputs.existing_comment_body_path }}"
 
           with csv_path.open("r", encoding="utf-8", newline="") as handle:
               rows = list(csv.DictReader(handle))
@@ -551,7 +597,35 @@ jobs:
           quality_status = row.get("quality_status", "") or "all"
           generated_at = row.get("generated_at", "") or "${{ github.run_started_at }}"
 
+          previous_body = ""
+          previous_paired_total = None
+          previous_coverage_ratio_pct = None
+          if previous_comment_path:
+              previous_path = Path(previous_comment_path)
+              if previous_path.exists():
+                  previous_body = previous_path.read_text(encoding="utf-8")
+                  paired_match = re.search(r"- Paired total: `([0-9]+)`", previous_body)
+                  if paired_match:
+                      previous_paired_total = int(paired_match.group(1))
+                  coverage_match = re.search(r"- Coverage ratio: `([0-9]+(?:\.[0-9]+)?)%`", previous_body)
+                  if coverage_match:
+                      previous_coverage_ratio_pct = float(coverage_match.group(1))
+
+          delta_lines = []
+          if previous_paired_total is None or previous_coverage_ratio_pct is None:
+              delta_lines.append("- Delta vs previous update: `n/a` (first tracked update)")
+          else:
+              paired_delta = paired_total - previous_paired_total
+              coverage_delta_pp = (coverage_ratio * 100.0) - previous_coverage_ratio_pct
+              delta_lines.append(
+                  f"- Delta paired total vs previous: `{paired_delta:+d}`"
+              )
+              delta_lines.append(
+                  f"- Delta coverage ratio vs previous: `{coverage_delta_pp:+.1f} pp`"
+              )
+
           lines = [
+              "<!-- coverage-tracking-comment:v1 -->",
               "### Capture coverage daily update",
               f"- Run: {run_url}",
               f"- Generated at (UTC): `{generated_at}`",
@@ -565,6 +639,7 @@ jobs:
               f"- Hard gates passed: `{str(hard_passed).lower()}`",
               f"- Warning gates passed: `{str(warning_passed).lower()}`",
           ]
+          lines.extend(delta_lines)
           if failing:
               lines.append("- Failing gates:")
               lines.extend(failing)
@@ -583,6 +658,111 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          gh issue comment "${{ steps.tracking.outputs.issue_number }}" \
+          comment_body="$(cat "${{ steps.tracking_comment.outputs.comment_path }}")"
+          if [[ -n "${{ steps.tracking_existing.outputs.existing_comment_id }}" ]]; then
+            gh api --method PATCH \
+              "repos/${GITHUB_REPOSITORY}/issues/comments/${{ steps.tracking_existing.outputs.existing_comment_id }}" \
+              -f body="$comment_body" > /dev/null
+            echo "Updated tracking comment id=${{ steps.tracking_existing.outputs.existing_comment_id }}."
+          else
+            gh issue comment "${{ steps.tracking.outputs.issue_number }}" \
+              --repo "${GITHUB_REPOSITORY}" \
+              --body-file "${{ steps.tracking_comment.outputs.comment_path }}" > /dev/null
+            echo "Created new tracking comment."
+          fi
+
+      - name: Build hard-gate incident issue body
+        id: hard_gate_incident
+        if: ${{ github.event_name == 'schedule' && steps.gates.outputs.hard_passed != 'true' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import csv
+          import json
+          import os
+          from pathlib import Path
+
+          csv_path = Path("${{ steps.generate.outputs.csv_path }}")
+          gates_path = Path("${{ steps.gates.outputs.gates_json_path }}")
+          body_path = Path("${{ steps.generate.outputs.report_dir }}") / "hard_gate_incident.md"
+          run_url = f"https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+          with csv_path.open("r", encoding="utf-8", newline="") as handle:
+              rows = list(csv.DictReader(handle))
+          row = rows[0] if rows else {}
+          generated_at = row.get("generated_at", "") or "${{ github.run_started_at }}"
+          coverage_ratio = float(row.get("coverage_ratio", "0") or "0")
+          paired_total = int(float(row.get("paired_total", "0") or "0"))
+          paired_with_capture = int(float(row.get("paired_with_capture", "0") or "0"))
+          paired_without_capture = int(float(row.get("paired_without_capture", "0") or "0"))
+
+          failing_hard = []
+          if gates_path.exists():
+              payload = json.loads(gates_path.read_text(encoding="utf-8"))
+              for gate in payload.get("gates", []):
+                  if gate.get("severity") == "hard" and not gate.get("passed", False):
+                      label = gate.get("label") or gate.get("id") or gate.get("metric", "gate")
+                      actual = gate.get("actual")
+                      operator = gate.get("operator")
+                      threshold = gate.get("threshold")
+                      failing_hard.append(
+                          f"- {label}: `{actual}` {operator} `{threshold}`"
+                      )
+
+          lines = [
+              "<!-- coverage-hard-gate-incident:v1 -->",
+              "# Incident: Capture coverage hard gates failed",
+              "",
+              f"- Latest failing run: {run_url}",
+              f"- Generated at (UTC): `{generated_at}`",
+              f"- Site: `{row.get('site_id', '') or '-'}`",
+              f"- Paired total: `{paired_total}`",
+              f"- Paired with capture: `{paired_with_capture}`",
+              f"- Paired without capture: `{paired_without_capture}`",
+              f"- Coverage ratio: `{coverage_ratio * 100:.1f}%`",
+              "",
+              "## Failing hard gates",
+          ]
+          if failing_hard:
+              lines.extend(failing_hard)
+          else:
+              lines.append("- hard gate failure detected, but no hard-gate details were parsed.")
+
+          body_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+          with Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as handle:
+              handle.write("incident_title=Incident: Capture coverage hard gates failed\n")
+              handle.write(f"incident_body_path={body_path}\n")
+          PY
+
+      - name: Upsert hard-gate incident issue
+        if: ${{ github.event_name == 'schedule' && steps.gates.outputs.hard_passed != 'true' }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          title="${{ steps.hard_gate_incident.outputs.incident_title }}"
+          body_path="${{ steps.hard_gate_incident.outputs.incident_body_path }}"
+
+          existing_issue_number="$(gh issue list \
             --repo "${GITHUB_REPOSITORY}" \
-            --body-file "${{ steps.tracking_comment.outputs.comment_path }}"
+            --state open \
+            --search "\"${title}\" in:title" \
+            --json number,title \
+            --jq ".[] | select(.title == \"${title}\") | .number" | head -n 1)"
+
+          if [[ -n "$existing_issue_number" ]]; then
+            gh issue edit "$existing_issue_number" \
+              --repo "${GITHUB_REPOSITORY}" \
+              --add-label bug \
+              --body-file "$body_path" > /dev/null
+            echo "Updated incident issue #$existing_issue_number."
+          else
+            new_url="$(gh issue create \
+              --repo "${GITHUB_REPOSITORY}" \
+              --title "$title" \
+              --label bug \
+              --body-file "$body_path")"
+            echo "Created incident issue: $new_url"
+          fi
