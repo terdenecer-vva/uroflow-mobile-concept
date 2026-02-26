@@ -58,10 +58,14 @@ on:
         required: false
         type: string
       enforce_coverage_gates:
-        description: "Fail workflow when hard gates fail"
+        description: "Fail workflow when hard gates fail (empty = use repo variable)"
         required: false
-        type: boolean
-        default: false
+        type: choice
+        options:
+          - ""
+          - "true"
+          - "false"
+        default: ""
       db_path:
         description: "DB path in repo/runner (used only when CLINICAL_HUB_DB_URL secret is empty)"
         required: false
