@@ -84,3 +84,24 @@ def test_validate_capture_payload_rejects_empty_sync_id_when_present() -> None:
 
     assert report.valid is False
     assert any("session.sync_id" in error for error in report.errors)
+
+
+def test_validate_capture_payload_allows_optional_analysis_block() -> None:
+    payload = _valid_payload()
+    payload["analysis"] = {
+        "runtime_flow_series": [
+            {"t_s": 0.0, "flow_ml_s": 0.0},
+            {"t_s": 0.5, "flow_ml_s": 12.1},
+        ],
+        "runtime_quality": {
+            "quality_score": 86.5,
+            "quality_status": "valid",
+            "roi_valid_ratio": 0.94,
+            "low_confidence_ratio": 0.08,
+        },
+    }
+
+    report = validate_capture_payload(payload)
+
+    assert report.valid is True
+    assert report.errors == []

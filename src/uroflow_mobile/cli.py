@@ -699,6 +699,28 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Optional output path for SHA-256 manifest of exported CSV.",
     )
 
+    export_paired_with_capture_cmd = subparsers.add_parser(
+        "export-paired-with-capture",
+        help=(
+            "Export paired measurements joined with best-matching capture package "
+            "(paired_measurement_id first, then session/attempt fallback)."
+        ),
+    )
+    export_paired_with_capture_cmd.add_argument(
+        "--db-path",
+        default="data/clinical_hub.db",
+        help="SQLite DB path for clinical hub data.",
+    )
+    export_paired_with_capture_cmd.add_argument(
+        "--output-csv",
+        required=True,
+        help="Target CSV path for joined paired+capture export.",
+    )
+    export_paired_with_capture_cmd.add_argument(
+        "--sha256-file",
+        help="Optional output path for SHA-256 manifest of exported CSV.",
+    )
+
     export_pilot_reports_cmd = subparsers.add_parser(
         "export-pilot-automation-reports",
         help="Export pilot automation reports from clinical hub SQLite DB to CSV.",
@@ -751,6 +773,73 @@ def _build_parser() -> argparse.ArgumentParser:
         choices=["valid", "repeat", "reject", "all"],
         default="valid",
         help="Quality status subset for summary (default: valid).",
+    )
+
+    coverage_summary_cmd = subparsers.add_parser(
+        "export-capture-coverage-summary",
+        help="Export capture coverage summary to CSV and optional PDF.",
+    )
+    coverage_summary_cmd.add_argument(
+        "--db-path",
+        default="data/clinical_hub.db",
+        help="SQLite DB path for clinical hub data.",
+    )
+    coverage_summary_cmd.add_argument(
+        "--output-csv",
+        required=True,
+        help="Target CSV path for one-row coverage summary export.",
+    )
+    coverage_summary_cmd.add_argument(
+        "--output-pdf",
+        help=(
+            "Optional target PDF path for formatted coverage summary. "
+            "Requires reportlab package."
+        ),
+    )
+    coverage_summary_cmd.add_argument(
+        "--sha256-file",
+        help="Optional output path for SHA-256 manifest of exported CSV.",
+    )
+    coverage_summary_cmd.add_argument("--site-id", help="Optional site filter.")
+    coverage_summary_cmd.add_argument("--sync-id", help="Optional sync_id filter.")
+    coverage_summary_cmd.add_argument("--subject-id", help="Optional subject filter.")
+    coverage_summary_cmd.add_argument("--operator-id", help="Optional operator_id filter.")
+    coverage_summary_cmd.add_argument(
+        "--platform",
+        choices=["ios", "android"],
+        help="Optional platform filter.",
+    )
+    coverage_summary_cmd.add_argument(
+        "--capture-mode",
+        choices=["water_impact", "jet_in_air_assist", "fallback_non_water"],
+        help="Optional capture mode filter.",
+    )
+    coverage_summary_cmd.add_argument(
+        "--quality-status",
+        choices=["valid", "repeat", "reject", "all"],
+        default="all",
+        help="Quality status subset for coverage summary (default: all).",
+    )
+    coverage_summary_cmd.add_argument(
+        "--targets-config",
+        help=(
+            "Optional JSON config with coverage gates. "
+            "Format: {'gates':[{'metric':'coverage_ratio','operator':'>=','threshold':0.9}]}"
+        ),
+    )
+    coverage_summary_cmd.add_argument(
+        "--gates-output-json",
+        help="Optional output path for evaluated coverage gates JSON report.",
+    )
+    coverage_summary_cmd.add_argument(
+        "--fail-on-hard-gates",
+        action="store_true",
+        help="Return non-zero exit code when any hard gate fails.",
+    )
+    coverage_summary_cmd.add_argument(
+        "--fail-on-warning-gates",
+        action="store_true",
+        help="Return non-zero exit code when any warning gate fails.",
     )
 
     return parser
@@ -1421,6 +1510,20 @@ def _handle_export_capture_packages(args: argparse.Namespace) -> int:
     return 0
 
 
+def _handle_export_paired_with_capture(args: argparse.Namespace) -> int:
+    from .clinical_hub import export_paired_with_capture_to_csv
+
+    db_path = Path(args.db_path)
+    output_csv = Path(args.output_csv)
+    row_count = export_paired_with_capture_to_csv(db_path=db_path, output_csv=output_csv)
+    manifest_path = _maybe_write_sha256_manifest(output_csv, args.sha256_file)
+    print(f"Paired-with-capture export saved: {output_csv}")
+    print(f"Rows exported: {row_count}")
+    if manifest_path is not None:
+        print(f"SHA-256 manifest: {manifest_path}")
+    return 0
+
+
 def _handle_export_pilot_automation_reports(args: argparse.Namespace) -> int:
     from .clinical_hub import export_pilot_automation_reports_to_csv
 
@@ -1432,6 +1535,299 @@ def _handle_export_pilot_automation_reports(args: argparse.Namespace) -> int:
     print(f"Rows exported: {row_count}")
     if manifest_path is not None:
         print(f"SHA-256 manifest: {manifest_path}")
+    return 0
+
+
+def _capture_coverage_csv_headers() -> list[str]:
+    return [
+        "generated_at",
+        "site_id",
+        "sync_id",
+        "subject_id",
+        "operator_id",
+        "platform",
+        "capture_mode",
+        "quality_status",
+        "paired_total",
+        "paired_with_capture",
+        "paired_without_capture",
+        "coverage_ratio",
+        "quality_valid",
+        "quality_repeat",
+        "quality_reject",
+        "match_paired_id",
+        "match_session_identity",
+        "match_none",
+    ]
+
+
+def _capture_coverage_csv_row(summary: object) -> list[object | None]:
+    from .clinical_hub import CaptureCoverageSummary
+
+    assert isinstance(summary, CaptureCoverageSummary)
+    return [
+        summary.generated_at.isoformat(),
+        summary.filters.site_id,
+        summary.filters.sync_id,
+        summary.filters.subject_id,
+        summary.filters.operator_id,
+        summary.filters.platform,
+        summary.filters.capture_mode,
+        summary.filters.quality_status,
+        summary.paired_total,
+        summary.paired_with_capture,
+        summary.paired_without_capture,
+        round(summary.coverage_ratio, 6),
+        summary.quality_distribution.get("valid", 0),
+        summary.quality_distribution.get("repeat", 0),
+        summary.quality_distribution.get("reject", 0),
+        summary.capture_match_distribution.get("paired_id", 0),
+        summary.capture_match_distribution.get("session_identity", 0),
+        summary.capture_match_distribution.get("none", 0),
+    ]
+
+
+def _write_capture_coverage_pdf(output_pdf: Path, summary: object) -> None:
+    from .clinical_hub import CaptureCoverageSummary
+
+    assert isinstance(summary, CaptureCoverageSummary)
+    try:
+        from reportlab.lib.pagesizes import A4
+        from reportlab.pdfgen import canvas
+    except ModuleNotFoundError as error:
+        raise ModuleNotFoundError(
+            "reportlab is required for --output-pdf. Install with: pip install reportlab"
+        ) from error
+
+    output_pdf.parent.mkdir(parents=True, exist_ok=True)
+    sheet = canvas.Canvas(str(output_pdf), pagesize=A4)
+    width, height = A4
+    y = height - 42
+
+    def line(text: str, step: int = 16) -> None:
+        nonlocal y
+        sheet.drawString(42, y, text)
+        y -= step
+
+    line("Capture Coverage Summary")
+    line(f"Generated at: {summary.generated_at.isoformat()}")
+    line(f"Site: {summary.filters.site_id or '-'}")
+    line(f"Sync ID: {summary.filters.sync_id or '-'}")
+    line(f"Subject: {summary.filters.subject_id or '-'}")
+    line(f"Operator: {summary.filters.operator_id or '-'}")
+    line(f"Platform: {summary.filters.platform or '-'}")
+    line(f"Capture mode: {summary.filters.capture_mode or '-'}")
+    line(
+        "Quality status filter: "
+        + (summary.filters.quality_status if summary.filters.quality_status is not None else "all")
+    )
+    y -= 6
+    line(f"Paired total: {summary.paired_total}")
+    line(f"Paired with capture: {summary.paired_with_capture}")
+    line(f"Paired without capture: {summary.paired_without_capture}")
+    line(f"Coverage ratio: {summary.coverage_ratio * 100:.1f}%")
+    y -= 6
+    line(
+        "Quality distribution: "
+        f"valid={summary.quality_distribution.get('valid', 0)}, "
+        f"repeat={summary.quality_distribution.get('repeat', 0)}, "
+        f"reject={summary.quality_distribution.get('reject', 0)}"
+    )
+    line(
+        "Capture match modes: "
+        f"paired_id={summary.capture_match_distribution.get('paired_id', 0)}, "
+        f"session_identity={summary.capture_match_distribution.get('session_identity', 0)}, "
+        f"none={summary.capture_match_distribution.get('none', 0)}"
+    )
+    sheet.showPage()
+    sheet.save()
+
+
+def _coverage_summary_metrics(summary: object) -> dict[str, float]:
+    from .clinical_hub import CaptureCoverageSummary
+
+    assert isinstance(summary, CaptureCoverageSummary)
+    paired_total = float(max(0, summary.paired_total))
+    denominator = paired_total if paired_total > 0 else 1.0
+
+    quality_valid = float(summary.quality_distribution.get("valid", 0))
+    quality_repeat = float(summary.quality_distribution.get("repeat", 0))
+    quality_reject = float(summary.quality_distribution.get("reject", 0))
+    match_none = float(summary.capture_match_distribution.get("none", 0))
+
+    return {
+        "paired_total": paired_total,
+        "paired_with_capture": float(max(0, summary.paired_with_capture)),
+        "paired_without_capture": float(max(0, summary.paired_without_capture)),
+        "coverage_ratio": float(summary.coverage_ratio),
+        "quality_valid_count": quality_valid,
+        "quality_repeat_count": quality_repeat,
+        "quality_reject_count": quality_reject,
+        "quality_valid_ratio": quality_valid / denominator,
+        "quality_repeat_ratio": quality_repeat / denominator,
+        "quality_reject_ratio": quality_reject / denominator,
+        "capture_match_none_count": match_none,
+        "capture_match_none_ratio": match_none / denominator,
+    }
+
+
+def _evaluate_gate(actual: float, operator: str, threshold: float) -> bool:
+    if operator == ">=":
+        return actual >= threshold
+    if operator == ">":
+        return actual > threshold
+    if operator == "<=":
+        return actual <= threshold
+    if operator == "<":
+        return actual < threshold
+    if operator == "==":
+        return actual == threshold
+    raise ValueError(f"Unsupported gate operator: {operator}")
+
+
+def _evaluate_coverage_targets(summary: object, targets_config: Path) -> dict[str, object]:
+    config_payload = json.loads(targets_config.read_text(encoding="utf-8"))
+    if not isinstance(config_payload, dict):
+        raise ValueError("coverage targets config must be a JSON object")
+
+    raw_gates = config_payload.get("gates")
+    if not isinstance(raw_gates, list) or len(raw_gates) == 0:
+        raise ValueError("coverage targets config must include non-empty 'gates' list")
+
+    metrics = _coverage_summary_metrics(summary)
+    evaluations: list[dict[str, object]] = []
+    hard_passed = True
+    warning_passed = True
+
+    for index, raw_gate in enumerate(raw_gates):
+        if not isinstance(raw_gate, dict):
+            raise ValueError(f"gates[{index}] must be an object")
+        metric = raw_gate.get("metric")
+        operator = raw_gate.get("operator")
+        threshold = raw_gate.get("threshold")
+        if not isinstance(metric, str) or not metric:
+            raise ValueError(f"gates[{index}].metric must be non-empty string")
+        if metric not in metrics:
+            raise ValueError(
+                f"gates[{index}].metric '{metric}' is unknown. "
+                f"Supported metrics: {', '.join(sorted(metrics))}"
+            )
+        if not isinstance(operator, str) or operator not in {">=", ">", "<=", "<", "=="}:
+            raise ValueError(
+                f"gates[{index}].operator must be one of: >=, >, <=, <, =="
+            )
+        if not isinstance(threshold, (int, float)) or not math.isfinite(float(threshold)):
+            raise ValueError(f"gates[{index}].threshold must be finite number")
+
+        severity_raw = raw_gate.get("severity", "hard")
+        severity = str(severity_raw).strip().lower()
+        if severity not in {"hard", "warning"}:
+            raise ValueError(f"gates[{index}].severity must be 'hard' or 'warning'")
+
+        actual = float(metrics[metric])
+        threshold_value = float(threshold)
+        passed = _evaluate_gate(actual, operator, threshold_value)
+
+        if severity == "hard" and not passed:
+            hard_passed = False
+        if severity == "warning" and not passed:
+            warning_passed = False
+
+        evaluations.append(
+            {
+                "id": raw_gate.get("id") or metric,
+                "label": raw_gate.get("label") or metric,
+                "metric": metric,
+                "operator": operator,
+                "threshold": threshold_value,
+                "actual": actual,
+                "severity": severity,
+                "passed": passed,
+            }
+        )
+
+    return {
+        "config_version": config_payload.get("version"),
+        "config_name": config_payload.get("name"),
+        "metrics": metrics,
+        "gates": evaluations,
+        "hard_passed": hard_passed,
+        "warning_passed": warning_passed,
+        "overall_passed": hard_passed,
+    }
+
+
+def _handle_export_capture_coverage_summary(args: argparse.Namespace) -> int:
+    from .clinical_hub import build_capture_coverage_summary
+
+    quality_status = None if args.quality_status == "all" else args.quality_status
+    summary = build_capture_coverage_summary(
+        db_path=Path(args.db_path),
+        site_id=args.site_id,
+        sync_id=args.sync_id,
+        subject_id=args.subject_id,
+        operator_id=args.operator_id,
+        platform=args.platform,
+        capture_mode=args.capture_mode,
+        quality_status=quality_status,
+    )
+
+    output_csv = Path(args.output_csv)
+    output_csv.parent.mkdir(parents=True, exist_ok=True)
+    with output_csv.open("w", encoding="utf-8", newline="") as file:
+        writer = csv.writer(file)
+        writer.writerow(_capture_coverage_csv_headers())
+        writer.writerow(_capture_coverage_csv_row(summary))
+
+    manifest_path = _maybe_write_sha256_manifest(output_csv, args.sha256_file)
+    print(f"Capture coverage summary exported: {output_csv}")
+    print(
+        "Coverage ratio: "
+        f"{summary.coverage_ratio * 100:.1f}% "
+        f"({summary.paired_with_capture}/{summary.paired_total})"
+    )
+    if manifest_path is not None:
+        print(f"SHA-256 manifest: {manifest_path}")
+
+    if args.output_pdf:
+        output_pdf = Path(args.output_pdf)
+        _write_capture_coverage_pdf(output_pdf, summary)
+        print(f"Coverage PDF exported: {output_pdf}")
+
+    if args.targets_config:
+        targets_path = Path(args.targets_config)
+        gates_report = _evaluate_coverage_targets(summary, targets_path)
+        print(
+            "Coverage gates: "
+            f"hard_passed={gates_report['hard_passed']}, "
+            f"warning_passed={gates_report['warning_passed']}"
+        )
+
+        for gate in gates_report["gates"]:
+            assert isinstance(gate, dict)
+            marker = "PASS" if bool(gate.get("passed")) else "FAIL"
+            print(
+                f"[{marker}] {gate.get('severity', 'hard')}: "
+                f"{gate.get('label', gate.get('metric', ''))} "
+                f"{gate.get('operator', '')} {gate.get('threshold', '')} "
+                f"(actual={gate.get('actual', '')})"
+            )
+
+        if args.gates_output_json:
+            gates_output = Path(args.gates_output_json)
+            gates_output.parent.mkdir(parents=True, exist_ok=True)
+            gates_output.write_text(
+                json.dumps(gates_report, ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
+            print(f"Coverage gates report exported: {gates_output}")
+
+        if args.fail_on_hard_gates and not bool(gates_report["hard_passed"]):
+            print("Hard coverage gates failed.")
+            return 1
+        if args.fail_on_warning_gates and not bool(gates_report["warning_passed"]):
+            print("Warning coverage gates failed.")
+            return 1
     return 0
 
 
@@ -1499,8 +1895,12 @@ def main(argv: list[str] | None = None) -> int:
         return _handle_export_audit_events(args)
     if args.command == "export-capture-packages":
         return _handle_export_capture_packages(args)
+    if args.command == "export-paired-with-capture":
+        return _handle_export_paired_with_capture(args)
     if args.command == "export-pilot-automation-reports":
         return _handle_export_pilot_automation_reports(args)
+    if args.command == "export-capture-coverage-summary":
+        return _handle_export_capture_coverage_summary(args)
     if args.command == "summarize-paired-measurements":
         return _handle_summarize_paired_measurements(args)
 

@@ -29,6 +29,9 @@ def test_clinical_hub_openapi_contract_contains_core_paths(tmp_path: Path) -> No
     paths = payload.get("paths", {})
     assert "/api/v1/paired-measurements" in paths
     assert "/api/v1/capture-packages" in paths
+    assert "/api/v1/capture-coverage-summary" in paths
+    assert "/api/v1/capture-coverage-summary.csv" in paths
+    assert "/api/v1/paired-with-capture.csv" in paths
     assert "/api/v1/pilot-automation-reports" in paths
     assert "/api/v1/comparison-summary" in paths
     assert "/api/v1/audit-events" in paths

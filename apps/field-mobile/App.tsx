@@ -1,6 +1,7 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
+  AppState,
   Platform,
   Pressable,
   SafeAreaView,
@@ -12,10 +13,20 @@ import {
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { CameraView, useCameraPermissions } from "expo-camera";
+import * as SecureStore from "expo-secure-store";
+import {
+  buildCaptureContractPayload,
+  buildCaptureContractPayloadFromSamples,
+} from "./src/capture/buildCaptureContract";
+import {
+  RuntimeCaptureSession,
+  type RuntimeFlowPoint,
+} from "./src/capture/runtimeCaptureSession";
+import { estimateRoiSignalFromBase64 } from "./src/capture/roiSignalEstimator";
 
 type QualityStatus = "valid" | "repeat" | "reject";
 type SummaryQualityStatus = QualityStatus | "all";
-type SessionPlatform = "ios" | "android" | "windows" | "macos" | "web";
 
 type ComparisonMetricSummary = {
   metric: string;
@@ -31,6 +42,15 @@ type ComparisonSummaryResponse = {
   records_matched_filters: number;
   quality_distribution: Record<string, number>;
   metrics: ComparisonMetricSummary[];
+};
+
+type CaptureCoverageSummaryResponse = {
+  paired_total: number;
+  paired_with_capture: number;
+  paired_without_capture: number;
+  coverage_ratio: number;
+  quality_distribution: Record<string, number>;
+  capture_match_distribution: Record<string, number>;
 };
 
 type AuthContextResponse = {
@@ -81,10 +101,21 @@ type PairedPayload = {
   notes: string | null;
 };
 
+type CapturePackagePayload = {
+  session: PairedPayload["session"];
+  package_type: "capture_contract_json";
+  capture_payload: Record<string, unknown>;
+  paired_measurement_id: number | null;
+  notes: string | null;
+};
+
+type PendingEndpoint = "paired_measurements" | "capture_packages";
+
 type PendingSubmission = {
   id: string;
   created_at: string;
-  payload: PairedPayload;
+  endpoint: PendingEndpoint;
+  payload: PairedPayload | CapturePackagePayload;
   request_headers: RequestHeaderContext;
   attempt_count: number;
   last_attempt_at: string | null;
@@ -117,17 +148,17 @@ type RequestHeaderContext = {
   operator_id: string;
 };
 
+type RoiFrameAnalysisState = {
+  prevHash: number | null;
+  prevLength: number | null;
+};
+
 const PENDING_SUBMISSIONS_KEY = "uroflow_pending_submissions_v1";
 const APP_SETTINGS_KEY = "uroflow_field_settings_v1";
+const APP_SETTINGS_API_KEY_SECURE_KEY = "uroflow_field_api_key_secure_v1";
 const DEFAULT_REQUEST_TIMEOUT_MS = "15000";
+const COVERAGE_GOAL_RATIO = 0.9;
 const ALLOWED_ACTOR_ROLES = ["operator", "investigator", "data_manager", "admin"] as const;
-const SUPPORTED_SESSION_PLATFORMS: SessionPlatform[] = [
-  "ios",
-  "android",
-  "windows",
-  "macos",
-  "web",
-];
 
 const defaultMeasuredAt = new Date().toISOString().slice(0, 19) + "Z";
 
@@ -196,21 +227,6 @@ function normalizeActorRoleInput(rawValue: string | null | undefined): string {
   return "operator";
 }
 
-function isSessionPlatform(rawValue: string): rawValue is SessionPlatform {
-  return SUPPORTED_SESSION_PLATFORMS.includes(rawValue as SessionPlatform);
-}
-
-function normalizeSessionPlatformInput(
-  rawValue: string,
-  fallback: SessionPlatform,
-): SessionPlatform {
-  const normalized = rawValue.trim().toLowerCase();
-  if (isSessionPlatform(normalized)) {
-    return normalized;
-  }
-  return fallback;
-}
-
 function buildHeaderContextFromValues(
   apiKey: string,
   actorRole: string,
@@ -227,7 +243,7 @@ function buildHeaderContextFromValues(
 
 function normalizeRequestHeaderContext(
   raw: unknown,
-  payload: PairedPayload,
+  payload: { session: { site_id: string; operator_id: string } },
 ): RequestHeaderContext {
   if (!raw || typeof raw !== "object") {
     return buildHeaderContextFromValues(
@@ -256,6 +272,13 @@ function clampTimeoutMs(rawValue: string): number {
   return Math.min(120000, Math.max(2000, Math.round(parsed)));
 }
 
+function normalizePendingEndpoint(raw: unknown): PendingEndpoint {
+  if (raw === "capture_packages") {
+    return "capture_packages";
+  }
+  return "paired_measurements";
+}
+
 function normalizePendingSubmission(raw: unknown): PendingSubmission | null {
   if (!raw || typeof raw !== "object") {
     return null;
@@ -282,8 +305,12 @@ function normalizePendingSubmission(raw: unknown): PendingSubmission | null {
   return {
     id,
     created_at: createdAt,
-    payload: payload as PairedPayload,
-    request_headers: normalizeRequestHeaderContext(candidate.request_headers, payload as PairedPayload),
+    endpoint: normalizePendingEndpoint(candidate.endpoint),
+    payload: payload as PairedPayload | CapturePackagePayload,
+    request_headers: normalizeRequestHeaderContext(
+      candidate.request_headers,
+      payload as { session: { site_id: string; operator_id: string } },
+    ),
     attempt_count: attemptCount,
     last_attempt_at:
       typeof candidate.last_attempt_at === "string" ? candidate.last_attempt_at : null,
@@ -320,8 +347,26 @@ async function savePendingSubmissions(queue: PendingSubmission[]): Promise<void>
 
 async function loadAppSettings(): Promise<AppSettings | null> {
   const raw = await AsyncStorage.getItem(APP_SETTINGS_KEY);
+  let secureApiKey = "";
+  try {
+    secureApiKey = (await SecureStore.getItemAsync(APP_SETTINGS_API_KEY_SECURE_KEY)) ?? "";
+  } catch {
+    secureApiKey = "";
+  }
   if (!raw) {
-    return null;
+    if (!secureApiKey) {
+      return null;
+    }
+    return {
+      api_base_url: "http://127.0.0.1:8000",
+      api_key: secureApiKey,
+      actor_role: "operator",
+      site_id: "SITE-001",
+      operator_id: "OP-01",
+      summary_quality_status: "valid",
+      summary_sync_id: "",
+      request_timeout_ms: DEFAULT_REQUEST_TIMEOUT_MS,
+    };
   }
   try {
     const parsed = JSON.parse(raw) as Partial<AppSettings>;
@@ -340,7 +385,7 @@ async function loadAppSettings(): Promise<AppSettings | null> {
         typeof parsed.api_base_url === "string" && parsed.api_base_url.trim()
           ? parsed.api_base_url
           : "http://127.0.0.1:8000",
-      api_key: typeof parsed.api_key === "string" ? parsed.api_key : "",
+      api_key: secureApiKey || (typeof parsed.api_key === "string" ? parsed.api_key : ""),
       actor_role: normalizeActorRoleInput(
         typeof parsed.actor_role === "string" ? parsed.actor_role : "operator",
       ),
@@ -359,18 +404,49 @@ async function loadAppSettings(): Promise<AppSettings | null> {
 }
 
 async function saveAppSettings(settings: AppSettings): Promise<void> {
-  await AsyncStorage.setItem(APP_SETTINGS_KEY, JSON.stringify(settings));
+  const { api_key: apiKeyValue, ...plainSettings } = settings;
+  await AsyncStorage.setItem(
+    APP_SETTINGS_KEY,
+    JSON.stringify({ ...plainSettings, api_key: "" }),
+  );
+  try {
+    await SecureStore.setItemAsync(APP_SETTINGS_API_KEY_SECURE_KEY, apiKeyValue);
+  } catch {
+    await AsyncStorage.setItem(APP_SETTINGS_KEY, JSON.stringify(settings));
+  }
+}
+
+function extractCreatedRecordId(responseBody: string): number | null {
+  try {
+    const parsed = JSON.parse(responseBody) as { id?: unknown };
+    return typeof parsed.id === "number" ? parsed.id : null;
+  } catch {
+    return null;
+  }
+}
+
+function runtimeCaptureMatchesSession(
+  runtimePayload: Record<string, unknown> | null,
+  session: PairedPayload["session"],
+): boolean {
+  if (!runtimePayload || typeof runtimePayload !== "object") {
+    return false;
+  }
+  const sessionNode = runtimePayload.session;
+  if (!sessionNode || typeof sessionNode !== "object") {
+    return false;
+  }
+  const candidate = sessionNode as { session_id?: unknown; sync_id?: unknown };
+  const sameSessionId =
+    typeof candidate.session_id === "string" && candidate.session_id === session.session_id;
+  const runtimeSyncId = typeof candidate.sync_id === "string" ? candidate.sync_id : null;
+  const sessionSyncId = session.sync_id ?? null;
+  return sameSessionId && runtimeSyncId === sessionSyncId;
 }
 
 export default function App() {
-  const defaultPlatform: SessionPlatform =
-    Platform.OS === "ios" ||
-    Platform.OS === "android" ||
-    Platform.OS === "windows" ||
-    Platform.OS === "macos" ||
-    Platform.OS === "web"
-      ? Platform.OS
-      : "android";
+  const defaultPlatform = Platform.OS === "ios" ? "ios" : "android";
+  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
 
   const [apiBaseUrl, setApiBaseUrl] = useState("http://127.0.0.1:8000");
   const [apiKey, setApiKey] = useState("");
@@ -383,8 +459,8 @@ export default function App() {
   const [operatorId, setOperatorId] = useState("OP-01");
   const [attemptNumber, setAttemptNumber] = useState("1");
   const [measuredAt, setMeasuredAt] = useState(defaultMeasuredAt);
-  const [platform, setPlatform] = useState<SessionPlatform>(defaultPlatform);
-  const [deviceModel, setDeviceModel] = useState<string>(Platform.OS);
+  const [platform, setPlatform] = useState(defaultPlatform);
+  const [deviceModel, setDeviceModel] = useState(Platform.OS);
   const [appVersion, setAppVersion] = useState("0.1.0");
   const [captureMode, setCaptureMode] = useState("water_impact");
 
@@ -416,7 +492,44 @@ export default function App() {
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [summaryError, setSummaryError] = useState("");
   const [summary, setSummary] = useState<ComparisonSummaryResponse | null>(null);
+  const [coverageLoading, setCoverageLoading] = useState(false);
+  const [coverageError, setCoverageError] = useState("");
+  const [coverageSummary, setCoverageSummary] = useState<CaptureCoverageSummaryResponse | null>(
+    null,
+  );
   const [settingsHydrated, setSettingsHydrated] = useState(false);
+  const [captureRunning, setCaptureRunning] = useState(false);
+  const [captureSampleCount, setCaptureSampleCount] = useState(0);
+  const [captureAvgMotionNorm, setCaptureAvgMotionNorm] = useState(0);
+  const [captureStatus, setCaptureStatus] = useState("Idle");
+  const [captureRoiValidRatio, setCaptureRoiValidRatio] = useState(0);
+  const [captureLowConfidenceRatio, setCaptureLowConfidenceRatio] = useState(0);
+  const [runtimeFlowSeries, setRuntimeFlowSeries] = useState<RuntimeFlowPoint[]>([]);
+  const [cameraPreviewReady, setCameraPreviewReady] = useState(false);
+  const [roiLocked, setRoiLocked] = useState(false);
+  const [roiMotionProxy, setRoiMotionProxy] = useState(0);
+  const [roiTextureProxy, setRoiTextureProxy] = useState(0);
+  const [roiFrameValid, setRoiFrameValid] = useState(false);
+  const [roiFrameCount, setRoiFrameCount] = useState(0);
+  const [manualAppMetricsOverride, setManualAppMetricsOverride] = useState(false);
+  const [runtimeCaptureContractPayload, setRuntimeCaptureContractPayload] = useState<
+    Record<string, unknown> | null
+  >(null);
+  const syncInFlightRef = useRef(false);
+  const autoSyncIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const captureRuntimeRef = useRef<RuntimeCaptureSession | null>(null);
+  const cameraPreviewRef = useRef<CameraView | null>(null);
+  const roiFrameIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const roiFrameInFlightRef = useRef(false);
+  const roiFrameStateRef = useRef<RoiFrameAnalysisState>({ prevHash: null, prevLength: null });
+
+  function resetRoiFrameTracking(): void {
+    roiFrameStateRef.current = { prevHash: null, prevLength: null };
+    setRoiMotionProxy(0);
+    setRoiTextureProxy(0);
+    setRoiFrameValid(false);
+    setRoiFrameCount(0);
+  }
 
   const payload = useMemo<PairedPayload>(() => {
     return {
@@ -488,6 +601,32 @@ export default function App() {
     subjectId,
   ]);
 
+  const runtimeCurvePreview = useMemo<RuntimeFlowPoint[]>(() => {
+    if (runtimeFlowSeries.length <= 32) {
+      return runtimeFlowSeries;
+    }
+    const step = Math.ceil(runtimeFlowSeries.length / 32);
+    const selected: RuntimeFlowPoint[] = [];
+    for (let index = 0; index < runtimeFlowSeries.length; index += step) {
+      selected.push(runtimeFlowSeries[index]);
+    }
+    const lastPoint = runtimeFlowSeries[runtimeFlowSeries.length - 1];
+    if (selected[selected.length - 1] !== lastPoint) {
+      selected.push(lastPoint);
+    }
+    return selected;
+  }, [runtimeFlowSeries]);
+
+  const runtimeCurveMaxFlow = useMemo(() => {
+    if (runtimeCurvePreview.length === 0) {
+      return 1;
+    }
+    return Math.max(
+      1,
+      ...runtimeCurvePreview.map((point) => (Number.isFinite(point.flow_ml_s) ? point.flow_ml_s : 0)),
+    );
+  }, [runtimeCurvePreview]);
+
   useEffect(() => {
     void (async () => {
       const [queue, settings] = await Promise.all([
@@ -535,6 +674,216 @@ export default function App() {
     summarySyncId,
     summaryQualityStatus,
   ]);
+
+  useEffect(() => {
+    if (captureRuntimeRef.current == null) {
+      captureRuntimeRef.current = new RuntimeCaptureSession();
+    }
+    return () => {
+      const runtime = captureRuntimeRef.current;
+      if (runtime) {
+        void runtime.stop();
+      }
+      if (roiFrameIntervalRef.current != null) {
+        clearInterval(roiFrameIntervalRef.current);
+        roiFrameIntervalRef.current = null;
+      }
+      roiFrameInFlightRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    const runtime = captureRuntimeRef.current;
+    if (!runtime) {
+      return;
+    }
+    runtime.setCameraSignal({
+      previewReady: cameraPreviewReady,
+      roiLocked,
+      roiMotionProxy,
+      roiTextureProxy,
+      roiValidByFrame: roiFrameValid,
+    });
+  }, [cameraPreviewReady, roiFrameValid, roiLocked, roiMotionProxy, roiTextureProxy]);
+
+  useEffect(() => {
+    if (!cameraPermission?.granted) {
+      setCameraPreviewReady(false);
+      setRoiLocked(false);
+      resetRoiFrameTracking();
+    }
+  }, [cameraPermission?.granted]);
+
+  useEffect(() => {
+    if (!captureRunning || !cameraPermission?.granted || !cameraPreviewReady) {
+      if (roiFrameIntervalRef.current != null) {
+        clearInterval(roiFrameIntervalRef.current);
+        roiFrameIntervalRef.current = null;
+      }
+      roiFrameInFlightRef.current = false;
+      return;
+    }
+
+    const runRoiFrameAnalysis = async (): Promise<void> => {
+      const camera = cameraPreviewRef.current;
+      if (!camera || roiFrameInFlightRef.current) {
+        return;
+      }
+      roiFrameInFlightRef.current = true;
+      try {
+        const photo = await camera.takePictureAsync({
+          base64: true,
+          quality: 0.08,
+          skipProcessing: true,
+        });
+        if (!photo.base64) {
+          return;
+        }
+        const signal = estimateRoiSignalFromBase64({
+          frameBase64: photo.base64,
+          prevHash: roiFrameStateRef.current.prevHash,
+          prevLength: roiFrameStateRef.current.prevLength,
+        });
+        roiFrameStateRef.current = {
+          prevHash: signal.frameHash,
+          prevLength: signal.frameLength,
+        };
+        setRoiMotionProxy(signal.motionProxy);
+        setRoiTextureProxy(signal.textureProxy);
+        setRoiFrameValid(signal.roiValid);
+        setRoiFrameCount((count) => count + 1);
+      } catch {
+        // If frame capture fails intermittently, keep session running.
+      } finally {
+        roiFrameInFlightRef.current = false;
+      }
+    };
+
+    void runRoiFrameAnalysis();
+    roiFrameIntervalRef.current = setInterval(() => {
+      void runRoiFrameAnalysis();
+    }, 900);
+
+    return () => {
+      if (roiFrameIntervalRef.current != null) {
+        clearInterval(roiFrameIntervalRef.current);
+        roiFrameIntervalRef.current = null;
+      }
+      roiFrameInFlightRef.current = false;
+    };
+  }, [cameraPermission?.granted, cameraPreviewReady, captureRunning]);
+
+  async function startRuntimeCapture(): Promise<void> {
+    const runtime = captureRuntimeRef.current ?? new RuntimeCaptureSession();
+    captureRuntimeRef.current = runtime;
+
+    try {
+      if (!cameraPermission?.granted) {
+        const permissionResult = await requestCameraPermission();
+        if (!permissionResult.granted) {
+          Alert.alert(
+            "Camera permission missing",
+            "Camera permission is required for ROI validity checks.",
+          );
+        }
+      }
+      if (!roiLocked) {
+        Alert.alert(
+          "ROI not locked",
+          "Lock ROI before capture for better quality. Capture will continue but may be marked repeat/reject.",
+        );
+      }
+      resetRoiFrameTracking();
+      setCaptureStatus("Requesting permissions...");
+      const startResult = await runtime.start();
+      setCaptureRunning(true);
+      setCaptureSampleCount(0);
+      setCaptureAvgMotionNorm(0);
+      setCaptureRoiValidRatio(0);
+      setCaptureLowConfidenceRatio(0);
+      setRuntimeFlowSeries([]);
+      setRuntimeCaptureContractPayload(null);
+      setMeasuredAt(startResult.startedAtIso);
+      setCaptureStatus(
+        `Capture running. mic=${startResult.permissions.microphoneGranted ? "ok" : "no"}, ` +
+          `camera=${startResult.permissions.cameraGranted ? "ok" : "no"}, ` +
+          `motion=${startResult.permissions.motionGranted ? "ok" : "no"}`,
+      );
+      if (!startResult.permissions.cameraGranted) {
+        Alert.alert(
+          "Camera permission missing",
+          "Capture will continue with audio+motion only; ROI quality flags may degrade.",
+        );
+      }
+    } catch (error) {
+      setCaptureRunning(false);
+      setCaptureStatus(`Capture start failed: ${String(error)}`);
+      Alert.alert("Capture start failed", String(error));
+    }
+  }
+
+  async function stopRuntimeCapture(): Promise<void> {
+    const runtime = captureRuntimeRef.current;
+    if (!runtime) {
+      return;
+    }
+
+    try {
+      const stopResult = await runtime.stop();
+      setCaptureRunning(false);
+      setCaptureSampleCount(stopResult.sampleCount);
+      setCaptureAvgMotionNorm(stopResult.averageMotionNorm);
+      setCaptureRoiValidRatio(stopResult.quality.roiValidRatio);
+      setCaptureLowConfidenceRatio(stopResult.quality.lowConfidenceRatio);
+      setRuntimeFlowSeries(stopResult.flowSeries);
+      setDeviceModel(stopResult.deviceModel);
+      if (!manualAppMetricsOverride) {
+        setAppQmax(stopResult.derived.qmaxMlS.toFixed(3));
+        setAppQavg(stopResult.derived.qavgMlS.toFixed(3));
+        setAppVvoid(stopResult.derived.vvoidMl.toFixed(3));
+        setAppFlowTime(stopResult.derived.flowTimeS.toFixed(3));
+        setAppTqmax(stopResult.derived.tqmaxS.toFixed(3));
+      }
+      setAppQualityScore(stopResult.quality.qualityScore.toFixed(1));
+      setAppQualityStatus(stopResult.quality.qualityStatus);
+
+      const contractPayload = buildCaptureContractPayloadFromSamples({
+        sessionId: sessionId.trim(),
+        syncId: syncId.trim() || null,
+        startedAtIso: stopResult.startedAtIso,
+        captureMode,
+        deviceModel: stopResult.deviceModel,
+        iosVersion: stopResult.osVersion,
+        appVersion: appVersion.trim() || null,
+        samples: stopResult.samples,
+        minDepthConfidence: 0.6,
+        sourceLabel: "runtime-audio-imu",
+        analysis: {
+          runtime_flow_series: stopResult.flowSeries,
+          runtime_quality: {
+            quality_score: stopResult.quality.qualityScore,
+            quality_status: stopResult.quality.qualityStatus,
+            roi_valid_ratio: stopResult.quality.roiValidRatio,
+            low_confidence_ratio: stopResult.quality.lowConfidenceRatio,
+          },
+        },
+      });
+      setRuntimeCaptureContractPayload(contractPayload as unknown as Record<string, unknown>);
+      setCaptureStatus(
+        `Capture stopped. samples=${stopResult.sampleCount}, quality=${stopResult.quality.qualityStatus}, score=${stopResult.quality.qualityScore.toFixed(1)}`,
+      );
+      if (stopResult.derived.eventStartTs != null && stopResult.derived.eventEndTs != null) {
+        const runtimeNote =
+          `runtime_event_start_s=${stopResult.derived.eventStartTs.toFixed(3)}, ` +
+          `runtime_event_end_s=${stopResult.derived.eventEndTs.toFixed(3)}`;
+        setNotes((existing) => (existing.trim() ? `${existing}; ${runtimeNote}` : runtimeNote));
+      }
+    } catch (error) {
+      setCaptureRunning(false);
+      setCaptureStatus(`Capture stop failed: ${String(error)}`);
+      Alert.alert("Capture stop failed", String(error));
+    }
+  }
 
   async function persistPendingQueue(queue: PendingSubmission[]): Promise<void> {
     await savePendingSubmissions(queue);
@@ -598,16 +947,56 @@ export default function App() {
     };
   }
 
-  async function attemptSubmit(
+  function endpointPath(endpoint: PendingEndpoint): string {
+    if (endpoint === "capture_packages") {
+      return "/api/v1/capture-packages";
+    }
+    return "/api/v1/paired-measurements";
+  }
+
+  function buildCapturePackagePayloadFromPaired(
     currentPayload: PairedPayload,
+    pairedMeasurementId: number | null,
+  ): CapturePackagePayload {
+    let captureContractPayload: Record<string, unknown>;
+    let notes = "mobile_scaffold_capture_contract_v0.1";
+    if (runtimeCaptureMatchesSession(runtimeCaptureContractPayload, currentPayload.session)) {
+      captureContractPayload = runtimeCaptureContractPayload;
+      notes = "mobile_runtime_capture_contract_audio_imu_v0.1";
+    } else {
+      captureContractPayload = buildCaptureContractPayload({
+        sessionId: currentPayload.session.session_id,
+        syncId: currentPayload.session.sync_id,
+        startedAtIso: currentPayload.session.measured_at,
+        captureMode: currentPayload.session.capture_mode,
+        deviceModel: currentPayload.session.device_model,
+        iosVersion: String(Platform.Version),
+        appVersion: currentPayload.session.app_version,
+        qmaxMlS: currentPayload.app.metrics.qmax_ml_s,
+        qavgMlS: currentPayload.app.metrics.qavg_ml_s,
+        flowTimeS: currentPayload.app.metrics.flow_time_s,
+      }) as unknown as Record<string, unknown>;
+    }
+    return {
+      session: currentPayload.session,
+      package_type: "capture_contract_json",
+      capture_payload: captureContractPayload,
+      paired_measurement_id: pairedMeasurementId,
+      notes,
+    };
+  }
+
+  async function attemptSubmitEndpoint(
+    endpoint: PendingEndpoint,
+    endpointPayload: PairedPayload | CapturePackagePayload,
     headerContext?: RequestHeaderContext,
   ): Promise<SubmitAttemptResult> {
-    const url = `${apiBaseUrl.replace(/\/$/, "")}/api/v1/paired-measurements`;
+    const url = `${apiBaseUrl.replace(/\/$/, "")}${endpointPath(endpoint)}`;
     try {
       const response = await fetchWithTimeout(url, {
         method: "POST",
         headers: buildRequestHeaders(true, headerContext),
-        body: JSON.stringify(currentPayload),
+        body: JSON.stringify(endpointPayload),
       });
       const body = await response.text();
       return {
@@ -627,7 +1016,32 @@ export default function App() {
     }
   }
 
-  async function syncPendingSubmissions(): Promise<void> {
+  async function enqueuePendingJob(
+    endpoint: PendingEndpoint,
+    endpointPayload: PairedPayload | CapturePackagePayload,
+    headerContext: RequestHeaderContext,
+    lastError: string | null,
+    lastStatusCode: number | null,
+  ): Promise<void> {
+    const pendingItem: PendingSubmission = {
+      id: createPendingId(),
+      created_at: new Date().toISOString(),
+      endpoint,
+      payload: endpointPayload,
+      request_headers: headerContext,
+      attempt_count: 0,
+      last_attempt_at: null,
+      last_error: lastError,
+      last_status_code: lastStatusCode,
+    };
+    await enqueuePendingSubmission(pendingItem);
+  }
+
+  async function syncPendingSubmissions(showAlert = true): Promise<void> {
+    if (syncInFlightRef.current) {
+      return;
+    }
+    syncInFlightRef.current = true;
     setSyncingPending(true);
     setSyncStatusMessage("");
     try {
@@ -639,12 +1053,13 @@ export default function App() {
       }
 
       const remaining: PendingSubmission[] = [];
-      let synced = 0;
+      let syncedPaired = 0;
+      let syncedCapture = 0;
       let droppedNonRetryable = 0;
 
       for (const item of queue) {
         const headerContext = resolvePendingHeaderContext(item);
-        const result = await attemptSubmit(item.payload, headerContext);
+        const result = await attemptSubmitEndpoint(item.endpoint, item.payload, headerContext);
         const attemptedItem: PendingSubmission = {
           ...item,
           request_headers: headerContext,
@@ -654,7 +1069,11 @@ export default function App() {
           last_error: result.ok ? null : result.body,
         };
         if (result.ok) {
-          synced += 1;
+          if (item.endpoint === "capture_packages") {
+            syncedCapture += 1;
+          } else {
+            syncedPaired += 1;
+          }
           continue;
         }
         if (result.retryable) {
@@ -667,16 +1086,72 @@ export default function App() {
       await persistPendingQueue(remaining);
 
       const statusMessage =
-        `Sync completed. Synced: ${synced}, ` +
+        `Sync completed. Synced paired: ${syncedPaired}, synced capture: ${syncedCapture}, ` +
         `remaining retryable: ${remaining.length}, ` +
         `dropped non-retryable: ${droppedNonRetryable}.`;
       setSyncStatusMessage(statusMessage);
       setLastResponse(statusMessage);
-      Alert.alert("Sync completed", statusMessage);
+      if (showAlert) {
+        Alert.alert("Sync completed", statusMessage);
+      }
     } finally {
+      syncInFlightRef.current = false;
       setSyncingPending(false);
     }
   }
+
+  useEffect(() => {
+    if (!settingsHydrated || pendingQueue.length === 0) {
+      if (autoSyncIntervalRef.current != null) {
+        clearInterval(autoSyncIntervalRef.current);
+        autoSyncIntervalRef.current = null;
+      }
+      return;
+    }
+
+    if (autoSyncIntervalRef.current == null) {
+      autoSyncIntervalRef.current = setInterval(() => {
+        void syncPendingSubmissions(false);
+      }, 25000);
+    }
+
+    void syncPendingSubmissions(false);
+
+    return () => {
+      if (autoSyncIntervalRef.current != null) {
+        clearInterval(autoSyncIntervalRef.current);
+        autoSyncIntervalRef.current = null;
+      }
+    };
+  }, [
+    actorRole,
+    apiBaseUrl,
+    apiKey,
+    operatorId,
+    pendingQueue.length,
+    requestTimeoutMs,
+    settingsHydrated,
+    siteId,
+  ]);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (state) => {
+      if (state === "active" && pendingQueue.length > 0) {
+        void syncPendingSubmissions(false);
+      }
+    });
+    return () => {
+      subscription.remove();
+    };
+  }, [
+    actorRole,
+    apiBaseUrl,
+    apiKey,
+    operatorId,
+    pendingQueue.length,
+    requestTimeoutMs,
+    siteId,
+  ]);
 
   async function clearPendingSubmissions(): Promise<void> {
     Alert.alert(
@@ -740,6 +1215,9 @@ export default function App() {
   }
 
   function validateRequired(): string | null {
+    if (captureRunning) {
+      return "Stop runtime capture before submitting.";
+    }
     if (!payload.session.session_id) {
       return "session_id is required";
     }
@@ -773,10 +1251,56 @@ export default function App() {
 
     try {
       const requestHeaderContext = createCurrentRequestHeaderContext();
-      const result = await attemptSubmit(payload, requestHeaderContext);
+      const result = await attemptSubmitEndpoint(
+        "paired_measurements",
+        payload,
+        requestHeaderContext,
+      );
       if (result.ok) {
-        setLastResponse(result.body);
-        Alert.alert("Submitted", "Paired measurement uploaded");
+        const pairedMeasurementId = extractCreatedRecordId(result.body);
+        const capturePayload = buildCapturePackagePayloadFromPaired(
+          payload,
+          pairedMeasurementId,
+        );
+        const captureResult = await attemptSubmitEndpoint(
+          "capture_packages",
+          capturePayload,
+          requestHeaderContext,
+        );
+        if (!captureResult.ok) {
+          if (captureResult.retryable) {
+            await enqueuePendingJob(
+              "capture_packages",
+              capturePayload,
+              requestHeaderContext,
+              captureResult.body,
+              captureResult.statusCode,
+            );
+            const queuedMessage =
+              `Paired uploaded; capture package queued for retry: ` +
+              `${captureResult.statusCode ? `HTTP ${captureResult.statusCode}` : "NETWORK"} ` +
+              `${captureResult.body}`;
+            setLastResponse(queuedMessage);
+            Alert.alert("Submitted with queued capture", queuedMessage);
+          } else {
+            const warningMessage =
+              `Paired measurement uploaded, but capture package rejected: ` +
+              `${captureResult.statusCode ? `HTTP ${captureResult.statusCode}` : "ERROR"} ` +
+              `${captureResult.body}`;
+            setLastResponse(warningMessage);
+            Alert.alert("Submitted with warning", warningMessage);
+          }
+        } else {
+          setLastResponse("Paired measurement and capture package uploaded.");
+          Alert.alert("Submitted", "Paired measurement and capture package uploaded.");
+        }
+        setRuntimeCaptureContractPayload(null);
+        setCaptureSampleCount(0);
+        setCaptureAvgMotionNorm(0);
+        setCaptureRoiValidRatio(0);
+        setCaptureLowConfidenceRatio(0);
+        setRuntimeFlowSeries([]);
+        setCaptureStatus("Idle");
         setSessionId(createSessionId());
         setSyncId(createSyncId());
         return;
@@ -794,26 +1318,39 @@ export default function App() {
         return;
       }
 
-      const pendingItem: PendingSubmission = {
-        id: createPendingId(),
-        created_at: new Date().toISOString(),
+      const capturePayloadWithoutPair = buildCapturePackagePayloadFromPaired(payload, null);
+      await enqueuePendingJob(
+        "paired_measurements",
         payload,
-        request_headers: requestHeaderContext,
-        attempt_count: 0,
-        last_attempt_at: null,
-        last_error: result.body,
-        last_status_code: result.statusCode,
-      };
-      await enqueuePendingSubmission(pendingItem);
+        requestHeaderContext,
+        result.body,
+        result.statusCode,
+      );
+      await enqueuePendingJob(
+        "capture_packages",
+        capturePayloadWithoutPair,
+        requestHeaderContext,
+        "queued_with_paired_retry",
+        null,
+      );
       setLastResponse(
-        `Queued for retry. Last error: ${
+        `Queued paired+capture for retry. Last paired error: ${
           result.statusCode ? `HTTP ${result.statusCode}` : "NETWORK"
         } ${result.body}`
       );
       Alert.alert(
         "Saved offline",
-        "No successful upload now. Record added to pending queue.",
+        "No successful upload now. Paired and capture records added to pending queue.",
       );
+      setRuntimeCaptureContractPayload(null);
+      setCaptureSampleCount(0);
+      setCaptureAvgMotionNorm(0);
+      setCaptureRoiValidRatio(0);
+      setCaptureLowConfidenceRatio(0);
+      setRuntimeFlowSeries([]);
+      setCaptureStatus("Idle");
+      setSessionId(createSessionId());
+      setSyncId(createSyncId());
     } finally {
       setSubmitting(false);
     }
@@ -854,12 +1391,55 @@ export default function App() {
     }
   }
 
+  async function loadCaptureCoverageSummary() {
+    const baseUrl = apiBaseUrl.replace(/\/$/, "");
+    const params = new URLSearchParams();
+    if (siteId.trim()) {
+      params.set("site_id", siteId.trim());
+    }
+    if (summarySyncId.trim()) {
+      params.set("sync_id", summarySyncId.trim());
+    }
+    params.set("quality_status", summaryQualityStatus);
+    const url = `${baseUrl}/api/v1/capture-coverage-summary?${params.toString()}`;
+
+    setCoverageLoading(true);
+    setCoverageError("");
+
+    try {
+      const response = await fetchWithTimeout(url, {
+        method: "GET",
+        headers: buildRequestHeaders(false),
+      });
+      const body = await response.text();
+      if (!response.ok) {
+        setCoverageSummary(null);
+        setCoverageError(`HTTP ${response.status}: ${body}`);
+        return;
+      }
+      setCoverageSummary(JSON.parse(body) as CaptureCoverageSummaryResponse);
+    } catch (error) {
+      setCoverageSummary(null);
+      setCoverageError(String(error));
+    } finally {
+      setCoverageLoading(false);
+    }
+  }
+
+  async function loadBothSummaries() {
+    await Promise.all([loadComparisonSummary(), loadCaptureCoverageSummary()]);
+  }
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="dark" />
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.title}>Uroflow Field Capture</Text>
         <Text style={styles.subtitle}>Pair app result with reference uroflowmeter</Text>
+        <Text style={styles.helperText}>
+          Capture contract auto-upload enabled: runtime audio/IMU samples are preferred, scaffold is
+          fallback.
+        </Text>
 
         <Text style={styles.sectionTitle}>API</Text>
         <LabeledInput label="API Base URL" value={apiBaseUrl} onChangeText={setApiBaseUrl} />
@@ -885,7 +1465,7 @@ export default function App() {
         </View>
         {pendingQueue.slice(0, 3).map((item) => (
           <Text key={item.id} style={styles.pendingItemText}>
-            {item.id}: attempts={item.attempt_count}
+            {item.id}: endpoint={item.endpoint}, attempts={item.attempt_count}
             {item.payload.session.sync_id ? `, sync=${item.payload.session.sync_id}` : ""}
             {item.request_headers.site_id ? `, site=${item.request_headers.site_id}` : ""}
             {item.request_headers.actor_role ? `, role=${item.request_headers.actor_role}` : ""}
@@ -929,6 +1509,106 @@ export default function App() {
           <Text style={styles.syncStatusText}>{syncStatusMessage}</Text>
         ) : null}
 
+        <Text style={styles.sectionTitle}>Runtime Capture (Audio + IMU + Camera Permission)</Text>
+        <Text style={styles.captureStatusText}>{captureStatus}</Text>
+        <Text style={styles.captureStatusText}>
+          Camera permission: {cameraPermission?.granted ? "granted" : "not granted"}, preview:{" "}
+          {cameraPreviewReady ? "ready" : "not ready"}, ROI lock: {roiLocked ? "on" : "off"}
+        </Text>
+        <Text style={styles.captureStatusText}>
+          Samples: {captureSampleCount}, avg motion norm: {captureAvgMotionNorm.toFixed(3)}
+        </Text>
+        <Text style={styles.captureStatusText}>
+          quality flags: roi_valid_ratio={captureRoiValidRatio.toFixed(3)}, low_confidence_ratio=
+          {captureLowConfidenceRatio.toFixed(3)}
+        </Text>
+        <Text style={styles.captureStatusText}>
+          Contract payload: {runtimeCaptureContractPayload ? "ready" : "not ready (scaffold fallback)"}
+        </Text>
+        {!cameraPermission?.granted ? (
+          <Pressable style={styles.summaryButton} onPress={() => void requestCameraPermission()}>
+            <Text style={styles.submitButtonText}>Grant Camera Permission</Text>
+          </Pressable>
+        ) : (
+          <View style={styles.cameraPreviewWrap}>
+            <CameraView
+              ref={cameraPreviewRef}
+              style={styles.cameraPreview}
+              facing="back"
+              onCameraReady={() => setCameraPreviewReady(true)}
+              onMountError={() => {
+                setCameraPreviewReady(false);
+                setCaptureStatus("Camera preview mount error; ROI validity may fail.");
+              }}
+            />
+          </View>
+        )}
+        <Pressable
+          style={[styles.summaryButton, !cameraPermission?.granted && styles.submitButtonDisabled]}
+          onPress={() => setRoiLocked((current) => !current)}
+          disabled={!cameraPermission?.granted}
+        >
+          <Text style={styles.submitButtonText}>{roiLocked ? "Unlock ROI" : "Lock ROI"}</Text>
+        </Pressable>
+        <Text style={styles.captureStatusText}>
+          ROI frames: {roiFrameCount}, valid: {roiFrameValid ? "yes" : "no"}, motion proxy:{" "}
+          {roiMotionProxy.toFixed(3)}, texture proxy: {roiTextureProxy.toFixed(3)}
+        </Text>
+        <Pressable
+          style={styles.summaryButton}
+          onPress={() => setManualAppMetricsOverride((current) => !current)}
+        >
+          <Text style={styles.submitButtonText}>
+            App metrics mode: {manualAppMetricsOverride ? "manual" : "runtime auto-fill"}
+          </Text>
+        </Pressable>
+        <View style={styles.buttonRow}>
+          <Pressable
+            style={[
+              styles.summaryButton,
+              styles.buttonGrow,
+              captureRunning && styles.submitButtonDisabled,
+            ]}
+            onPress={() => void startRuntimeCapture()}
+            disabled={captureRunning}
+          >
+            <Text style={styles.submitButtonText}>
+              {captureRunning ? "Capture running..." : "Start Capture"}
+            </Text>
+          </Pressable>
+          <Pressable
+            style={[
+              styles.dangerButton,
+              styles.buttonGrow,
+              !captureRunning && styles.submitButtonDisabled,
+            ]}
+            onPress={() => void stopRuntimeCapture()}
+            disabled={!captureRunning}
+          >
+            <Text style={styles.submitButtonText}>Stop Capture</Text>
+          </Pressable>
+        </View>
+
+        <Text style={styles.sectionTitle}>Runtime Q(t) Preview</Text>
+        <View style={styles.curveBox}>
+          {runtimeCurvePreview.length === 0 ? (
+            <Text style={styles.responseText}>No runtime curve yet. Run capture and press Stop.</Text>
+          ) : (
+            runtimeCurvePreview.map((point, index) => {
+              const widthPct = Math.min(100, Math.max(0, (point.flow_ml_s / runtimeCurveMaxFlow) * 100));
+              return (
+                <View key={`${point.t_s.toFixed(3)}-${index}`} style={styles.curveRow}>
+                  <Text style={styles.curveTimeText}>{point.t_s.toFixed(1)}s</Text>
+                  <View style={styles.curveBarTrack}>
+                    <View style={[styles.curveBarFill, { width: `${widthPct}%` }]} />
+                  </View>
+                  <Text style={styles.curveValueText}>{point.flow_ml_s.toFixed(1)}</Text>
+                </View>
+              );
+            })
+          )}
+        </View>
+
         <Text style={styles.sectionTitle}>Session</Text>
         <LabeledInput label="Session ID" value={sessionId} onChangeText={setSessionId} />
         <LabeledInput label="Sync ID" value={syncId} onChangeText={setSyncId} />
@@ -940,9 +1620,7 @@ export default function App() {
         <LabeledInput
           label="Platform (ios/android)"
           value={platform}
-          onChangeText={(value) =>
-            setPlatform((current) => normalizeSessionPlatformInput(value, current))
-          }
+          onChangeText={(value) => setPlatform(value as typeof platform)}
         />
         <LabeledInput label="Device Model" value={deviceModel} onChangeText={setDeviceModel} />
         <LabeledInput label="App Version" value={appVersion} onChangeText={setAppVersion} />
@@ -980,6 +1658,23 @@ export default function App() {
         </View>
 
         <Text style={styles.sectionTitle}>Comparison Summary (App vs Reference)</Text>
+        <Text style={styles.helperText}>
+          Uses current filters: site_id + optional sync_id + quality status.
+        </Text>
+        <Pressable
+          style={[
+            styles.summaryButton,
+            (summaryLoading || coverageLoading) && styles.submitButtonDisabled,
+          ]}
+          onPress={() => void loadBothSummaries()}
+          disabled={summaryLoading || coverageLoading}
+        >
+          <Text style={styles.submitButtonText}>
+            {summaryLoading || coverageLoading
+              ? "Loading both summaries..."
+              : "Load Both Summaries"}
+          </Text>
+        </Pressable>
         <LabeledInput
           label="Summary Quality Status (valid/repeat/reject/all)"
           value={summaryQualityStatus}
@@ -1026,6 +1721,55 @@ export default function App() {
             </>
           ) : (
             <Text style={styles.responseText}>No summary loaded yet</Text>
+          )}
+        </View>
+
+        <Text style={styles.sectionTitle}>Capture Coverage Summary</Text>
+        <Pressable
+          style={[styles.summaryButton, coverageLoading && styles.submitButtonDisabled]}
+          onPress={loadCaptureCoverageSummary}
+          disabled={coverageLoading}
+        >
+          <Text style={styles.submitButtonText}>
+            {coverageLoading ? "Loading..." : "Load Coverage Summary"}
+          </Text>
+        </Pressable>
+        {coverageError ? <Text style={styles.summaryErrorText}>{coverageError}</Text> : null}
+        <View style={styles.responseBox}>
+          {coverageSummary ? (
+            <>
+              <Text style={styles.summaryText}>
+                Paired total: {coverageSummary.paired_total}, with capture:{" "}
+                {coverageSummary.paired_with_capture}, without capture:{" "}
+                {coverageSummary.paired_without_capture}
+              </Text>
+              <Text style={styles.summaryText}>
+                Coverage ratio:{" "}
+                <Text
+                  style={
+                    coverageSummary.coverage_ratio >= COVERAGE_GOAL_RATIO
+                      ? styles.coverageGoodText
+                      : styles.coverageBadText
+                  }
+                >
+                  {(coverageSummary.coverage_ratio * 100).toFixed(1)}%
+                </Text>{" "}
+                (target: {(COVERAGE_GOAL_RATIO * 100).toFixed(0)}%)
+              </Text>
+              <Text style={styles.summaryText}>
+                Match modes: paired_id=
+                {coverageSummary.capture_match_distribution.paired_id ?? 0}, session_identity=
+                {coverageSummary.capture_match_distribution.session_identity ?? 0}, none=
+                {coverageSummary.capture_match_distribution.none ?? 0}
+              </Text>
+              <Text style={styles.summaryText}>
+                Quality: valid={coverageSummary.quality_distribution.valid ?? 0}, repeat=
+                {coverageSummary.quality_distribution.repeat ?? 0}, reject=
+                {coverageSummary.quality_distribution.reject ?? 0}
+              </Text>
+            </>
+          ) : (
+            <Text style={styles.responseText}>No coverage summary loaded yet</Text>
           )}
         </View>
       </ScrollView>
@@ -1083,6 +1827,11 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginBottom: 16,
     color: "#475467",
+  },
+  helperText: {
+    marginBottom: 10,
+    fontSize: 12,
+    color: "#334155",
   },
   sectionTitle: {
     marginTop: 14,
@@ -1167,6 +1916,61 @@ const styles = StyleSheet.create({
     color: "#b91c1c",
     fontSize: 12,
   },
+  captureStatusText: {
+    color: "#0f172a",
+    fontSize: 12,
+    marginBottom: 4,
+  },
+  cameraPreviewWrap: {
+    marginTop: 8,
+    marginBottom: 8,
+    borderRadius: 10,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#cbd5e1",
+    backgroundColor: "#0f172a",
+  },
+  cameraPreview: {
+    width: "100%",
+    height: 180,
+  },
+  curveBox: {
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: "#d1d5db",
+    backgroundColor: "#ffffff",
+    borderRadius: 8,
+    padding: 10,
+  },
+  curveRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 6,
+  },
+  curveTimeText: {
+    width: 42,
+    color: "#334155",
+    fontSize: 11,
+  },
+  curveBarTrack: {
+    flex: 1,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#e2e8f0",
+    overflow: "hidden",
+    marginHorizontal: 8,
+  },
+  curveBarFill: {
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#0f766e",
+  },
+  curveValueText: {
+    width: 44,
+    textAlign: "right",
+    color: "#0f172a",
+    fontSize: 11,
+  },
   pendingRow: {
     marginTop: 8,
     marginBottom: 4,
@@ -1195,5 +1999,13 @@ const styles = StyleSheet.create({
     color: "#0f172a",
     fontSize: 12,
     marginBottom: 4,
+  },
+  coverageGoodText: {
+    color: "#166534",
+    fontWeight: "700",
+  },
+  coverageBadText: {
+    color: "#b91c1c",
+    fontWeight: "700",
   },
 });

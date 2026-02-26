@@ -8,12 +8,28 @@
       "ios",
       "android"
     ],
+    "plugins": [
+      "expo-secure-store",
+      "expo-camera",
+      "expo-av"
+    ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.uroflow.field"
+      "bundleIdentifier": "com.uroflow.field",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Camera is used to capture uroflow recording area.",
+        "NSMicrophoneUsageDescription": "Microphone is used to capture uroflow acoustic signal.",
+        "NSMotionUsageDescription": "Motion sensors are used to detect phone movement artifacts."
+      }
     },
     "android": {
-      "package": "com.uroflow.field"
+      "package": "com.uroflow.field",
+      "versionCode": 1,
+      "permissions": [
+        "CAMERA",
+        "RECORD_AUDIO"
+      ]
     }
   }
 }

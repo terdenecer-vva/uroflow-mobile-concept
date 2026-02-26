@@ -187,6 +187,39 @@ PYTHONPATH=src python -m uroflow_mobile.cli export-capture-packages \
   --output-csv data/capture_packages_export.csv
 ```
 
+Объединённый экспорт `paired + capture` (для анализа соответствия и покрытия capture-пакетами):
+
+```bash
+PYTHONPATH=src python -m uroflow_mobile.cli export-paired-with-capture \
+  --db-path data/clinical_hub.db \
+  --output-csv data/paired_with_capture_export.csv
+```
+
+Экспорт coverage summary в CSV (и опционально в PDF):
+
+```bash
+PYTHONPATH=src python -m uroflow_mobile.cli export-capture-coverage-summary \
+  --db-path data/clinical_hub.db \
+  --site-id SITE-001 \
+  --sync-id SYNC-20260225 \
+  --quality-status all \
+  --output-csv data/capture_coverage_summary.csv \
+  --output-pdf data/capture_coverage_summary.pdf
+```
+
+Экспорт coverage summary с оценкой pilot-гейтов:
+
+```bash
+PYTHONPATH=src python -m uroflow_mobile.cli export-capture-coverage-summary \
+  --db-path data/clinical_hub.db \
+  --site-id SITE-001 \
+  --quality-status all \
+  --output-csv data/capture_coverage_summary.csv \
+  --targets-config config/coverage_targets_config.v1.json \
+  --gates-output-json data/capture_coverage_gates.json \
+  --fail-on-hard-gates
+```
+
 Экспорт pilot automation reports (`qa_summary`, `g1_eval`, `tfl_summary`, `drift_summary`):
 
 ```bash
@@ -208,6 +241,34 @@ REST endpoint для дашборда пилота:
 
 ```bash
 GET /api/v1/comparison-summary?site_id=SITE-001&quality_status=valid
+GET /api/v1/capture-coverage-summary?site_id=SITE-001&sync_id=SYNC-20260225&quality_status=all
+GET /api/v1/capture-coverage-summary.csv?site_id=SITE-001&sync_id=SYNC-20260225&quality_status=all
+```
+
+## GitHub Actions: daily coverage report
+
+Workflow: `.github/workflows/capture-coverage-report.yml`
+
+Data source priority:
+
+1. `secret` `CLINICAL_HUB_URL` (API mode, preferred)
+2. `secret` `CLINICAL_HUB_DB_URL` (download SQLite DB)
+3. local `db_path` input on manual run
+
+Recommended repo configuration (`gh` CLI):
+
+```bash
+gh secret set CLINICAL_HUB_URL --body "https://your-hub.example.com"
+gh secret set CLINICAL_HUB_API_KEY --body "<site_or_data_manager_key>"
+gh variable set CLINICAL_HUB_SITE_ID --body "SITE-001"
+gh variable set CLINICAL_HUB_COVERAGE_TARGETS_CONFIG --body "config/coverage_targets_config.v1.json"
+gh variable set CLINICAL_HUB_ENFORCE_COVERAGE_GATES --body "true"
+```
+
+Optional DB mode:
+
+```bash
+gh secret set CLINICAL_HUB_DB_URL --body "https://secure-storage.example.com/clinical_hub.db"
 ```
 
 Capture package endpoints:
@@ -217,6 +278,7 @@ POST /api/v1/capture-packages
 GET /api/v1/capture-packages
 GET /api/v1/capture-packages/{id}
 GET /api/v1/capture-packages.csv
+GET /api/v1/paired-with-capture.csv
 ```
 
 `POST /api/v1/capture-packages` идемпотентен по

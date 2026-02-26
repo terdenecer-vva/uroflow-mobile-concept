@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+from io import StringIO
 from pathlib import Path
 
 from fastapi.testclient import TestClient
@@ -396,6 +397,30 @@ def test_sync_id_filters_for_paired_and_capture_endpoints(tmp_path: Path) -> Non
         assert summary_body["records_considered"] == 1
         assert summary_body["filters"]["sync_id"] == "sync-001"
 
+        coverage_summary = client.get(
+            "/api/v1/capture-coverage-summary",
+            params={"quality_status": "all", "sync_id": "sync-001"},
+        )
+        assert coverage_summary.status_code == 200
+        coverage_body = coverage_summary.json()
+        assert coverage_body["paired_total"] == 1
+        assert coverage_body["paired_with_capture"] == 1
+        assert coverage_body["paired_without_capture"] == 0
+        assert coverage_body["coverage_ratio"] == approx(1.0)
+        assert coverage_body["filters"]["sync_id"] == "sync-001"
+        assert coverage_body["capture_match_distribution"]["paired_id"] == 1
+
+        coverage_csv = client.get(
+            "/api/v1/capture-coverage-summary.csv",
+            params={"quality_status": "all", "sync_id": "sync-001"},
+        )
+        assert coverage_csv.status_code == 200
+        coverage_rows = list(csv.DictReader(StringIO(coverage_csv.text)))
+        assert len(coverage_rows) == 1
+        assert coverage_rows[0]["sync_id"] == "sync-001"
+        assert coverage_rows[0]["paired_total"] == "1"
+        assert coverage_rows[0]["paired_with_capture"] == "1"
+
         paired_csv = client.get(
             "/api/v1/paired-measurements.csv",
             params={"sync_id": "sync-001"},
@@ -413,6 +438,57 @@ def test_sync_id_filters_for_paired_and_capture_endpoints(tmp_path: Path) -> Non
         assert "capture-sync-001" in capture_csv.text
         assert "capture-sync-002" not in capture_csv.text
         assert "sync-001" in capture_csv.text
+
+        paired_with_capture_csv = client.get(
+            "/api/v1/paired-with-capture.csv",
+            params={"sync_id": "sync-001"},
+        )
+        assert paired_with_capture_csv.status_code == 200
+        assert "session-sync-001" in paired_with_capture_csv.text
+        assert "session-sync-002" not in paired_with_capture_csv.text
+        assert "paired_id" in paired_with_capture_csv.text
+        assert "capture_match_mode" in paired_with_capture_csv.text
+
+
+def test_capture_coverage_summary_detects_missing_capture(tmp_path: Path) -> None:
+    db_path = tmp_path / "clinical_hub_capture_coverage.db"
+    app = create_clinical_hub_app(db_path)
+
+    with TestClient(app) as client:
+        paired_1 = client.post(
+            "/api/v1/paired-measurements",
+            json=_payload(session_id="session-coverage-001", sync_id="sync-coverage-001"),
+        )
+        paired_2 = client.post(
+            "/api/v1/paired-measurements",
+            json=_payload(session_id="session-coverage-002", sync_id="sync-coverage-001"),
+        )
+        assert paired_1.status_code == 201
+        assert paired_2.status_code == 201
+
+        capture_1 = client.post(
+            "/api/v1/capture-packages",
+            json=_capture_package_payload(
+                session_id="capture-coverage-001",
+                sync_id="sync-coverage-001",
+                paired_measurement_id=paired_1.json()["id"],
+            ),
+        )
+        assert capture_1.status_code == 201
+
+        summary = client.get(
+            "/api/v1/capture-coverage-summary",
+            params={"quality_status": "all", "sync_id": "sync-coverage-001"},
+        )
+        assert summary.status_code == 200
+        body = summary.json()
+        assert body["paired_total"] == 2
+        assert body["paired_with_capture"] == 1
+        assert body["paired_without_capture"] == 1
+        assert body["coverage_ratio"] == approx(0.5)
+        assert body["capture_match_distribution"]["paired_id"] == 1
+        assert body["capture_match_distribution"]["none"] == 1
+        assert body["filters"]["sync_id"] == "sync-coverage-001"
 
 
 def test_clinical_hub_api_key_and_audit_export(tmp_path: Path) -> None:
@@ -724,6 +800,20 @@ def test_operator_scope_filters_same_site_data_and_blocks_cross_operator_write(
         assert summary_body["filters"]["site_id"] == "SITE-001"
         assert summary_body["filters"]["operator_id"] == "OP-01"
 
+        coverage_summary = client.get(
+            "/api/v1/capture-coverage-summary",
+            params={"quality_status": "all"},
+            headers=operator_headers,
+        )
+        assert coverage_summary.status_code == 200
+        coverage_body = coverage_summary.json()
+        assert coverage_body["paired_total"] == 1
+        assert coverage_body["paired_with_capture"] == 0
+        assert coverage_body["paired_without_capture"] == 1
+        assert coverage_body["filters"]["site_id"] == "SITE-001"
+        assert coverage_body["filters"]["operator_id"] == "OP-01"
+        assert coverage_body["capture_match_distribution"]["none"] == 1
+
         paired_csv = client.get("/api/v1/paired-measurements.csv", headers=operator_headers)
         assert paired_csv.status_code == 200
         assert "session-op-scope-001" in paired_csv.text
@@ -786,6 +876,39 @@ def test_operator_scope_filters_same_site_data_and_blocks_cross_operator_write(
         assert capture_csv.status_code == 200
         assert "capture-op-scope-001" in capture_csv.text
         assert "capture-op-scope-002" not in capture_csv.text
+
+        coverage_summary_after_capture = client.get(
+            "/api/v1/capture-coverage-summary",
+            params={"quality_status": "all"},
+            headers=operator_headers,
+        )
+        assert coverage_summary_after_capture.status_code == 200
+        coverage_after_body = coverage_summary_after_capture.json()
+        assert coverage_after_body["paired_total"] == 1
+        assert coverage_after_body["paired_with_capture"] == 1
+        assert coverage_after_body["paired_without_capture"] == 0
+        assert coverage_after_body["capture_match_distribution"]["paired_id"] == 1
+
+        coverage_csv_after_capture = client.get(
+            "/api/v1/capture-coverage-summary.csv",
+            params={"quality_status": "all"},
+            headers=operator_headers,
+        )
+        assert coverage_csv_after_capture.status_code == 200
+        coverage_rows = list(csv.DictReader(StringIO(coverage_csv_after_capture.text)))
+        assert len(coverage_rows) == 1
+        assert coverage_rows[0]["operator_id"] == "OP-01"
+        assert coverage_rows[0]["paired_total"] == "1"
+        assert coverage_rows[0]["paired_with_capture"] == "1"
+
+        paired_with_capture_csv = client.get(
+            "/api/v1/paired-with-capture.csv",
+            headers=operator_headers,
+        )
+        assert paired_with_capture_csv.status_code == 200
+        assert "session-op-scope-001" in paired_with_capture_csv.text
+        assert "session-op-scope-002" not in paired_with_capture_csv.text
+        assert "capture_match_mode" in paired_with_capture_csv.text
 
         audit_events = client.get("/api/v1/audit-events", headers=operator_headers)
         assert audit_events.status_code == 200
