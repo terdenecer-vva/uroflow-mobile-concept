@@ -1,0 +1,7 @@
+Threat_ID,STRIDE,Asset/Flow,Threat_Description,Attack_Vector,Impact,Likelihood (1-5),Severity (1-5),Risk (H/M/L),Mitigations,Verification
+T-01,Spoofing,F-04,Подмена сервера EMR/перехват токена,"MITM, phishing config",Утечка данных/неверная запись в EMR,3,5,H,"TLS, строгая валидация сертификата, ограничение доменов, короткоживущие токены",Security tests; config review
+T-02,Tampering,A-03/F-05,Подмена модели/обновления,"Malicious update, jailbreak",Неверные результаты Q(t),2,5,H,"Подпись обновлений, hash verification, rollback, jailbreak warning",Update integrity tests; regression suite
+T-03,Repudiation,F-03/F-04,Отрицание факта экспорта/изменения,No audit trail,Невозможность расследования инцидента,3,3,M,"Audit log (who/when/what), immutable event log",Audit log review tests
+T-04,Information Disclosure,A-02,Утечка видео/аудио,"Improper storage, backups","PHI leak, privacy harm",2,5,H,"Default off, on-device only, encrypted storage, ROI-only, no cloud upload",Privacy tests; storage inspection
+T-05,Denial of Service,App,Сбой/зависание во время записи,"Resource exhaustion, low storage",Потеря измерения; неудобство,3,2,M,"Performance budget, low-storage checks, graceful stop and recovery",Perf tests; chaos tests
+T-06,Elevation of Privilege,App,Доступ к данным без авторизации,"jailbreak, local exploit",PHI leak,2,5,H,"App sandbox, Keychain, optional biometric gate, jailbreak detection",Security review; pen test

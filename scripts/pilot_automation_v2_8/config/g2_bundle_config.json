@@ -1,0 +1,10 @@
+{
+  "version": "1.0",
+  "include_statuses": [
+    "Included",
+    "Required"
+  ],
+  "eu_index_relpath": "06_EU_MDR/Annex_II_III_Submission_Folder/EU_MDR_AnnexII_III_Submission_Folder_Index_v2.2.xlsx",
+  "fda_index_relpath": "07_US_FDA/FDA_Submission_Folder/FDA_Submission_Folder_Index_v2.2.xlsx",
+  "zip_bundle": true
+}

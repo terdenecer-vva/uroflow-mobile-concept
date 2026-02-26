@@ -6,9 +6,14 @@ on:
       - main
   pull_request:
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lint-and-test:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
@@ -22,6 +27,8 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+          cache: "pip"
+          cache-dependency-path: pyproject.toml
 
       - name: Install dependencies
         run: |
@@ -33,3 +40,392 @@ jobs:
 
       - name: Tests
         run: pytest -q
+
+  release-gates-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: lint-and-test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: pyproject.toml
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Build gate metrics
+        run: |
+          PYTHONPATH=src python -m uroflow_mobile.cli build-gate-metrics \
+            --clinical-csv examples/gates/clinical_fixture.csv \
+            --bench-csv examples/gates/bench_fixture.csv \
+            --output-json /tmp/gate_metrics.json
+
+      - name: Evaluate release gates
+        run: |
+          PYTHONPATH=src python -m uroflow_mobile.cli evaluate-gates /tmp/gate_metrics.json \
+            --config-json docs/project-package-v1.5/gates-config-v1.json \
+            --gates G0 BENCH_G0
+
+  pilot-automation-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    needs: lint-and-test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: pyproject.toml
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+          pip install pandas jsonschema
+
+      - name: Generate pilot fixture dataset
+        run: |
+          python - <<'PY'
+          import csv
+          import json
+          from pathlib import Path
+
+          root = Path("/tmp/pilot_ds")
+          records_root = root / "records"
+          records_root.mkdir(parents=True, exist_ok=True)
+
+          profiles = [
+              ("REC-001", "SITE-1", "TOIL-1", "M", "male_standing", "none", "yes"),
+              ("REC-002", "SITE-1", "TOIL-1", "M", "male_sitting", "moderate", "yes"),
+              ("REC-003", "SITE-1", "TOIL-2", "F", "female_sitting", "none", "yes"),
+              ("REC-004", "SITE-2", "TOIL-3", "F", "female_sitting", "high", "yes"),
+              ("REC-005", "SITE-2", "TOIL-3", "M", "male_standing", "moderate", "yes"),
+              ("REC-006", "SITE-2", "TOIL-4", "F", "female_sitting", "none", "yes"),
+              ("REC-007", "SITE-1", "TOIL-2", "M", "male_standing", "high", "yes"),
+              ("REC-008", "SITE-2", "TOIL-4", "F", "female_sitting", "moderate", "no"),
+          ]
+
+          def integrate_trapezoid(t_values, q_values):
+              total = 0.0
+              for idx in range(1, len(t_values)):
+                  dt = t_values[idx] - t_values[idx - 1]
+                  total += (q_values[idx] + q_values[idx - 1]) * 0.5 * dt
+              return total
+
+          manifest_rows = []
+          for idx, (record_id, site_id, toilet_id, sex, posture, noise_level, valid) in enumerate(
+              profiles, start=1
+          ):
+              rec = records_root / record_id
+              rec.mkdir(parents=True, exist_ok=True)
+
+              t_values = [float(i) for i in range(0, 11)]
+              base = [0.0, 1.0, 2.5, 4.5, 6.5, 7.5, 6.0, 4.0, 2.0, 0.8, 0.0]
+              scale = 1.0 + idx * 0.03
+              q_ref = [round(value * scale, 4) for value in base]
+              q_pred = [round(value * (0.95 + idx * 0.005), 4) for value in q_ref]
+
+              with (rec / "Q_ref.csv").open("w", encoding="utf-8", newline="") as handle:
+                  writer = csv.writer(handle)
+                  writer.writerow(["t_s", "Q_ml_s"])
+                  writer.writerows(zip(t_values, q_ref))
+
+              with (rec / "Q_pred.csv").open("w", encoding="utf-8", newline="") as handle:
+                  writer = csv.writer(handle)
+                  writer.writerow(["t_s", "Q_ml_s"])
+                  writer.writerows(zip(t_values, q_pred))
+
+              (rec / "meta.json").write_text(
+                  json.dumps({"record_id": record_id, "site_id": site_id}),
+                  encoding="utf-8",
+              )
+              (rec / "quality.json").write_text(
+                  json.dumps({"quality_score": 78.0 + idx * 0.5}),
+                  encoding="utf-8",
+              )
+              (rec / "app_result.json").write_text(
+                  json.dumps({"status": "ok", "model_id": "ci-smoke"}),
+                  encoding="utf-8",
+              )
+
+              qmax_ref = max(q_ref)
+              qavg_ref = sum(q_ref) / len(q_ref)
+              vvoid_ref = integrate_trapezoid(t_values, q_ref)
+              flow_start = next(i for i, value in enumerate(q_ref) if value > 0.0)
+              flow_end = len(q_ref) - 1 - next(i for i, value in enumerate(reversed(q_ref)) if value > 0.0)
+              flow_time = t_values[flow_end] - t_values[flow_start]
+
+              manifest_rows.append(
+                  {
+                      "record_id": record_id,
+                      "sync_id": f"SYNC-{record_id}",
+                      "profile_id": "P0",
+                      "subject_id": f"SUBJ-{idx:03d}",
+                      "site_id": site_id,
+                      "toilet_id": toilet_id,
+                      "collection_datetime_local": f"2026-02-24 10:{idx:02d}:00",
+                      "sex": sex,
+                      "posture": posture,
+                      "age_years": str(30 + idx),
+                      "iphone_model": "iPhone15,2",
+                      "ios_version": "18.3",
+                      "lidar_available": "yes",
+                      "toilet_scan": "yes",
+                      "pour_calibration": "no",
+                      "noise_level": noise_level,
+                      "lighting": "normal",
+                      "aimed_into_water": "yes",
+                      "ref_sampling_hz": "10",
+                      "Qmax_ref_ml_s": f"{qmax_ref:.4f}",
+                      "Qavg_ref_ml_s": f"{qavg_ref:.4f}",
+                      "Vvoid_ref_ml": f"{vvoid_ref:.4f}",
+                      "flow_time_ref_s": f"{flow_time:.4f}",
+                      "overall_record_valid": valid,
+                      "art_flush": "no",
+                      "art_phone_motion": "no",
+                      "art_not_in_water": "no",
+                      "notes": "",
+                  }
+              )
+
+          manifest_path = root / "manifest.csv"
+          with manifest_path.open("w", encoding="utf-8", newline="") as handle:
+              writer = csv.DictWriter(handle, fieldnames=list(manifest_rows[0].keys()))
+              writer.writeheader()
+              writer.writerows(manifest_rows)
+          PY
+
+      - name: Validate artifact profile (daily QA gate)
+        run: |
+          python scripts/pilot_automation_v2_8/scripts/validate_artifacts_by_profile.py \
+            --dataset_root /tmp/pilot_ds \
+            --manifest /tmp/pilot_ds/manifest.csv \
+            --use_manifest_profile \
+            --config scripts/pilot_automation_v2_8/config/data_artifact_profile_config.json \
+            --out_dir /tmp/pilot_automation_smoke/artifact_profile_daily_qa
+
+      - name: Run pilot automation scripts
+        run: |
+          python scripts/pilot_automation_v2_8/scripts/run_daily_qa.py \
+            --dataset_root /tmp/pilot_ds \
+            --manifest /tmp/pilot_ds/manifest.csv \
+            --config scripts/pilot_automation_v2_8/config/qa_config.json \
+            --out /tmp/pilot_automation_smoke
+
+          python scripts/pilot_automation_v2_8/scripts/run_tfl_from_golden_dataset.py \
+            --dataset_root /tmp/pilot_ds \
+            --manifest /tmp/pilot_ds/manifest.csv \
+            --config scripts/pilot_automation_v2_8/config/metrics_config.json \
+            --out_dir /tmp/pilot_automation_smoke/tfl
+
+          python scripts/pilot_automation_v2_8/scripts/run_drift_dashboard.py \
+            --tfl_csv /tmp/pilot_automation_smoke/tfl/tfl_record_level.csv \
+            --out_dir /tmp/pilot_automation_smoke/drift \
+            --g1_config scripts/pilot_automation_v2_8/config/g1_acceptance_config.json
+
+          python scripts/pilot_automation_v2_8/scripts/validate_artifacts_by_profile.py \
+            --dataset_root /tmp/pilot_ds \
+            --manifest /tmp/pilot_ds/manifest.csv \
+            --profile P0 \
+            --config scripts/pilot_automation_v2_8/config/data_artifact_profile_config.json \
+            --out_dir /tmp/pilot_automation_smoke/artifact_profile_prefreeze
+
+          python scripts/pilot_automation_v2_8/scripts/build_g1_evidence_bundle.py \
+            --dataset_root /tmp/pilot_ds \
+            --manifest /tmp/pilot_ds/manifest.csv \
+            --out_dir /tmp/pilot_automation_smoke/g1 \
+            --g1_config scripts/pilot_automation_v2_8/config/g1_acceptance_config.json
+
+      - name: Smoke-check v2.8 submission utility scripts
+        run: |
+          python scripts/pilot_automation_v2_8/scripts/autofill_gspr_executed.py --help >/dev/null
+          python scripts/pilot_automation_v2_8/scripts/autofill_gspr_evidence_links.py --help >/dev/null
+          python scripts/pilot_automation_v2_8/scripts/update_dhf_status.py --help >/dev/null
+          python scripts/pilot_automation_v2_8/scripts/build_eu_master_index.py --help >/dev/null
+          python scripts/pilot_automation_v2_8/scripts/build_g2_submission_bundle.py --help >/dev/null
+          python scripts/pilot_automation_v2_8/scripts/validate_artifacts_by_profile.py --help >/dev/null
+
+      - name: Smoke-check v4.2 pilot automation scripts
+        run: |
+          SAMPLE_ROOT=scripts/pilot_automation_v4_2/sample/golden_record_contract_v1
+          SAMPLE_MANIFEST=$SAMPLE_ROOT/manifest.csv
+
+          python scripts/pilot_automation_v4_2/scripts/build_dataset_release_bundle_guarded.py --help >/dev/null
+          python scripts/pilot_automation_v4_2/scripts/build_pilot_freeze_kit.py --help >/dev/null
+          python scripts/pilot_automation_v4_2/scripts/build_ethics_submission_pack.py --help >/dev/null
+          python scripts/pilot_automation_v4_2/scripts/compute_accuracy_acceptance.py --help >/dev/null
+
+          python scripts/pilot_automation_v4_2/scripts/run_sync_validation_minimal.py \
+            --dataset_root "$SAMPLE_ROOT" \
+            --manifest "$SAMPLE_MANIFEST"
+
+          python scripts/pilot_automation_v4_2/scripts/run_daily_qa_minimal.py \
+            --dataset_root "$SAMPLE_ROOT" \
+            --manifest "$SAMPLE_MANIFEST"
+
+          python scripts/pilot_automation_v4_2/scripts/validate_ios_capture_contract.py \
+            --dataset_root "$SAMPLE_ROOT" \
+            --manifest "$SAMPLE_MANIFEST" \
+            --schema scripts/pilot_automation_v4_2/schemas/ios_capture_contract_schema_v1.0.json
+
+          python scripts/pilot_automation_v4_2/scripts/compute_record_level_gates.py \
+            --dataset_root "$SAMPLE_ROOT" \
+            --manifest "$SAMPLE_MANIFEST" \
+            --config scripts/pilot_automation_v4_2/config/record_level_gates_config.json
+
+          python scripts/pilot_automation_v4_2/scripts/run_pre_freeze_gates.py \
+            --dataset_root "$SAMPLE_ROOT" \
+            --manifest "$SAMPLE_MANIFEST" \
+            --config scripts/pilot_automation_v4_2/config/pre_freeze_gates_config.json
+
+      - name: Build gate metrics from automation artifacts
+        run: |
+          QA_SUMMARY=$(find /tmp/pilot_automation_smoke -name qa_summary.json | head -n 1)
+          test -n "$QA_SUMMARY"
+
+          PYTHONPATH=src python -m uroflow_mobile.cli build-gate-metrics \
+            --tfl-summary-json /tmp/pilot_automation_smoke/tfl/tfl_summary.json \
+            --drift-summary-json /tmp/pilot_automation_smoke/drift/drift_summary.json \
+            --g1-eval-json /tmp/pilot_automation_smoke/g1/g1_eval.json \
+            --qa-summary-json "$QA_SUMMARY" \
+            --output-json /tmp/pilot_automation_smoke/gate_metrics.json
+
+          PYTHONPATH=src python -m uroflow_mobile.cli evaluate-gates \
+            /tmp/pilot_automation_smoke/gate_metrics.json \
+            --config-json docs/project-package-v2.8/gates-config-v2.8.json \
+            --gates G0 \
+            --output-json /tmp/pilot_automation_smoke/gate_summary.json
+
+      - name: Push pilot reports to Clinical Hub (optional)
+        env:
+          CLINICAL_HUB_URL: ${{ secrets.CLINICAL_HUB_URL }}
+          CLINICAL_HUB_API_KEY: ${{ secrets.CLINICAL_HUB_API_KEY }}
+          CLINICAL_HUB_SITE_ID: ${{ vars.CLINICAL_HUB_SITE_ID }}
+        run: |
+          if [[ -z "${CLINICAL_HUB_URL:-}" || -z "${CLINICAL_HUB_API_KEY:-}" ]]; then
+            echo "Skipping Clinical Hub report push: required secrets are not configured."
+            exit 0
+          fi
+
+          QA_SUMMARY=$(find /tmp/pilot_automation_smoke -name qa_summary.json | head -n 1)
+          test -n "$QA_SUMMARY"
+          REPORT_DATE=$(basename "$(dirname "$QA_SUMMARY")")
+          SITE_ID=${CLINICAL_HUB_SITE_ID:-CI-SMOKE}
+
+          python scripts/post_pilot_reports_to_clinical_hub.py \
+            --base-url "$CLINICAL_HUB_URL" \
+            --api-key "$CLINICAL_HUB_API_KEY" \
+            --site-id "$SITE_ID" \
+            --report-date "$REPORT_DATE" \
+            --package-version "v2.8" \
+            --dataset-id "pilot-smoke-${GITHUB_RUN_ID}" \
+            --model-id "ci-smoke" \
+            --notes "github_actions:${GITHUB_WORKFLOW}/${GITHUB_RUN_ID}" \
+            --qa-summary-json "$QA_SUMMARY" \
+            --tfl-summary-json /tmp/pilot_automation_smoke/tfl/tfl_summary.json \
+            --drift-summary-json /tmp/pilot_automation_smoke/drift/drift_summary.json \
+            --g1-eval-json /tmp/pilot_automation_smoke/g1/g1_eval.json \
+            --gate-summary-json /tmp/pilot_automation_smoke/gate_summary.json
+
+      - name: Upload pilot automation artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pilot-automation-smoke-v2.8
+          path: /tmp/pilot_automation_smoke
+
+  release-gates-g1-holdout-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: lint-and-test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: pyproject.toml
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Generate holdout fixtures for G1
+        run: |
+          python - <<'PY'
+          import csv
+          from pathlib import Path
+
+          out_dir = Path("/tmp/gates_g1_holdout")
+          out_dir.mkdir(parents=True, exist_ok=True)
+          clinical_path = out_dir / "clinical_holdout.csv"
+          bench_path = out_dir / "bench_holdout.csv"
+
+          clinical_rows = [
+              {"cohort": "clinic", "quality_status": "valid", "sex": "m", "ref_qmax_ml_s": 20, "app_qmax_ml_s": 21.1, "ref_vvoid_ml": 300, "app_vvoid_ml": 312},
+              {"cohort": "clinic", "quality_status": "valid", "sex": "m", "ref_qmax_ml_s": 18, "app_qmax_ml_s": 17.1, "ref_vvoid_ml": 280, "app_vvoid_ml": 272},
+              {"cohort": "clinic", "quality_status": "valid", "sex": "m", "ref_qmax_ml_s": 22, "app_qmax_ml_s": 22.8, "ref_vvoid_ml": 320, "app_vvoid_ml": 334},
+              {"cohort": "clinic", "quality_status": "valid", "sex": "m", "ref_qmax_ml_s": 19, "app_qmax_ml_s": 18.2, "ref_vvoid_ml": 295, "app_vvoid_ml": 286},
+              {"cohort": "clinic", "quality_status": "repeat", "sex": "m", "ref_qmax_ml_s": 21, "app_qmax_ml_s": 20.0, "ref_vvoid_ml": 310, "app_vvoid_ml": 302},
+              {"cohort": "clinic", "quality_status": "valid", "sex": "f", "ref_qmax_ml_s": 17, "app_qmax_ml_s": 18.2, "ref_vvoid_ml": 260, "app_vvoid_ml": 272},
+              {"cohort": "clinic", "quality_status": "valid", "sex": "f", "ref_qmax_ml_s": 16, "app_qmax_ml_s": 15.1, "ref_vvoid_ml": 250, "app_vvoid_ml": 243},
+              {"cohort": "clinic", "quality_status": "valid", "sex": "f", "ref_qmax_ml_s": 18, "app_qmax_ml_s": 19.0, "ref_vvoid_ml": 275, "app_vvoid_ml": 288},
+              {"cohort": "clinic", "quality_status": "valid", "sex": "f", "ref_qmax_ml_s": 20, "app_qmax_ml_s": 19.1, "ref_vvoid_ml": 305, "app_vvoid_ml": 296},
+              {"cohort": "clinic", "quality_status": "valid", "sex": "f", "ref_qmax_ml_s": 15, "app_qmax_ml_s": 16.0, "ref_vvoid_ml": 240, "app_vvoid_ml": 251},
+          ]
+
+          bench_rows = [
+              {"scenario": "multi_toilet_a", "ref_qmax_ml_s": 15, "app_qmax_ml_s": 16.0},
+              {"scenario": "multi_toilet_b", "ref_qmax_ml_s": 18, "app_qmax_ml_s": 19.2},
+              {"scenario": "multi_toilet_c", "ref_qmax_ml_s": 22, "app_qmax_ml_s": 23.0},
+          ]
+
+          with clinical_path.open("w", encoding="utf-8", newline="") as f:
+              writer = csv.DictWriter(f, fieldnames=list(clinical_rows[0].keys()))
+              writer.writeheader()
+              writer.writerows(clinical_rows)
+
+          with bench_path.open("w", encoding="utf-8", newline="") as f:
+              writer = csv.DictWriter(f, fieldnames=list(bench_rows[0].keys()))
+              writer.writeheader()
+              writer.writerows(bench_rows)
+          PY
+
+      - name: Evaluate G1 holdout gates
+        run: |
+          PYTHONPATH=src python -m uroflow_mobile.cli build-gate-metrics \
+            --clinical-csv /tmp/gates_g1_holdout/clinical_holdout.csv \
+            --bench-csv /tmp/gates_g1_holdout/bench_holdout.csv \
+            --output-json /tmp/gates_g1_holdout/metrics.json
+
+          PYTHONPATH=src python -m uroflow_mobile.cli evaluate-gates \
+            /tmp/gates_g1_holdout/metrics.json \
+            --config-json docs/project-package-v2.8/gates-config-v2.8.json \
+            --gates G1 BENCH_G1 \
+            --output-json /tmp/gates_g1_holdout/gate_summary.json
+
+      - name: Upload G1 holdout artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-gates-g1-holdout-smoke
+          path: /tmp/gates_g1_holdout

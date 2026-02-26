@@ -1,0 +1,78 @@
+{
+  "version": "1.0",
+  "plots_subdir": "ba_plots",
+  "placeholders": {
+    "{{AUTO_TABLE_T1_QMAX}}": {
+      "kind": "table",
+      "metric": "Qmax",
+      "unit": "ml/s",
+      "label_en": "Qmax",
+      "label_ru": "Qmax"
+    },
+    "{{AUTO_FIGURE_F1_QMAX}}": {
+      "kind": "fig",
+      "metric": "Qmax",
+      "filename": "BA_Qmax.png"
+    },
+    "{{AUTO_TABLE_T2_QAVG}}": {
+      "kind": "table",
+      "metric": "Qavg",
+      "unit": "ml/s",
+      "label_en": "Qavg",
+      "label_ru": "Qavg"
+    },
+    "{{AUTO_FIGURE_F2_QAVG}}": {
+      "kind": "fig",
+      "metric": "Qavg",
+      "filename": "BA_Qavg.png"
+    },
+    "{{AUTO_TABLE_T3_VVOID}}": {
+      "kind": "table",
+      "metric": "Vvoid",
+      "unit": "ml",
+      "label_en": "Vvoid",
+      "label_ru": "Vvoid"
+    },
+    "{{AUTO_FIGURE_F3_VVOID}}": {
+      "kind": "fig",
+      "metric": "Vvoid",
+      "filename": "BA_Vvoid.png"
+    },
+    "{{AUTO_TABLE_T4_FLOWTIME}}": {
+      "kind": "table",
+      "metric": "FlowTime",
+      "unit": "s",
+      "label_en": "Flow time",
+      "label_ru": "Время потока"
+    },
+    "{{AUTO_FIGURE_F4_FLOWTIME}}": {
+      "kind": "fig",
+      "metric": "FlowTime",
+      "filename": "BA_FlowTime.png"
+    },
+    "{{AUTO_LISTING_L1}}": {
+      "kind": "listing",
+      "max_rows": 20
+    }
+  },
+  "listing_columns_preferred": [
+    "record_id",
+    "sync_id",
+    "site_id",
+    "toilet_id",
+    "sex",
+    "posture",
+    "noise_level",
+    "lidar_available",
+    "quality_score",
+    "valid_for_primary",
+    "ref_Qmax_ml_s",
+    "app_Qmax_ml_s",
+    "ref_Vvoid_ml",
+    "app_Vvoid_ml",
+    "ref_Qavg_ml_s",
+    "app_Qavg_ml_s",
+    "ref_FlowTime_s",
+    "app_FlowTime_s"
+  ]
+}

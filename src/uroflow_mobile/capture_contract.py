@@ -59,6 +59,10 @@ def validate_capture_payload(payload: dict[str, Any]) -> CaptureValidationReport
     if not isinstance(session_id, str) or not session_id.strip():
         errors.append("session.session_id must be a non-empty string")
 
+    sync_id = session.get("sync_id")
+    if sync_id is not None and (not isinstance(sync_id, str) or not sync_id.strip()):
+        errors.append("session.sync_id must be a non-empty string when provided")
+
     if not _parse_started_at(session.get("started_at")):
         errors.append("session.started_at must be ISO-8601 timestamp")
 
@@ -198,6 +202,9 @@ def capture_to_level_payload(payload: dict[str, Any]) -> dict[str, object]:
             "ml_per_mm": float(payload["session"]["calibration"]["ml_per_mm"]),
         },
     }
+    sync_id = payload["session"].get("sync_id")
+    if isinstance(sync_id, str) and sync_id.strip():
+        level_payload["meta"]["sync_id"] = sync_id
 
     if has_any_rgb:
         level_payload["rgb_level_mm"] = rgb_level_mm

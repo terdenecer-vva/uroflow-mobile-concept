@@ -1,0 +1,5 @@
+Test ID,Profile Q(t),Qmax set (ml/s),V set (ml),Height (m),Angle (deg),Water level,Toilet type,Room acoustics,Noise scenario,iPhone model,LiDAR,Calibration state,Expected outcome,Pass criteria,Notes
+B-01,plateau,10,300,0.3,0,normal,A,normal,none,iPhone 15 Pro,yes,toilet_scan,Valid,MAE_Qmax<=2.5; MAPE_V<=10%,
+B-02,bell,20,350,0.4,0,normal,A,echo,fan,iPhone 14,no,none,Valid (degraded),quality>=70; MAE_Qmax<=3.0,No LiDAR fallback
+B-03,intermittent,15,250,0.4,20,low,B,normal,speech,iPhone 15 Pro,yes,pour_cal,Valid,intermittency_index ok; t_start/t_end ok,
+B-04,plateau,12,300,0.3,0,normal,A,normal,flush,iPhone 15 Pro,yes,toilet_scan,Invalid,Must reject (flush),

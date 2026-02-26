@@ -1,0 +1,12 @@
+Build root,/mnt/data/build_v28/Submission_Build_v2.8
+GSPR input,/mnt/data/build_v28/Submission_Build_v2.8/06_EU_MDR/Uroflow_EU_MDR_GSPR_Checklist_AnnexI_v1.2_EXECUTED_AUTO.xlsx
+Evidence manifest,/mnt/data/build_v28/Submission_Build_v2.8/05_Clinical/Uroflow_P0_Pilot_Readiness_Evidence_Manifest_v1.0.xlsx
+Search roots,12_Evidence_Bundles/Evidence_Files ; 10_Pilot_Automation/outputs ; 05_Clinical ; 01_Product_QMS
+,
+Total rows,23
+Rows with Evidence_IDs,0
+Rows ALL_PRESENT,0
+,
+Missing Evidence_ID (not in manifest),Count
+,
+Missing expected filename (not found on disk),Count

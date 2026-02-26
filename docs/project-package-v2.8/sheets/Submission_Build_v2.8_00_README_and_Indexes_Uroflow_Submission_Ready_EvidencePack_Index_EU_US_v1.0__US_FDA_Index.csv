@@ -1,0 +1,11 @@
+Evidence_ID,FDA Topic,Артефакт/документ,Файл(ы) в пакете,Статус,Примечания
+US-01,Device classification & intended use,Intended use / claims (US),Uroflow_IntendedUse_Claims_ByRegion_v1.0_RU.docx,Draft,Проверить позиционирование: urine flow/volume measuring system (21 CFR 876.1800).
+US-02,Description,Device/software description,Uroflow_Smartphone_Design_Clinical_Package_v1.0.docx,Draft,
+US-03,Software documentation,Algorithm spec + CoreML input contract,Uroflow_Smartphone_Algorithm_Spec_v1.1_Fusion_CoreML.docx; Uroflow_CoreML_Model_Input_Contract_v1.0.docx,Draft,
+US-04,Performance testing,Bench SOP + templates + regression suite,Uroflow_Bench_SOP_BOM_v0.2.docx; Uroflow_Bench_and_Dataset_Templates_v1.0.xlsx; Uroflow_Regression_Suite_v1.0.xlsx,Ready,
+US-05,Clinical performance,Protocol + SAP + CSR template,Uroflow_Clinical_Protocol_v1.0_EN.docx; Uroflow_SAP_MethodComparison_v1.0.docx; Uroflow_CSR_Template_v1.0.docx,Draft,
+US-06,Human factors,HFE file + summative plan/report template + forms,Uroflow_HFE_Usability_Engineering_File_v1.0_RU.docx; Uroflow_HFE_Summative_Validation_Plan_v1.0_RU.docx; Uroflow_HFE_Summative_Validation_Report_Template_v1.0_RU.docx; Uroflow_HFE_Observation_Forms_and_Questionnaires_v1.0.xlsx,Draft,Для FDA потребуется фактический summative report.
+US-07,Cybersecurity,Threat model + cybersecurity file + SBOM + vuln disclosure + security test report/checklist,Uroflow_Cybersecurity_Engineering_File_v1.0_RU.docx; Uroflow_Threat_Model_STRIDE_v1.0.xlsx; Uroflow_SBOM_Template_v1.0.xlsx; Uroflow_Vulnerability_Disclosure_and_Incident_Response_v1.0_RU.docx; Uroflow_Security_Test_Report_Template_v1.0_RU.docx; Uroflow_Security_Test_Checklist_and_Regression_v1.0.xlsx,Draft,
+US-08,Labeling,IFU + labeling alignment,Uroflow_IFU_Draft_v1.0_EN.docx; Uroflow_Labeling_Claims_Alignment_v1.0_RU.docx,Draft,
+US-09,QMS readiness,QMS SOP pack + registers,Uroflow_QMS_SOP_Pack_v1.0_RU.docx; Uroflow_QMS_Forms_and_Registers_v1.0.xlsx,Draft,Для US: готовность к QMSR и управление изменениями ML.
+US-10,Acceptance criteria,Acceptance criteria/gates,Uroflow_Acceptance_Criteria_v1.0_RU.docx,Draft,

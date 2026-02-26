@@ -1,0 +1,6 @@
+Milestone,Gate,Objective,Inputs,Exit criteria,Owner,Target date,Status,Notes
+Pilot start readiness,G0,"Start clinical pilot safely (site ready, legal/privacy, baseline frozen)",Protocol/ICF approved; app build; site SOP; data flows,DR-2 signed; baseline freeze; staff trained; dry run passed,Clinical+RA,,Planned,
+Golden dataset readiness,G1,Collect and freeze synchronous golden dataset (iPhone+reference),Acquisition SOP; labeling SOP; reference export pipeline,Dataset v1 frozen; QA complete; coverage targets met,ML+Clinical,,Planned,
+Performance acceptance,G1,Meet accuracy/valid-rate criteria on golden dataset,Acceptance criteria; BA scripts; regression suite,All primary metrics within thresholds; QS calibrated,ML+Biostat,,Planned,
+EU MDR submission ready,G2,Technical file ready (Annex II/III + GSPR + CER/CEP + RMF + PMS/PMCF),All evidence packs,Master index shows no blocking TBDs; signoffs complete,RA,,Planned,
+US FDA submission ready,G2,Software/Cybersecurity bundle ready; intended use aligned to class/risk,FDA bundle; V&V; cybersecurity tests,Index complete; anomalies resolved or justified,RA+Eng,,Planned,

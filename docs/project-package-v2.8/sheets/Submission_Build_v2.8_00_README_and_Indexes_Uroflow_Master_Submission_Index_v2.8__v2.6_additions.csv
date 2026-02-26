@@ -1,0 +1,8 @@
+New file / tool,Purpose,Path (relative)
+CSR auto-draft script,Generate CSR Appendix with numbered T/F/L and insert into CSR template,10_Pilot_Automation/scripts/generate_csr_autodraft.py
+CSR one-click runner,Runs TFL (with plots) + generates CSR auto-draft docx,10_Pilot_Automation/run_csr_autodraft_oneclick.(sh|bat)
+CSR autofill template,CSR template with placeholders for auto-insertion,05_Clinical/Uroflow_CSR_Template_v1.1_AUTOFILL.docx
+G2 bundle builder,Build EU+US submission bundles from folder indexes and produce executed indexes,10_Pilot_Automation/scripts/build_g2_submission_bundle.py
+G2 one-click runner,Runs G2 bundle builder,10_Pilot_Automation/run_g2_bundle_oneclick.(sh|bat)
+G2 bundle config,Config for required/optional bundle items and output naming,10_Pilot_Automation/config/g2_bundle_config.json
+CSR autodraft config,Config for mapping metrics→tables/figures and language settings,10_Pilot_Automation/config/csr_autodraft_config.json

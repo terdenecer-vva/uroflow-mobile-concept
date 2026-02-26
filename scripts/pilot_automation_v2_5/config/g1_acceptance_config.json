@@ -1,0 +1,13 @@
+{
+  "version": "1.0",
+  "gate": "G1",
+  "criteria": {
+    "valid_rate_min": 0.85,
+    "mae_qmax_max_ml_s": 2.5,
+    "mape_vvoid_max": 15.0,
+    "mae_qavg_max_ml_s": 2.0,
+    "mae_flowtime_max_s": 3.0,
+    "drift_mae_multiplier_max": 1.5,
+    "min_records_per_group": 10
+  }
+}

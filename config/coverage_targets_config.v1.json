@@ -1,0 +1,55 @@
+{
+  "version": "1.0",
+  "name": "pilot_capture_coverage_v1",
+  "description": "Coverage and data-quality gates for pilot capture readiness.",
+  "gates": [
+    {
+      "id": "coverage_ratio_hard",
+      "label": "Coverage ratio >= 90%",
+      "metric": "coverage_ratio",
+      "operator": ">=",
+      "threshold": 0.9,
+      "severity": "hard"
+    },
+    {
+      "id": "match_none_ratio_hard",
+      "label": "Missing capture ratio <= 10%",
+      "metric": "capture_match_none_ratio",
+      "operator": "<=",
+      "threshold": 0.1,
+      "severity": "hard"
+    },
+    {
+      "id": "paired_total_site_warning",
+      "label": "Paired records >= 50",
+      "metric": "paired_total",
+      "operator": ">=",
+      "threshold": 50,
+      "severity": "warning"
+    },
+    {
+      "id": "paired_total_program_warning",
+      "label": "Program target >= 200",
+      "metric": "paired_total",
+      "operator": ">=",
+      "threshold": 200,
+      "severity": "warning"
+    },
+    {
+      "id": "reject_ratio_warning",
+      "label": "Reject ratio <= 15%",
+      "metric": "quality_reject_ratio",
+      "operator": "<=",
+      "threshold": 0.15,
+      "severity": "warning"
+    },
+    {
+      "id": "repeat_ratio_warning",
+      "label": "Repeat ratio <= 25%",
+      "metric": "quality_repeat_ratio",
+      "operator": "<=",
+      "threshold": 0.25,
+      "severity": "warning"
+    }
+  ]
+}

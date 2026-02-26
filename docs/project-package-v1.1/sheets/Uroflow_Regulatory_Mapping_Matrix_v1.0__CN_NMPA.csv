@@ -1,0 +1,5 @@
+Тема,Требование / ожидание,Доказательства / испытания,Артефакт / документ,Приоритет,Ответственный,Примечания,Ключевые источники (URL)
+Определение SaMD,Stand alone software: software with medical purposes on universal platform,Квалификация изделия как standalone software,CN classification file,High,RA,Определение в NMPA rules for classification,https://english.nmpa.gov.cn/2019-10/11/c_415411.htm
+Measuring function,Medical device with measuring functions: accuracy may impact safety; обычно не ниже Class II,"Доказательства точности, калибровка",Performance test reports,High,RA/Engineering,,https://english.nmpa.gov.cn/2019-10/11/c_415411.htm
+Клинические данные,Сопоставимость с референсом + локальные требования (обычно жёстче),"Clinical study, возможно локальные испытания",CN clinical package,High,Clinical/RA,,
+Данные,Требования к обработке sensitive PI (здоровье) + отдельные согласия,"Consent flows, локализация",Privacy & consent file,High,Legal/Security,,

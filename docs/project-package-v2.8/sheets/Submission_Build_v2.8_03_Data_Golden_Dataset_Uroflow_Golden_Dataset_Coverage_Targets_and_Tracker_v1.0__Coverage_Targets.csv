@@ -1,0 +1,11 @@
+Stratum,Definition,Target records (min),Rationale,Status,Notes
+M_STAND,"Male, standing, in-water mode",80,Capture male standing acoustic/video variability,Planned,
+M_SIT,"Male, sitting, in-water mode",40,Less common but needed for some patients,Planned,
+F_SIT,"Female, sitting, in-water mode",120,Primary female usage scenario,Planned,
+NOISE_LOW,Quiet environment (SNR high),120,Baseline performance,Planned,
+NOISE_MED,Moderate noise (fan/ambient),80,Robustness,Planned,
+NOISE_HIGH,High noise (speech/background),40,Quality gating calibration,Planned,
+TOILET_A,Toilet geometry A (site toilet_id A),100,Generalization across toilets,Planned,
+TOILET_B,Toilet geometry B,100,Generalization across toilets,Planned,
+DEVICE_LIDAR,iPhone with LiDAR (Pro),120,Depth/geometry normalization test,Planned,
+DEVICE_NO_LIDAR,iPhone without LiDAR,120,Fallback generalization,Planned,

@@ -1,0 +1,9 @@
+Workstream,Key tasks,Deliverables,Owner,Status
+Product/iOS,"AR positioning, ROI privacy crop, audio/video sync, offline mode, export",App build + smoke tests + permissions checklist,Engineering,Planned
+ML/Algorithm,"Model A (event+quality), Model B (Q(t)+sigma), fusion, calibration","Model freeze, regression suite, V&V results",ML Lead,Planned
+Golden dataset,"Synchronous acquisition, manifest, labeling, QA",Dataset v1 freeze + dataset card,Data manager,Planned
+Clinical pilot site,"Ethics approval, recruitment, training, onsite SOPs","Site initiation complete, screening/enrollment logs",Clinical lead,Planned
+QMS/Design controls,"SOP training, DHF updates, change control","Signed SOPs, DHF index, CAPA/complaints logs",QA/RA,Planned
+Cybersecurity,"Threat model, SBOM, vuln mgmt, security testing",Cybersecurity file + test report,Security lead,Planned
+HFE/Usability,"URRA, formative tests, summative plan",Summative validation report,HFE lead,Planned
+Regulatory (EU/US/RU/CN),"Claims lock, classification strategy, submission pack build","Annex II/III pack, FDA bundle, localization notes",RA lead,Planned

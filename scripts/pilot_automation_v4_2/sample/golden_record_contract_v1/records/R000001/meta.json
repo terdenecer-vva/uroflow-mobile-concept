@@ -1,0 +1,89 @@
+{
+  "record_id": "R000001",
+  "sync_id": "SYNC-2026-02-25-0001",
+  "created_at_utc": "2026-02-25T00:00:00Z",
+  "app": {
+    "name": "UroflowCapture",
+    "version": "0.1.0",
+    "build": "100",
+    "algorithm_version": "A0"
+  },
+  "device": {
+    "iphone_model": "iPhone 15 Pro",
+    "ios_version": "17.3",
+    "has_lidar": true,
+    "device_id_hash": "sha256:DEMO"
+  },
+  "capture": {
+    "audio": {
+      "sample_rate_hz": 48000,
+      "channels": 1,
+      "format": "wav"
+    },
+    "video": {
+      "fps": 30,
+      "width": 720,
+      "height": 1280,
+      "roi_only": true,
+      "codec": "h264"
+    },
+    "depth": {
+      "enabled": true,
+      "source": "LiDAR",
+      "fps": 30
+    }
+  },
+  "roi": {
+    "type": "polygon",
+    "frame_width": 720,
+    "frame_height": 1280,
+    "polygon": [
+      [
+        100,
+        800
+      ],
+      [
+        620,
+        800
+      ],
+      [
+        620,
+        1200
+      ],
+      [
+        100,
+        1200
+      ]
+    ]
+  },
+  "timestamps": {
+    "session_start_epoch_ms": 0,
+    "session_end_epoch_ms": 12000,
+    "sync_markers": []
+  },
+  "privacy_live_guardrails": {
+    "precheck": {
+      "pass": true,
+      "reason": ""
+    },
+    "during": {
+      "pass": true,
+      "max_skin_fraction_border": 0.02,
+      "max_reflection_risk": 0.1,
+      "roi_lost_count": 0
+    }
+  },
+  "stand_pose_summary": {
+    "distance_m_median": 0.45,
+    "pitch_deg_median": -25.0,
+    "yaw_deg_median": 0.0,
+    "roll_deg_median": 0.0,
+    "jitter_deg": 1.2,
+    "class": "PASS"
+  },
+  "quality_summary": {
+    "quality_score": 92,
+    "quality_class": "VALID",
+    "invalid_reasons": []
+  }
+}

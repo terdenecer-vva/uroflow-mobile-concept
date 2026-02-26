@@ -1,0 +1,11 @@
+Field,Type,Required,Description,Example
+record_id,string,yes,Уникальный идентификатор записи,CLN001_000123
+mode,enum,yes,Режим измерения,water_impact / fallback_nonwater
+sex,enum,yes,Пол,M/F
+posture,enum,yes,Поза мочеиспускания,male_standing/male_sitting/female_sitting
+t_start,float,yes,Начало потока (сек от начала записи),3.20
+t_end,float,yes,Конец потока (сек от начала записи),38.70
+artifact_flags,multi-enum,no,Артефакты (noise/motion/flush/not_in_water/...),noise;motion
+quality_score,int,yes,Quality score (0-100),82
+Q_ref_series,timeseries,yes,Референс Q(t) от урофлоуметра (10 Гц),list/CSV path
+Q_pred_series,timeseries,yes,Предсказанный Q(t) (10 Гц),list/CSV path

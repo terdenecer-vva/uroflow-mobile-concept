@@ -1,0 +1,25 @@
+{
+  "outputs_dirname": "outputs/record_level_gates",
+  "sync_offset_max_s": 1.0,
+  "standpose_allowed_classes": [
+    "PASS",
+    "BORDERLINE"
+  ],
+  "priv_content_required_if_video_present": true,
+  "priv_content_pass_values": [
+    "PASS",
+    "REVIEW"
+  ],
+  "require_ios_contract": true,
+  "require_privacy_consistency": true,
+  "require_q_ref": true,
+  "require_ref_alignment": true,
+  "require_quality_summary": true,
+  "min_quality_score": 70,
+  "allowed_quality_classes": [
+    "VALID"
+  ],
+  "quality_score_field": "quality_score",
+  "quality_class_field": "quality_class",
+  "quality_summary_path": "quality_summary"
+}

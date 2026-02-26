@@ -1,0 +1,4 @@
+QS Range,Label,Include in primary analysis,UI behavior,Disqualifying artifacts
+>=70,Valid,Yes,Show full report,flush=no; roi_lost=no; major_motion=no
+50-69,Borderline,No (exploratory only),Show warnings; consider ranges,
+<50,Invalid,No,Hide numeric metrics; prompt repeat,

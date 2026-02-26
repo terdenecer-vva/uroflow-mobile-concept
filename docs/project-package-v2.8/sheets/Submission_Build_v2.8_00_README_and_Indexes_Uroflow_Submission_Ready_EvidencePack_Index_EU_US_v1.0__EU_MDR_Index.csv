@@ -1,0 +1,28 @@
+Evidence_ID,MDR Annex/Section,Артефакт/документ,Файл(ы) в пакете,Статус (Ready/Draft/TBD),Владелец,Примечания
+EU-01,Annex II 1,Device/Software description + variants,Uroflow_Smartphone_Design_Clinical_Package_v1.0.docx,Draft,RA/Engineering,
+EU-02,Annex II 2,Intended use / claims (EU-aligned),Uroflow_IntendedUse_Claims_ByRegion_v1.0_RU.docx,Draft,RA,Зафиксировать Claim Set A для MDR Rule 11.
+EU-03,Annex II 3,Design inputs/outputs + traceability,Uroflow_Smartphone_Design_Controls_Pack_v1.0.docx,Draft,QA/Engineering,
+EU-04,Annex II 3,DHF index / status register,Uroflow_DHF_Index_Status_Register_v1.1.xlsx,Ready,QA,
+EU-05,Annex II 4,Risk Management File (ISO 14971) — полный отчёт,,TBD,QA/RA,В пакете есть URRA; нужен полный RMF.
+EU-06,Annex II 4,URRA (use-related risk analysis),Uroflow_HFE_Use_Related_Risk_Analysis_URRA_v1.0.xlsx,Ready,HFE/QA,
+EU-07,Annex II 4,Usability Engineering File,Uroflow_HFE_Usability_Engineering_File_v1.0_RU.docx,Draft,HFE,
+EU-08,Annex II 4,Summative usability validation plan,Uroflow_HFE_Summative_Validation_Plan_v1.0_RU.docx,Draft,HFE,
+EU-09,Annex II 4,Summative usability validation report,Uroflow_HFE_Summative_Validation_Report_Template_v1.0_RU.docx,Template,HFE,Заполняется после исследования.
+EU-10,Annex II 4,HFE observation forms & questionnaires,Uroflow_HFE_Observation_Forms_and_Questionnaires_v1.0.xlsx,Ready,HFE,
+EU-11,Annex II 4,Software lifecycle (IEC 62304) — SDLC evidence,Uroflow_QMS_SOP_Pack_v1.0_RU.docx,Draft,QA/Engineering,"Нужны записи выполнения (tickets, test logs)."
+EU-12,Annex II 6,Software architecture & algorithm specification,Uroflow_Smartphone_Algorithm_Spec_v1.1_Fusion_CoreML.docx,Draft,Engineering/ML,
+EU-13,Annex II 6,ML training/validation pipeline spec,Uroflow_ML_Training_Pipeline_Spec_v1.0.docx,Draft,ML,
+EU-14,Annex II 6,Golden dataset plan + schema,Uroflow_Golden_Dataset_Plan_v1.0_RU.docx; Uroflow_Golden_Dataset_Schema_v1.0.xlsx,Draft,ML/Clinical,
+EU-15,Annex II 6,"Bench verification (SOP, templates, BOM)",Uroflow_Bench_SOP_BOM_v0.2.docx; Uroflow_Bench_BOM_Variants_v0.2.xlsx,Ready,Engineering,
+EU-16,Annex II 6,Regression suite for model updates,Uroflow_Regression_Suite_v1.0.xlsx,Ready,ML/QA,
+EU-17,Annex II 6,Acceptance criteria & gates,Uroflow_Acceptance_Criteria_v1.0_RU.docx; Uroflow_Acceptance_Test_Matrix_v1.0.xlsx,Draft,QA/Clinical,
+EU-18,Annex II 7,Clinical Evaluation / Clinical Investigation docs,Uroflow_Clinical_Protocol_v1.0_EN.docx; Uroflow_SAP_MethodComparison_v1.0.docx,Draft,Clinical/RA,
+EU-19,Annex II 7,CSR template + TFL workbook,Uroflow_CSR_Template_v1.0.docx; Uroflow_CSR_TFL_Workbook_v1.0.xlsx,Ready,Clinical/Stats,
+EU-20,Annex II 8,Labeling / IFU,Uroflow_IFU_Draft_v1.0_EN.docx; Uroflow_Labeling_Claims_Alignment_v1.0_RU.docx,Draft,RA/Medical,
+EU-21,Annex II 6,Cybersecurity engineering file,Uroflow_Cybersecurity_Engineering_File_v1.0_RU.docx,Draft,Security/QA,
+EU-22,Annex II 6,Threat model,Uroflow_Threat_Model_STRIDE_v1.0.xlsx,Ready,Security,
+EU-23,Annex II 6,SBOM,Uroflow_SBOM_Template_v1.0.xlsx,Template,Security,Заполняется по сборке/релизу.
+EU-24,Annex II 6,Vulnerability disclosure & incident response,Uroflow_Vulnerability_Disclosure_and_Incident_Response_v1.0_RU.docx,Draft,Security/QA,
+EU-25,Annex II 6,Security test report,Uroflow_Security_Test_Report_Template_v1.0_RU.docx,Template,Security,Заполняется после тестов.
+EU-26,Annex III,PMS Plan / PMCF Plan,,TBD,QA/RA,Нужен PMS/PMCF план и отчётность.
+EU-27,GDPR / privacy,Data privacy architecture,Uroflow_Data_Privacy_Architecture_v1.0_EN.docx; Uroflow_Data_Privacy_Architecture_v1.0_RU.docx,Draft,Privacy/Legal,

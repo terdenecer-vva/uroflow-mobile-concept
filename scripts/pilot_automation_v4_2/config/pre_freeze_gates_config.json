@@ -1,0 +1,33 @@
+{
+  "required_gates": [
+    "PRIV_LIVE",
+    "PRIV_STORAGE",
+    "STANDPOSE",
+    "SYNC",
+    "DAILY_QA",
+    "COVERAGE",
+    "VALID_RATE"
+  ],
+  "conditional_gates": [
+    "PRIV_CONTENT"
+  ],
+  "priv_content_required_if_video_present": true,
+  "sync_offset_max_s": 1.0,
+  "min_overall_valid_rate": 0.85,
+  "outputs_dirname": "outputs/pre_freeze_gates",
+  "forbidden_artifact_patterns": [
+    "**/full_frame*.mp4",
+    "**/full_frame*.mov",
+    "**/full_frame*.jpg",
+    "**/full_frame*.png",
+    "**/*fullframe*.mp4",
+    "**/*fullframe*.mov",
+    "**/*fullframe*.jpg",
+    "**/*fullframe*.png"
+  ],
+  "coverage_summary_path_default": "outputs/coverage_dashboard/coverage_summary.json",
+  "coverage_targets_config": "config/coverage_targets_config.json",
+  "min_valid_measurement_rate": 0.8,
+  "min_standpose_pass_rate": 0.85,
+  "min_quality_score_for_valid_rate": 70
+}

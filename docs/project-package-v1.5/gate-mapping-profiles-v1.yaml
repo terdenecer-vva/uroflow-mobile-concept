@@ -1,0 +1,53 @@
+version: 1
+profiles:
+  redcap_v1:
+    clinical:
+      column_map:
+        flow_start_time_s: app_t_start_s
+        flow_end_time_s: app_t_end_s
+        ref_flow_start_time_s: ref_t_start_s
+        ref_flow_end_time_s: ref_t_end_s
+      value_map:
+        quality_status:
+          "1": valid
+          "2": repeat
+          "3": reject
+    bench:
+      value_map:
+        quality_status:
+          "1": valid
+          "2": repeat
+          "3": reject
+
+  openclinica_v1:
+    clinical:
+      column_map:
+        I.APP_QMAX_ML_S: app_qmax_ml_s
+        I.APP_QAVG_ML_S: app_qavg_ml_s
+        I.APP_VVOID_ML: app_vvoid_ml
+        I.REF_QMAX_ML_S: ref_qmax_ml_s
+        I.REF_QAVG_ML_S: ref_qavg_ml_s
+        I.REF_VVOID_ML: ref_vvoid_ml
+        I.FLOW_START_TIME_S: app_t_start_s
+        I.FLOW_END_TIME_S: app_t_end_s
+        I.REF_FLOW_START_TIME_S: ref_t_start_s
+        I.REF_FLOW_END_TIME_S: ref_t_end_s
+        I.FLUSH_DETECTED: flush_detected
+        I.QUALITY_STATUS: quality_status
+        I.SEX_AT_BIRTH: subgroup
+      value_map:
+        quality_status:
+          "1": valid
+          "2": repeat
+          "3": reject
+        subgroup:
+          "1": male
+          "2": female
+    bench:
+      column_map:
+        I.QUALITY_STATUS: quality_status
+      value_map:
+        quality_status:
+          "1": valid
+          "2": repeat
+          "3": reject

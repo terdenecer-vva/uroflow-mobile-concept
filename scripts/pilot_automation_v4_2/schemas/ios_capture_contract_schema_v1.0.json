@@ -1,0 +1,339 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Uroflow iOS Capture Contract meta.json v1.0",
+  "type": "object",
+  "required": [
+    "record_id",
+    "sync_id",
+    "created_at_utc",
+    "app",
+    "device",
+    "capture",
+    "roi",
+    "timestamps",
+    "stand_pose_summary",
+    "quality_summary"
+  ],
+  "properties": {
+    "record_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sync_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "created_at_utc": {
+      "type": "string",
+      "minLength": 10
+    },
+    "app": {
+      "type": "object",
+      "required": [
+        "name",
+        "version",
+        "build"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "build": {
+          "type": "string"
+        },
+        "algorithm_version": {
+          "type": "string"
+        },
+        "model_id": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "device": {
+      "type": "object",
+      "required": [
+        "iphone_model",
+        "ios_version",
+        "has_lidar"
+      ],
+      "properties": {
+        "iphone_model": {
+          "type": "string"
+        },
+        "ios_version": {
+          "type": "string"
+        },
+        "has_lidar": {
+          "type": "boolean"
+        },
+        "device_id_hash": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "capture": {
+      "type": "object",
+      "required": [
+        "audio",
+        "video"
+      ],
+      "properties": {
+        "audio": {
+          "type": "object",
+          "required": [
+            "sample_rate_hz",
+            "channels",
+            "format"
+          ],
+          "properties": {
+            "sample_rate_hz": {
+              "type": "number"
+            },
+            "channels": {
+              "type": "integer"
+            },
+            "format": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": true
+        },
+        "video": {
+          "type": "object",
+          "required": [
+            "fps",
+            "width",
+            "height",
+            "roi_only"
+          ],
+          "properties": {
+            "fps": {
+              "type": "number"
+            },
+            "width": {
+              "type": "integer"
+            },
+            "height": {
+              "type": "integer"
+            },
+            "roi_only": {
+              "type": "boolean"
+            },
+            "codec": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": true
+        },
+        "depth": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "source": {
+              "type": "string"
+            },
+            "fps": {
+              "type": "number"
+            }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "roi": {
+      "type": "object",
+      "required": [
+        "type",
+        "frame_width",
+        "frame_height"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "rect",
+            "polygon"
+          ]
+        },
+        "frame_width": {
+          "type": "integer"
+        },
+        "frame_height": {
+          "type": "integer"
+        },
+        "rect": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "type": "number"
+            },
+            "y": {
+              "type": "number"
+            },
+            "w": {
+              "type": "number"
+            },
+            "h": {
+              "type": "number"
+            }
+          },
+          "additionalProperties": true
+        },
+        "polygon": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 2,
+            "maxItems": 2
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "timestamps": {
+      "type": "object",
+      "required": [
+        "session_start_epoch_ms",
+        "session_end_epoch_ms"
+      ],
+      "properties": {
+        "session_start_epoch_ms": {
+          "type": "number"
+        },
+        "session_end_epoch_ms": {
+          "type": "number"
+        },
+        "sync_markers": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "default": []
+        }
+      },
+      "additionalProperties": true
+    },
+    "privacy_live_guardrails": {
+      "type": "object",
+      "required": [
+        "precheck",
+        "during"
+      ],
+      "properties": {
+        "precheck": {
+          "type": "object",
+          "required": [
+            "pass"
+          ],
+          "properties": {
+            "pass": {
+              "type": "boolean"
+            },
+            "reason": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": true
+        },
+        "during": {
+          "type": "object",
+          "required": [
+            "pass"
+          ],
+          "properties": {
+            "pass": {
+              "type": "boolean"
+            },
+            "max_skin_fraction_border": {
+              "type": "number"
+            },
+            "max_reflection_risk": {
+              "type": "number"
+            },
+            "roi_lost_count": {
+              "type": "integer"
+            }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "stand_pose_summary": {
+      "type": "object",
+      "required": [
+        "distance_m_median",
+        "pitch_deg_median",
+        "yaw_deg_median",
+        "roll_deg_median",
+        "jitter_deg",
+        "class"
+      ],
+      "properties": {
+        "distance_m_median": {
+          "type": "number"
+        },
+        "pitch_deg_median": {
+          "type": "number"
+        },
+        "yaw_deg_median": {
+          "type": "number"
+        },
+        "roll_deg_median": {
+          "type": "number"
+        },
+        "jitter_deg": {
+          "type": "number"
+        },
+        "class": {
+          "type": "string",
+          "enum": [
+            "PASS",
+            "BORDERLINE",
+            "FAIL"
+          ]
+        }
+      },
+      "additionalProperties": true
+    },
+    "quality_summary": {
+      "type": "object",
+      "required": [
+        "quality_score",
+        "quality_class"
+      ],
+      "properties": {
+        "quality_score": {
+          "type": "number"
+        },
+        "quality_class": {
+          "type": "string",
+          "enum": [
+            "VALID",
+            "BORDERLINE",
+            "INVALID"
+          ]
+        },
+        "invalid_reasons": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

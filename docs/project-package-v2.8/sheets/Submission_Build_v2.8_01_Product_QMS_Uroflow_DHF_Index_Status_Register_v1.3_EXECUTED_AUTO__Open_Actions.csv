@@ -1,0 +1,7 @@
+Action ID,Description,Owner,Target date,Status,Related DHF_ID / file
+ACT-001,Run dry-run on-site and attach evidence logs to Evidence Manifest,Clinical Ops,,Planned,Uroflow_Pilot_DryRun_End2End_Report_v1.0_RU.docx
+ACT-002,Freeze golden dataset v1 (manifest + dataset card) after collecting target N,Data Manager,,Planned,Uroflow_Golden_Dataset_Schema_v1.0.xlsx
+ACT-003,Execute summative usability validation and finalize report,HFE Lead,,Planned,Uroflow_HFE_Summative_Validation_Report_Template_v1.0_RU.docx
+ACT-004,Execute security testing and finalize security test report,Security Lead,,Planned,Uroflow_Security_Test_Report_Template_v1.0_RU.docx
+ACT-005,Update V&V Report with executed test results and pass/fail summary,QA Lead,,Planned,Uroflow_Software_System_VV_Report_v1.0_EN.docx
+ACT-006,Finalize IFU (RU/EN) with supported devices list and warnings,Product Owner,,Planned,Uroflow_IFU_Draft_v1.0_EN.docx

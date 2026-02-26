@@ -1,0 +1,9 @@
+Parameter,Default,Notes
+sample_fps,3,Frame sampling rate.
+max_frames,180,Maximum frames processed per video.
+skin_frac_fail,0.15,FAIL threshold for max skin fraction.
+face_min_size_px,40,Minimum face bounding box size to count as hit.
+person_min_height_px,80,Minimum person bbox height to count as hit.
+border_leak_review,0.65,Border leak score for REVIEW.
+generate_evidence,false,Generate de-identified thumbnails when FAIL/REVIEW.
+evidence_mode,pixelate_edges,pixelate_edges|pixelate_gray|none.

@@ -1,0 +1,10 @@
+Gate,Metric,Population,Threshold,Method,Dataset,Owner,Evidence artifact
+G0,Valid rate (clinic),All attempts,>= 80% valid (QS>=70),Count valid/attempt,Pilot clinic set,Clinical Ops,Pilot readiness report
+G0,Qmax MAE,Valid records,<= 3.0 ml/s,MAE,Pilot clinic set,Data Lead,TFL: Qmax MAE
+G0,Qmax bias,Valid records,|bias| <= 2.0 ml/s,Bland-Altman,Pilot clinic set,Biostat,BA plot/report
+G0,Vvoid MAPE/MAE,Valid records,MAPE <= 15% OR MAE <= 30 ml,MAPE/MAE,Pilot clinic set,Biostat,TFL: Vvoid
+G1,Valid rate (clinic),All attempts,>= 85% valid,Count valid/attempt,Multi-site clinic set,Clinical Ops,Pivotal readiness report
+G1,Qmax LoA,Valid records,95% LoA within +/-5 ml/s,Bland-Altman,Holdout evaluation set,Biostat,CSR BA tables
+G1,Vvoid LoA,Valid records,95% LoA within +/-40 ml,Bland-Altman,Holdout evaluation set,Biostat,CSR BA tables
+G1,Subgroup robustness,Valid records,No subgroup > 1.5x overall MAE,Stratified MAE,Evaluation set,Data Lead,Subgroup TFL
+G2,Regression suite pass,All tests,No critical regressions,Compare to baseline,Frozen regression suite,SW Lead,Regression report

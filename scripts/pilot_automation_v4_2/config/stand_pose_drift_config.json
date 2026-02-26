@@ -1,0 +1,16 @@
+{
+  "min_records_per_group": 10,
+  "min_pass_rate": 0.85,
+  "distance_m_range": [
+    0.2,
+    0.8
+  ],
+  "pitch_deg_range": [
+    -60,
+    -5
+  ],
+  "yaw_deg_abs_max": 45,
+  "roll_deg_abs_max": 30,
+  "jitter_deg_max": 3.0,
+  "outputs_dirname": "outputs/stand_pose_drift_dashboard"
+}

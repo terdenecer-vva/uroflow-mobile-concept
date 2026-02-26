@@ -1,0 +1,28 @@
+Test_ID,Scenario,Setup,Steps,Expected behavior (on-device),Expected stored artifacts,Severity,Evidence (link/ID)
+PG-LIVE-01,Normal operation (clean ROI),Phone on stand; bowl ROI only; no people in background,"1) Start precheck
+2) Start recording
+3) Finish normally",Precheck PASS; recording allowed; privacy_live_guardrails.precheck.pass=true; during.pass=true,No full-frame. ROI-video/features as per profile. privacy_live_guardrails present.,Major,
+PG-LIVE-02,Person enters frame during precheck,Operator steps into camera view near ROI border,"1) Start precheck
+2) Ensure person visible
+3) Attempt start",Precheck FAIL; recording blocked; warning shown; no files saved,No media saved; privacy_live_guardrails indicates precheck.pass=false,Critical,
+PG-LIVE-03,Person enters during recording,Start recording clean; then person appears at border,"1) Start recording
+2) Person enters view
+3) Observe abort",Recording aborted; raw media deleted/not persisted; session invalid,No saved media (or only invalid stub); privacy_live_guardrails.during.pass=false,Critical,
+PG-LIVE-04,Skin reflection in glossy surface,Introduce reflective object causing skin-colored region near ROI border,"1) Start precheck
+2) Observe skin heuristic trigger",Precheck FAIL (skin_fraction_border > threshold) OR warning and block,No saved media; metadata indicates skin trigger,Critical,
+PG-LIVE-05,Face reflection in mirror-like tile,Place mirror tile causing face reflection near ROI edge,"1) Start precheck
+2) Ensure face detection triggers",Precheck FAIL (face detected) and recording blocked,No saved media; metadata indicates face_detected=true,Critical,
+PG-LIVE-06,Excessive reflection without face,Strong specular highlights but no face/person,"1) Start precheck
+2) Increase reflection",If reflection_risk_score above threshold -> block; else allow but mark BORDERLINE,ROI/features saved; metadata records max_reflection_risk,Major,
+PG-LIVE-07,Low light / noisy image,Dim environment,"1) Start precheck
+2) Attempt recording",Guardrails should not false-trigger; if uncertainty high -> request reposition/light,No full-frame; metadata indicates low_light flag if implemented,Major,
+PG-LIVE-08,Camera moved during recording,Move phone/stand,"1) Start recording
+2) Move device",Quality gating may invalidate; live privacy should continue to monitor; if ROI lost -> abort or invalidate,No full-frame; meta has motion flag; may abort,Major,
+PG-LIVE-09,ROI crop leak (incorrect ROI),Intentionally mis-set ROI to include outside bowl,"1) Set wrong ROI
+2) Start precheck",Precheck FAIL via border leak / person/skin heuristic,No saved media; metadata indicates border_leak,Critical,
+PG-LIVE-10,User insists to continue (override),Try to bypass guardrails,"1) Trigger FAIL
+2) Attempt override",No override allowed in production mode; must block recording,No saved media; override disabled,Critical,
+PG-LIVE-11,Clinic-test evidence thumbnails ON,Enable generate_evidence (controlled),"1) Trigger FAIL
+2) Confirm evidence produced",Recording blocked; evidence thumbnails created ONLY in clinic-test folder,Evidence thumbnails exist in controlled path; no raw media,Major,
+PG-LIVE-12,Regional profile: ROI video NOT stored,Profile forbids roi_video,"1) Clean recording
+2) Export record",Live guardrails PASS; storage policy stores only features; validator PASS,No roi_video.mp4; privacy_live_guardrails present; features exist,Major,

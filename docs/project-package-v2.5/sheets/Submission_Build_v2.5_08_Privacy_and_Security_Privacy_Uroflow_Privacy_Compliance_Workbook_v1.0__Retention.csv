@@ -1,0 +1,4 @@
+Data type,Default retention,Clinic mode retention,Deletion method,Notes
+"Derived results (Q(t), parameters, quality)",Until user deletes,Per clinic policy / medical record retention,In-app delete + secure OS deletion,
+Raw audio/video,Not stored by default,Only if enabled; minimal,Disable by default; delete upon export/analysis completion,Requires explicit consent
+Device/config metadata,Until user deletes,Per clinic policy,In-app delete,Avoid persistent identifiers when possible

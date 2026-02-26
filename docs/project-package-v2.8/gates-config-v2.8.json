@@ -1,0 +1,129 @@
+{
+  "config_version": "2.8",
+  "source": "Uroflow_Acceptance_Test_Matrix_v1.0 (Submission_Build_v2.8)",
+  "gates": {
+    "G0": {
+      "description": "Clinical pilot readiness gate (v2.8)",
+      "rules": [
+        {
+          "id": "valid_rate_clinic",
+          "metric": "valid_rate_clinic",
+          "op": ">=",
+          "value": 0.8
+        },
+        {
+          "id": "qmax_mae",
+          "metric": "qmax_mae_ml_s",
+          "op": "<=",
+          "value": 3.0
+        },
+        {
+          "id": "qmax_bias_abs",
+          "metric": "qmax_bias_abs_ml_s",
+          "op": "<=",
+          "value": 2.0
+        },
+        {
+          "id": "vvoid_error",
+          "any_of": [
+            {
+              "metric": "vvoid_mape_pct",
+              "op": "<=",
+              "value": 15.0
+            },
+            {
+              "metric": "vvoid_mae_ml",
+              "op": "<=",
+              "value": 30.0
+            }
+          ]
+        }
+      ]
+    },
+    "G1": {
+      "description": "Clinical pivotal readiness gate (v2.8)",
+      "rules": [
+        {
+          "id": "valid_rate_clinic",
+          "metric": "valid_rate_clinic",
+          "op": ">=",
+          "value": 0.85
+        },
+        {
+          "id": "qmax_loa95",
+          "metric": "qmax_loa95_abs_ml_s",
+          "op": "<=",
+          "value": 5.0
+        },
+        {
+          "id": "vvoid_loa95",
+          "metric": "vvoid_loa95_abs_ml",
+          "op": "<=",
+          "value": 40.0
+        },
+        {
+          "id": "subgroup_robustness",
+          "metric": "subgroup_max_mae_ratio",
+          "op": "<=",
+          "value": 1.5
+        }
+      ]
+    },
+    "G2": {
+      "description": "Clinical release gate (v2.8)",
+      "rules": [
+        {
+          "id": "regression_suite_pass",
+          "metric": "regression_suite_pass",
+          "op": "==",
+          "value": true
+        }
+      ]
+    },
+    "BENCH_G0": {
+      "description": "Bench gate G0 (v2.8)",
+      "rules": [
+        {
+          "id": "qmax_mae_quiet",
+          "metric": "bench_qmax_mae_quiet_ml_s",
+          "op": "<=",
+          "value": 2.0
+        },
+        {
+          "id": "qmax_mae_noise",
+          "metric": "bench_qmax_mae_noise_ml_s",
+          "op": "<=",
+          "value": 2.5
+        },
+        {
+          "id": "not_in_water_sensitivity",
+          "metric": "not_in_water_sensitivity",
+          "op": ">=",
+          "value": 0.9
+        }
+      ]
+    },
+    "BENCH_G1": {
+      "description": "Bench gate G1 (v2.8)",
+      "rules": [
+        {
+          "id": "qmax_mae_multi_toilet",
+          "metric": "bench_qmax_mae_multi_toilet_ml_s",
+          "op": "<=",
+          "value": 2.5
+        }
+      ]
+    },
+    "BENCH_G2": {
+      "description": "Bench gate G2 (v2.8)",
+      "rules": [
+        {
+          "id": "stress_false_valid_rate",
+          "metric": "stress_false_valid_rate",
+          "op": "<=",
+          "value": 0.02
+        }
+      ]
+    }
+  }
+}

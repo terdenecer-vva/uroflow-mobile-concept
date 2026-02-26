@@ -1,0 +1,6 @@
+Gate,Scenario,Metric,Threshold,Method,Notes
+G0,"Quiet, standard toilet, LiDAR device",Qmax MAE,<= 2.0 ml/s,Compare to weight-based Q_ref,Best-case bench
+G0,Noise moderate,Qmax MAE,<= 2.5 ml/s,MAE,
+G0,Not-in-water,Artifact detection,>= 90% sensitivity,Confusion matrix,Used for fallback labeling
+G1,Multi-toilet bench,Qmax MAE,<= 2.5 ml/s,MAE across toilets,Generalization check
+G2,"Stress suite (flush, tap water)",False valid rate,<= 2%,Count invalid marked as valid,Safety gate

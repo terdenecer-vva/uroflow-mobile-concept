@@ -1,0 +1,9 @@
+Submission Build v2.7 – additions
+""
+1) GSPR executed autofill: adds existence/SHA256/Evidence_ID mapping for each GSPR row.
+2) EU Annex II/III master index executed: de-duplicated file list with hashes + missing report.
+3) Pilot-freeze submission tree builder: clean EU+US tree (no archives/duplicates) + checksums.
+""
+Key outputs generated in this build:
+ - 06_EU_MDR/Uroflow_EU_MDR_GSPR_Checklist_AnnexI_v1.2_EXECUTED_AUTO.xlsx
+ - 06_EU_MDR/Uroflow_EU_MDR_AnnexII_III_Master_Index_v1.0_EXECUTED.xlsx

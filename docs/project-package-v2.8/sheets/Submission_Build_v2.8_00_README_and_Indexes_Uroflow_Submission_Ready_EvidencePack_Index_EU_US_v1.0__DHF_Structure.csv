@@ -1,0 +1,13 @@
+Рекомендуемая структура Evidence Pack (submission-ready)
+""
+01_IntendedUse_Claims/
+02_Device_Description/
+03_Software_Architecture_SDLC/
+04_Risk_Management_ISO14971/
+05_Usability_HFE_IEC62366/
+06_Cybersecurity_IEC81001-5-1/
+07_Verification_Bench_Regression/
+08_Clinical_Protocol_SAP_CSR/
+09_Labeling_IFU/
+10_QMS_Records_ChangeControl/
+11_PMS_PMFC/

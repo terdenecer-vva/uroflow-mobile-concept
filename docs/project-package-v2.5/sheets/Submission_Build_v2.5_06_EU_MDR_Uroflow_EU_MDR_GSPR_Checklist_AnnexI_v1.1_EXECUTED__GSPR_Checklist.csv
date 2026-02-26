@@ -1,0 +1,107 @@
+GSPR ID (Annex I),Requirement summary (verify against official text),Applicable (Y/N/Partial),Justification if N/Partial,Design / Risk controls (summary),Verification & Validation evidence (doc IDs / tests),Status (TBD/Draft/Ready),Notes,Build file references (relative paths),Open items to finalize (execution)
+1,Safety and performance: devices achieve intended performance and are safe; benefit-risk acceptable.,Y,,Claim set A; quality gating; risk management; conservative labeling.,RMF (ISO 14971) + Acceptance criteria + V&V plan/evidence matrix + Release/Update policy + Quality gating,Ready (docs),,"01_Product_QMS/Uroflow_Risk_Management_Plan_ISO14971_v1.0_RU.docx
+01_Product_QMS/Uroflow_Risk_Management_Report_ISO14971_v1.0_RU.docx
+01_Product_QMS/Uroflow_Risk_Control_Verification_Matrix_v1.0.xlsx
+01_Product_QMS/Uroflow_Acceptance_Criteria_v1.0_RU.docx
+01_Product_QMS/Uroflow_Acceptance_Test_Matrix_v1.0.xlsx
+06_EU_MDR/Uroflow_Software_System_VV_Plan_v1.0_EN.docx
+06_EU_MDR/Uroflow_VV_Evidence_Matrix_v1.0.xlsx
+01_Product_QMS/Uroflow_Software_Release_and_Update_Policy_v1.0_RU.docx",Execute V&V and attach test logs; finalize residual risk after pilot if needed
+2,Risk reduction: eliminate/reduce risks as far as possible; protective measures; information for safety.,Y,,Quality score; artifact detection; warnings; IFU; usability validation.,RMF (ISO 14971) + Acceptance criteria + V&V plan/evidence matrix + Release/Update policy + Quality gating,Ready (docs),,"01_Product_QMS/Uroflow_Risk_Management_Plan_ISO14971_v1.0_RU.docx
+01_Product_QMS/Uroflow_Risk_Management_Report_ISO14971_v1.0_RU.docx
+01_Product_QMS/Uroflow_Risk_Control_Verification_Matrix_v1.0.xlsx
+01_Product_QMS/Uroflow_Acceptance_Criteria_v1.0_RU.docx
+01_Product_QMS/Uroflow_Acceptance_Test_Matrix_v1.0.xlsx
+06_EU_MDR/Uroflow_Software_System_VV_Plan_v1.0_EN.docx
+06_EU_MDR/Uroflow_VV_Evidence_Matrix_v1.0.xlsx
+01_Product_QMS/Uroflow_Software_Release_and_Update_Policy_v1.0_RU.docx",Execute V&V and attach test logs; finalize residual risk after pilot if needed
+3,Risk management process must be applied throughout lifecycle.,Y,,ISO 14971 process integrated with change control.,RMF (ISO 14971) + Acceptance criteria + V&V plan/evidence matrix + Release/Update policy + Quality gating,Ready (docs),,"01_Product_QMS/Uroflow_Risk_Management_Plan_ISO14971_v1.0_RU.docx
+01_Product_QMS/Uroflow_Risk_Management_Report_ISO14971_v1.0_RU.docx
+01_Product_QMS/Uroflow_Risk_Control_Verification_Matrix_v1.0.xlsx
+01_Product_QMS/Uroflow_Acceptance_Criteria_v1.0_RU.docx
+01_Product_QMS/Uroflow_Acceptance_Test_Matrix_v1.0.xlsx
+06_EU_MDR/Uroflow_Software_System_VV_Plan_v1.0_EN.docx
+06_EU_MDR/Uroflow_VV_Evidence_Matrix_v1.0.xlsx
+01_Product_QMS/Uroflow_Software_Release_and_Update_Policy_v1.0_RU.docx",Execute V&V and attach test logs; finalize residual risk after pilot if needed
+4,Performance characteristics and risk controls remain effective during lifetime.,Y,,Release/update policy; regression suite; PMS monitoring.,RMF (ISO 14971) + Acceptance criteria + V&V plan/evidence matrix + Release/Update policy + Quality gating,Ready (docs),,"01_Product_QMS/Uroflow_Risk_Management_Plan_ISO14971_v1.0_RU.docx
+01_Product_QMS/Uroflow_Risk_Management_Report_ISO14971_v1.0_RU.docx
+01_Product_QMS/Uroflow_Risk_Control_Verification_Matrix_v1.0.xlsx
+01_Product_QMS/Uroflow_Acceptance_Criteria_v1.0_RU.docx
+01_Product_QMS/Uroflow_Acceptance_Test_Matrix_v1.0.xlsx
+06_EU_MDR/Uroflow_Software_System_VV_Plan_v1.0_EN.docx
+06_EU_MDR/Uroflow_VV_Evidence_Matrix_v1.0.xlsx
+01_Product_QMS/Uroflow_Software_Release_and_Update_Policy_v1.0_RU.docx",Execute V&V and attach test logs; finalize residual risk after pilot if needed
+5,Characteristics and performance not adversely affected by transport/storage conditions (as applicable).,Partial,Software distribution; ensure integrity and compatibility across iOS versions.,Signed binaries; compatibility checks; installation requirements.,Software-only product: transport/storage mostly N/A; verify device compatibility and environment assumptions via labeling,Ready (justification),,"01_Product_QMS/Uroflow_IFU_Draft_v1.0_EN.docx
+01_Product_QMS/Uroflow_IFU_Draft_v1.0_RU.docx",Confirm any storage/transport constraints (if distributing as app only)
+6,Protection against risks from use error; ergonomic features; use environment.,Y,,AR acquisition wizard; privacy-by-design; human factors validation.,HFE/Usability Engineering File + URRA + Summative validation plan/report + IFU/labeling + quality gating,Ready (docs),,"09_HFE_Usability/Uroflow_HFE_Usability_Engineering_File_v1.0_RU.docx
+09_HFE_Usability/Uroflow_HFE_Use_Related_Risk_Analysis_URRA_v1.0.xlsx
+09_HFE_Usability/Uroflow_HFE_Summative_Validation_Plan_v1.0_RU.docx
+09_HFE_Usability/Uroflow_HFE_Summative_Validation_Report_Template_v1.0_RU.docx
+01_Product_QMS/Uroflow_IFU_Draft_v1.0_EN.docx
+01_Product_QMS/Uroflow_Labeling_Claims_Alignment_v1.0_RU.docx",Run formative + summative usability sessions; compile final summative report
+7,Consideration of intended users and their training; lay users if applicable.,Y,,Two modes (home/clinical); user instructions; UI warnings.,HFE/Usability Engineering File + URRA + Summative validation plan/report + IFU/labeling + quality gating,Ready (docs),,"09_HFE_Usability/Uroflow_HFE_Usability_Engineering_File_v1.0_RU.docx
+09_HFE_Usability/Uroflow_HFE_Use_Related_Risk_Analysis_URRA_v1.0.xlsx
+09_HFE_Usability/Uroflow_HFE_Summative_Validation_Plan_v1.0_RU.docx
+09_HFE_Usability/Uroflow_HFE_Summative_Validation_Report_Template_v1.0_RU.docx
+01_Product_QMS/Uroflow_IFU_Draft_v1.0_EN.docx
+01_Product_QMS/Uroflow_Labeling_Claims_Alignment_v1.0_RU.docx",Run formative + summative usability sessions; compile final summative report
+8,Devices must be designed so that risks associated with use in intended conditions are removed or minimized.,Y,,Noise/motion detection; not-in-water classifier; gating.,RMF (ISO 14971) + Acceptance criteria + V&V plan/evidence matrix + Release/Update policy + Quality gating,Ready (docs),,"01_Product_QMS/Uroflow_Risk_Management_Plan_ISO14971_v1.0_RU.docx
+01_Product_QMS/Uroflow_Risk_Management_Report_ISO14971_v1.0_RU.docx
+01_Product_QMS/Uroflow_Risk_Control_Verification_Matrix_v1.0.xlsx
+01_Product_QMS/Uroflow_Acceptance_Criteria_v1.0_RU.docx
+01_Product_QMS/Uroflow_Acceptance_Test_Matrix_v1.0.xlsx
+06_EU_MDR/Uroflow_Software_System_VV_Plan_v1.0_EN.docx
+06_EU_MDR/Uroflow_VV_Evidence_Matrix_v1.0.xlsx
+01_Product_QMS/Uroflow_Software_Release_and_Update_Policy_v1.0_RU.docx",Execute V&V and attach test logs; finalize residual risk after pilot if needed
+9,Manufacturers must reduce risks related to reasonably foreseeable environmental conditions.,Y,,Toilet scan normalization; pour calibration; multi-toilet dataset; quality thresholds.,RMF (ISO 14971) + Acceptance criteria + V&V plan/evidence matrix + Release/Update policy + Quality gating,Ready (docs),,"01_Product_QMS/Uroflow_Risk_Management_Plan_ISO14971_v1.0_RU.docx
+01_Product_QMS/Uroflow_Risk_Management_Report_ISO14971_v1.0_RU.docx
+01_Product_QMS/Uroflow_Risk_Control_Verification_Matrix_v1.0.xlsx
+01_Product_QMS/Uroflow_Acceptance_Criteria_v1.0_RU.docx
+01_Product_QMS/Uroflow_Acceptance_Test_Matrix_v1.0.xlsx
+06_EU_MDR/Uroflow_Software_System_VV_Plan_v1.0_EN.docx
+06_EU_MDR/Uroflow_VV_Evidence_Matrix_v1.0.xlsx
+01_Product_QMS/Uroflow_Software_Release_and_Update_Policy_v1.0_RU.docx",Execute V&V and attach test logs; finalize residual risk after pilot if needed
+10,"Chemical, physical and biological properties (as applicable).",N,Software-only product; no patient-contacting materials.,N/A,Not applicable for standalone software (no patient-contact materials).,Ready,,06_EU_MDR/Uroflow_EU_MDR_GSPR_Checklist_AnnexI_v1.1_EXECUTED.xlsx,
+11,Infection and microbial contamination (as applicable).,N,Software-only; no sterile components.,N/A,Not applicable for standalone software (no biological/medicinal/radiation components).,Ready,,,
+12,Devices incorporating medicinal substances (as applicable).,N,Not applicable.,N/A,Not applicable for standalone software (no biological/medicinal/radiation components).,Ready,,,
+13,Devices incorporating human blood/tissue or derivatives (as applicable).,N,Not applicable.,N/A,Not applicable for standalone software (no biological/medicinal/radiation components).,Ready,,,
+14,Devices incorporating animal tissue or derivatives (as applicable).,N,Not applicable.,N/A,Not applicable for standalone software (no biological/medicinal/radiation components).,Ready,,,
+15,Construction and environmental properties (as applicable).,Partial,Software-only; reliance on smartphone hardware environment.,Define operating conditions; handle low-light/noise; fail-safe behavior.,"Partial applicability (software construction/environment): see software architecture, SoUP, release policy",Ready (docs),,"06_EU_MDR/Uroflow_EU_MDR_Software_Architecture_Description_v1.0_EN.docx
+06_EU_MDR/Uroflow_EU_SoUP_Register_v1.0.xlsx
+01_Product_QMS/Uroflow_Software_Release_and_Update_Policy_v1.0_RU.docx",Finalize compatibility list (supported iPhone/iOS) and include in IFU
+16,Protection against radiation (as applicable).,N,Not applicable.,N/A,Not applicable for standalone software (no biological/medicinal/radiation components).,Ready,,,
+17,"Electronic programmable systems and software: lifecycle, validation, risk control, cybersecurity.",Y,,IEC 62304-aligned SDLC; V&V; cybersecurity engineering; SBOM; secure updates.,Software lifecycle (IEC 62304-aligned) + V&V + SoUP + cybersecurity engineering file + SBOM + security testing + change control for ML,Ready (docs),,"01_Product_QMS/Uroflow_QMS_SOP_Pack_v1.0_RU.docx
+06_EU_MDR/Uroflow_EU_MDR_Software_Architecture_Description_v1.0_EN.docx
+06_EU_MDR/Uroflow_EU_SoUP_Register_v1.0.xlsx
+06_EU_MDR/Uroflow_Software_System_VV_Plan_v1.0_EN.docx
+06_EU_MDR/Uroflow_Software_System_VV_Report_v1.0_EN.docx
+08_Privacy_and_Security/Cybersecurity/Uroflow_Cybersecurity_Engineering_File_v1.0_RU.docx
+08_Privacy_and_Security/Cybersecurity/Uroflow_Threat_Model_STRIDE_v1.0.xlsx
+08_Privacy_and_Security/Cybersecurity/Uroflow_SBOM_Template_v1.0.xlsx
+08_Privacy_and_Security/Cybersecurity/Uroflow_Security_Test_Report_Template_v1.0_RU.docx",Execute security tests and V&V; complete unresolved anomalies log; ensure change control evidence for ML updates
+18,"Devices with measuring function: accuracy, precision, limits, metrological traceability (as applicable).",Y,,Bench verification with weight reference; acceptance criteria; calibration procedures.,Measuring function: bench + clinic method-comparison + acceptance criteria + golden dataset plan + calibration protocol + QS gating,Ready (docs),,"03_Data_Golden_Dataset/Uroflow_Golden_Dataset_Plan_v1.0_RU.docx
+03_Data_Golden_Dataset/Uroflow_Golden_Dataset_Acquisition_SOP_v1.0_RU.docx
+04_Bench_Testing/Uroflow_Bench_SOP_BOM_v1.0.docx
+05_Clinical/Uroflow_Clinical_Protocol_v1.0_EN.docx
+05_Clinical/Uroflow_SAP_MethodComparison_v1.0.docx
+01_Product_QMS/Uroflow_Acceptance_Criteria_v1.0_RU.docx
+02_Algorithm_and_ML/Uroflow_Quality_Score_Calibration_Protocol_v1.0_RU.docx",Collect and freeze golden dataset; run BA analysis; update CER/CSR with results
+19,Protection against mechanical risks and related to devices supplied with energy (as applicable).,Partial,Smartphone is external; ensure safe instructions for placement (avoid falls/water damage).,Use instructions; warning labels; do not require mains power.,"Partial applicability; software-only device. Address via labeling, environment assumptions, and iPhone platform constraints.",Ready (justification),,"01_Product_QMS/Uroflow_IFU_Draft_v1.0_EN.docx
+06_EU_MDR/Uroflow_EU_MDR_Device_Description_and_Specification_v1.0_EN.docx",Confirm environmental constraints and include in IFU; verify no additional supplied hardware
+20,Protection against thermal risks (as applicable).,Partial,Phone heating may affect capture; ensure time limits and safe operation.,Limit capture duration; handle thermal throttling; quality flags.,"Partial applicability; software-only device. Address via labeling, environment assumptions, and iPhone platform constraints.",Ready (justification),,"01_Product_QMS/Uroflow_IFU_Draft_v1.0_EN.docx
+06_EU_MDR/Uroflow_EU_MDR_Device_Description_and_Specification_v1.0_EN.docx",Confirm environmental constraints and include in IFU; verify no additional supplied hardware
+21,Protection against risks posed by devices intended for use by lay persons (as applicable).,Y,,Clear instructions; warnings; privacy; minimize incorrect use.,HFE/Usability Engineering File + URRA + Summative validation plan/report + IFU/labeling + quality gating,Ready (docs),,"09_HFE_Usability/Uroflow_HFE_Usability_Engineering_File_v1.0_RU.docx
+09_HFE_Usability/Uroflow_HFE_Use_Related_Risk_Analysis_URRA_v1.0.xlsx
+09_HFE_Usability/Uroflow_HFE_Summative_Validation_Plan_v1.0_RU.docx
+09_HFE_Usability/Uroflow_HFE_Summative_Validation_Report_Template_v1.0_RU.docx
+01_Product_QMS/Uroflow_IFU_Draft_v1.0_EN.docx
+01_Product_QMS/Uroflow_Labeling_Claims_Alignment_v1.0_RU.docx",Run formative + summative usability sessions; compile final summative report
+22,"Information supplied with device: labels, IFU, safety information, performance, compatibility.",Y,,"IFU includes acquisition protocol, limitations, quality indicators, supported devices.",IFU + labeling/claims alignment + sample report + compatibility list + warnings and quality gating,Ready (docs),,"01_Product_QMS/Uroflow_IFU_Draft_v1.0_EN.docx
+01_Product_QMS/Uroflow_IFU_Draft_v1.0_RU.docx
+01_Product_QMS/Uroflow_Labeling_Claims_Alignment_v1.0_RU.docx
+01_Product_QMS/Other/Sample_Report.pdf",Finalize IFU and supported device list; align translations
+23,Post-market surveillance and vigilance (as applicable).,Y,,PMS plan; complaint handling; cybersecurity monitoring; trend reporting; PMCF.,PMS plan + PMCF plan + PSUR template + vigilance workflow + complaint/CAPA registers,Ready (docs),,"06_EU_MDR/Uroflow_PMS_Plan_EU_MDR_AnnexIII_v1.0_RU.docx
+06_EU_MDR/Uroflow_PMCF_Plan_v1.0_RU.docx
+06_EU_MDR/Uroflow_PSUR_Template_v1.0_RU.docx
+01_Product_QMS/Uroflow_QMS_Forms_and_Registers_v1.0.xlsx
+06_EU_MDR/Uroflow_PMS_Forms_and_Registers_v1.0.xlsx",Define PMS KPIs and reporting cadence; start PMS logging at pilot launch

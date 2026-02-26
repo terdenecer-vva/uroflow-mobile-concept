@@ -5,6 +5,12 @@ from .capture_contract import (
     capture_to_level_payload,
     validate_capture_payload,
 )
+from .events import (
+    EventDetectionConfig,
+    EventDetectionResult,
+    detect_voiding_interval,
+    slice_indices_for_interval,
+)
 from .fusion import (
     FusionEstimationResult,
     FusionLevelConfig,
@@ -19,7 +25,28 @@ from .fusion import (
     evaluate_fusion_quality,
     fuse_depth_and_rgb_levels,
 )
+from .gate_metrics import (
+    build_gate_metrics,
+    load_csv_rows,
+    load_mapping_profile,
+    select_mapping_profile,
+)
+from .gate_profile import build_profile_template, load_csv_headers, suggest_column_map
+from .gates import (
+    DEFAULT_GATES_CONFIG,
+    GateEvaluation,
+    GateEvaluationSummary,
+    RuleEvaluation,
+    evaluate_release_gates,
+    gate_summary_to_dict,
+)
 from .metrics import UroflowSummary, calculate_uroflow_summary
+from .session import (
+    CaptureSessionAnalysis,
+    CaptureSessionConfig,
+    CaptureSessionQuality,
+    analyze_capture_session,
+)
 from .synthetic import (
     BENCH_SCENARIOS,
     SUPPORTED_PROFILES,
@@ -36,6 +63,14 @@ from .synthetic import (
 __all__ = [
     "UroflowSummary",
     "calculate_uroflow_summary",
+    "EventDetectionConfig",
+    "EventDetectionResult",
+    "detect_voiding_interval",
+    "slice_indices_for_interval",
+    "CaptureSessionAnalysis",
+    "CaptureSessionConfig",
+    "CaptureSessionQuality",
+    "analyze_capture_session",
     "FusionLevelConfig",
     "FusionQualityFlags",
     "FusionEstimationResult",
@@ -48,6 +83,19 @@ __all__ = [
     "evaluate_fusion_quality",
     "fuse_depth_and_rgb_levels",
     "estimate_from_level_series",
+    "load_csv_rows",
+    "load_mapping_profile",
+    "select_mapping_profile",
+    "load_csv_headers",
+    "suggest_column_map",
+    "build_profile_template",
+    "build_gate_metrics",
+    "RuleEvaluation",
+    "GateEvaluation",
+    "GateEvaluationSummary",
+    "DEFAULT_GATES_CONFIG",
+    "evaluate_release_gates",
+    "gate_summary_to_dict",
     "CaptureValidationReport",
     "capture_to_level_payload",
     "validate_capture_payload",

@@ -1,0 +1,13 @@
+Area,New/Updated artifact,Relative path,Purpose
+EU MDR,Executed GSPR with evidence links,06_EU_MDR/Uroflow_EU_MDR_GSPR_Checklist_AnnexI_v1.3_EXECUTED_EVIDENCE_AUTO.xlsx,Adds Evidence_ID->file path->SHA256 traceability
+EU MDR,Annex II/III index update,06_EU_MDR/Annex_II_III_Submission_Folder/EU_MDR_AnnexII_III_Submission_Folder_Index_v2.4.xlsx,References the latest executed GSPR
+QMS/DHF,Executed DHF status register,01_Product_QMS/Uroflow_DHF_Index_Status_Register_v1.3_EXECUTED_AUTO.xlsx,File-level existence + hashes + timestamps
+Automation,GSPR evidence-link autofill script,10_Pilot_Automation/scripts/autofill_gspr_evidence_links.py,Generate executed GSPR evidence columns
+Automation,DHF status update script,10_Pilot_Automation/scripts/update_dhf_status.py,Generate executed DHF register
+Automation,One-click wrappers,10_Pilot_Automation/run_gspr_evidence_autofill_oneclick.(sh|bat),Simplify execution
+Automation,One-click wrappers,10_Pilot_Automation/run_dhf_status_update_oneclick.(sh|bat),Simplify execution
+Region pack (RU),RU claims strategy,11_Region_Packs/RU_Roszdravnadzor/Uroflow_RU_Claims_and_Registration_Strategy_v1.0_RU.docx,Conservative claim set to avoid class escalation
+Region pack (RU),RU claims/evidence matrix,11_Region_Packs/RU_Roszdravnadzor/Uroflow_RU_Claims_Evidence_Matrix_v1.0.xlsx,Evidence checklist per claim
+Region pack (CN),CN claims strategy,11_Region_Packs/CN_NMPA/Uroflow_CN_Claims_and_Registration_Strategy_v1.0_EN.docx,Conservative claim set + PIPL-aware notes
+Region pack (CN),CN claims/evidence matrix,11_Region_Packs/CN_NMPA/Uroflow_CN_Claims_Evidence_Matrix_v1.0.xlsx,Evidence checklist per claim
+Evidence,Evidence bundles folder,12_Evidence_Bundles/Evidence_Files/,Central storage for executed evidence attachments

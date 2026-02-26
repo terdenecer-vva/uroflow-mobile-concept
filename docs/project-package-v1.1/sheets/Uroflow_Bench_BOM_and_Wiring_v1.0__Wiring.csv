@@ -1,0 +1,12 @@
+Подсистема,Сигнал/провод,Откуда,Куда,Комментарий
+Load cell,E+,Load cell (красный),ADC/усилитель E+,Питание моста
+Load cell,E-,Load cell (черный),ADC/усилитель E-,Питание моста
+Load cell,A+,Load cell (зеленый),ADC/усилитель A+,Сигнал +
+Load cell,A-,Load cell (белый),ADC/усилитель A-,Сигнал -
+ADC (HX711),VCC,HX711 VCC,MCU 3.3/5V,Согласовать уровни питания
+ADC (HX711),GND,HX711 GND,MCU GND,Общий провод
+ADC (HX711),DT/DOUT,HX711 DOUT,MCU GPIO,Линия данных
+ADC (HX711),SCK,HX711 SCK,MCU GPIO,Тактовая
+Sync,LED,MCU GPIO + резистор,LED,Мигающий маркер для видео
+Sync,Buzzer,MCU GPIO,Пьезо,Короткий звуковой маркер
+MCU,USB,MCU USB,PC,Serial logging

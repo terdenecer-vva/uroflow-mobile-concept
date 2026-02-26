@@ -1,0 +1,26 @@
+relative_path,category,type,size_kb,modified_utc,notes
+00_README_and_Indexes/00_README_Submission_Build_v4.1.txt,00_README_and_Indexes,txt,2.9,2026-02-25T12:25:59.060931Z,New in v4.1
+10_Pilot_Automation/config/acceptance_metrics_config.json,10_Pilot_Automation,json,0.6,2026-02-25T12:21:28.682647Z,New in v4.1
+10_Pilot_Automation/scripts/compute_accuracy_acceptance.py,10_Pilot_Automation,py,14.7,2026-02-25T12:22:47.612440Z,New in v4.1
+10_Pilot_Automation/run_accuracy_acceptance_oneclick.sh,10_Pilot_Automation,sh,0.3,2026-02-25T12:23:04.805883Z,New in v4.1
+10_Pilot_Automation/run_accuracy_acceptance_oneclick.bat,10_Pilot_Automation,bat,0.3,2026-02-25T12:23:04.806812Z,New in v4.1
+11_Region_Packs/EU_MDR/Uroflow_EU_IntendedUse_Claims_and_Class_Rationale_v1.0_EN.docx,11_Region_Packs,docx,36.7,2026-02-25T12:23:55.007983Z,New in v4.1
+11_Region_Packs/US_FDA/Uroflow_US_IntendedUse_Claims_and_Reg_Pathway_Rationale_v1.0_EN.docx,11_Region_Packs,docx,36.7,2026-02-25T12:23:55.026579Z,New in v4.1
+11_Region_Packs/RU_Roszdravnadzor/Uroflow_RU_IntendedUse_Claims_and_Class_Rationale_v1.0_RU.docx,11_Region_Packs,docx,36.9,2026-02-25T12:23:55.042156Z,New in v4.1
+11_Region_Packs/CN_NMPA/Uroflow_CN_IntendedUse_Claims_and_Reg_Considerations_v1.0_EN.docx,11_Region_Packs,docx,36.6,2026-02-25T12:23:55.074720Z,New in v4.1
+01_Product_QMS/Uroflow_Acceptance_Criteria_Lock_v2.0_EN.docx,01_Product_QMS,docx,38,2026-02-25T12:16:54.189803Z,New in v4.1
+01_Product_QMS/Uroflow_Acceptance_Criteria_Lock_v2.0_RU.docx,01_Product_QMS,docx,38.6,2026-02-25T12:16:54.173830Z,New in v4.1
+01_Product_QMS/Uroflow_Claims_Guardrails_Checklist_v1.0.xlsx,01_Product_QMS,xlsx,8.6,2026-02-25T12:17:32.612241Z,New in v4.1
+01_Product_QMS/Uroflow_DesignControls_DHF_Execution_Tracker_v1.0.xlsx,01_Product_QMS,xlsx,7.2,2026-02-25T12:24:40.846566Z,New in v4.1
+01_Product_QMS/Uroflow_Design_Review_Minutes_Templates_DR0_DR1_DR2_v1.0_EN.docx,01_Product_QMS,docx,36.8,2026-02-25T12:25:01.508772Z,New in v4.1
+01_Product_QMS/Uroflow_Design_Review_Minutes_Templates_DR0_DR1_DR2_v1.0_RU.docx,01_Product_QMS,docx,37,2026-02-25T12:25:01.526003Z,New in v4.1
+01_Product_QMS/Uroflow_IntendedUse_Claims_ByRegion_Lock_v2.0_EN.docx,01_Product_QMS,docx,37.9,2026-02-25T12:15:48.582059Z,New in v4.1
+01_Product_QMS/Uroflow_IntendedUse_Claims_ByRegion_Lock_v2.0_RU.docx,01_Product_QMS,docx,38.7,2026-02-25T12:15:48.554568Z,New in v4.1
+01_Product_QMS/Uroflow_QMS_Document_Register_v1.0.xlsx,01_Product_QMS,xlsx,14.1,2026-02-25T12:24:05.482563Z,New in v4.1
+01_Product_QMS/Uroflow_QMS_Execution_Plan_v1.0_EN.docx,01_Product_QMS,docx,37.2,2026-02-25T12:25:37.528891Z,New in v4.1
+01_Product_QMS/Uroflow_QMS_Execution_Plan_v1.0_RU.docx,01_Product_QMS,docx,37.6,2026-02-25T12:25:37.512540Z,New in v4.1
+01_Product_QMS/Uroflow_QMS_Training_Matrix_v1.0.xlsx,01_Product_QMS,xlsx,5.8,2026-02-25T12:24:21.786052Z,New in v4.1
+10_Pilot_Automation/config/pre_freeze_gates_config.json,10_Pilot_Automation,json,0.8,2026-02-25T12:20:22.715233Z,Updated in v4.1 (thresholds/QS/VALID_RATE)
+10_Pilot_Automation/config/record_level_gates_config.json,10_Pilot_Automation,json,0.6,2026-02-25T12:19:29.266189Z,Updated in v4.1 (thresholds/QS/VALID_RATE)
+10_Pilot_Automation/scripts/run_pre_freeze_gates.py,10_Pilot_Automation,py,22.8,2026-02-25T12:21:09.751226Z,Updated in v4.1 (thresholds/QS/VALID_RATE)
+10_Pilot_Automation/scripts/compute_record_level_gates.py,10_Pilot_Automation,py,12,2026-02-25T12:19:58.330506Z,Updated in v4.1 (thresholds/QS/VALID_RATE)

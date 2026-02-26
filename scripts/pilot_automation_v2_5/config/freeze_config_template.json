@@ -1,0 +1,20 @@
+{
+  "version": "1.0",
+  "dataset_id": "GOLDEN_DS_YYYYMMDD_v1",
+  "model_id": "MODEL_XYZ_1.0",
+  "qs_thresholds": {
+    "valid_min": 70,
+    "review_min": 50
+  },
+  "claims_set_id": "ClaimSet_A_v1.0",
+  "region": "RU",
+  "build_version": "Submission_Build_v2.4",
+  "include_paths_relative_to_build": [
+    "01_Product_QMS/Uroflow_Claims_Lock_Record_v1.0_RU.docx",
+    "01_Product_QMS/Uroflow_Acceptance_Criteria_Lock_Record_v1.0_RU.docx",
+    "01_Product_QMS/Uroflow_Freeze_Procedure_Dataset_Model_QS_v1.0_RU.docx",
+    "05_Clinical/Uroflow_Pilot_Config_Freeze_Record_v1.0_RU.docx",
+    "05_Clinical/Uroflow_P0_Pilot_Readiness_Evidence_Manifest_v1.0.xlsx"
+  ],
+  "notes": "Edit this file before running freeze_bundle_generator.py"
+}

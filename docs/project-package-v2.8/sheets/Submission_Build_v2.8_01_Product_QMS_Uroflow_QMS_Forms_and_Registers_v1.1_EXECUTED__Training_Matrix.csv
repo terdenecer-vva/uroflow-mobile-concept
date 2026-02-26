@@ -1,0 +1,7 @@
+role,required_training_modules (semicolon-separated),frequency,evidence_record
+Engineering Lead,Document control; Change control; SDLC; Privacy-by-design; Incident response,Annual,Training log / sign-in sheet
+ML Lead,Data governance; Model release/change control; Bias/robustness checks; V&V evidence,Annual,Training log
+Clinical Ops,Protocol; ICF; Site SOP; Privacy; AE/deviation logging,Per study,SIV attendance log
+QA/RA Lead,ISO 13485 processes; ISO 14971; IEC 62304; MDR/FDA requirements; CAPA,Annual,Training record
+Security Lead,Threat modeling; SBOM; Vulnerability management; Secure release,Annual,Training record
+HFE Lead,IEC 62366; URRA; formative/summative methods,Annual,Training record

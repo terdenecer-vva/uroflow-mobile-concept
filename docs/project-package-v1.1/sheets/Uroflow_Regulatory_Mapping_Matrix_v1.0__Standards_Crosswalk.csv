@@ -1,0 +1,12 @@
+Стандарт/гайд,Тема,Применимость к проекту,Какой артефакт закрывает,Примечания,URL (если публичный)
+ISO 13485:2016 / FDA QMSR,Система качества,QMS для разработки/производства SaMD,"QMS procedures, DHF, DMR",Для США QMSR эффективно с 02.02.2026,https://www.fda.gov/medical-devices/postmarket-requirements-devices/quality-management-system-regulation-qmsr
+ISO 14971,Risk management,"Опасности: точность, приватность, киберриски, обновления ML","Risk file, FMEA, hazardous situations",,
+IEC 62304,Software lifecycle,"Классификация ПО (A/B/C), V&V, трассировка","SRS, RTM, test plan/reports",,
+IEC 62366-1,Usability,"Позиционирование телефона, предупреждения, ошибки пользователя",Usability engineering file,,
+IEC 81001-5-1,Cybersecurity,Security activities across lifecycle,"Threat model, security tests, SBOM",,https://www.iso.org/standard/76097.html
+IMDRF SaMD N41,Клиническая оценка SaMD,Clinical evaluation framework,Clinical evaluation report,,https://www.imdrf.org/documents/software-medical-device-samd-clinical-evaluation
+EU MDR 2017/745 Annex VIII Rule 11,Класс ПО,Обычно минимум IIa для диагностических решений/мониторинга,Classification rationale,,https://eur-lex.europa.eu/eli/reg/2017/745/2017-05-05
+MDCG 2019-11 rev.1 (2025),Квалификация/классификация ПО,Практические примеры Rule 11,EU classification file,,https://health.ec.europa.eu/latest-updates/update-mdcg-2019-11-rev1-qualification-and-classification-software-regulation-eu-2017745-and-2025-06-17_en
+NMPA Rules for Classification (2019),Китай: SaMD,"Определение stand alone software, measuring functions",CN classification rationale,,https://english.nmpa.gov.cn/2019-10/11/c_415411.htm
+РФ ПП №1684 (30.11.2024),РФ: регистрация МИ,Правила госрегистрации и подача через ЕПГУ,RU submission dossier,,https://roszdravnadzor.gov.ru/medproducts/registration
+23-ФЗ от 28.02.2025 (152-ФЗ),РФ: персональные данные,Локализация при сборе ПД,Data residency architecture,вступление в силу 01.07.2025 (проверить актуальные требования с юристом),https://publication.pravo.gov.ru/document/0001202502280034

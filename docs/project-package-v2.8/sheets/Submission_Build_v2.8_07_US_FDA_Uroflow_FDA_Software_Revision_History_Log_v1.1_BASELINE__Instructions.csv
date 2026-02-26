@@ -1,0 +1,2 @@
+How to use
+Maintain this log as part of configuration management. Every released build (even internal test builds) should have an entry. Link each release to risk impact assessment and executed regression tests.

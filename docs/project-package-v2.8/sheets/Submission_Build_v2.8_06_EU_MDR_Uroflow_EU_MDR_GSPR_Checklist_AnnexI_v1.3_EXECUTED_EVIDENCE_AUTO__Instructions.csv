@@ -1,0 +1,8 @@
+How to use this checklist
+"This workbook is a working template. Requirement summaries are intentionally brief and must be verified against MDR Annex I text. For each applicable requirement, provide a concise design solution summary and point to controlled evidence documents and test reports."
+Recommended workflow:
+1) Freeze intended use/claim set and labeling.
+2) Mark each GSPR as Applicable (Y/N/Partial).
+"3) For Applicable/Partial, document risk controls and evidence references."
+4) Review consistency with Risk Management File and V&V evidence matrix.
+"5) Finalize with document control (version, approvals)."

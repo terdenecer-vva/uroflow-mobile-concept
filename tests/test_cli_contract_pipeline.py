@@ -11,6 +11,7 @@ def _capture_payload() -> dict[str, object]:
         "schema_version": "ios_capture_v1",
         "session": {
             "session_id": "it-pipeline-001",
+            "sync_id": "sync-it-pipeline-001",
             "started_at": "2026-02-23T21:00:00Z",
             "mode": "water_impact",
             "calibration": {
@@ -88,6 +89,9 @@ def test_capture_contract_to_fusion_summary_pipeline(tmp_path: Path) -> None:
     assert analyze_exit_code == 0
     assert fusion_csv_path.exists()
     assert fusion_summary_path.exists()
+
+    level_payload = json.loads(level_path.read_text(encoding="utf-8"))
+    assert level_payload["meta"]["sync_id"] == "sync-it-pipeline-001"
 
     summary_payload = json.loads(fusion_summary_path.read_text(encoding="utf-8"))
     assert summary_payload["quality"]["status"] in {"valid", "repeat", "reject"}

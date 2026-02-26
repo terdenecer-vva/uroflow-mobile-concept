@@ -1,0 +1,10 @@
+Region,Context,Phrase / Wording,Status (ALLOWED/DISALLOWED/REVIEW),Rationale,Owner,Last reviewed,Link to source doc
+Россия,UI/Report,«Не предназначено для самостоятельной диагностики. Интерпретация врачом.»,ALLOWED,Снижает риск decision/diagnosis claims.,RA/Clinical,,01_Product_QMS/Uroflow_IntendedUse_Claims_ByRegion_Lock_v2.0_RU.docx
+ЕС,Marketing,«Измерение параметров мочеиспускания для мониторинга»,ALLOWED,Monitoring claim (Rule 11 still possible IIa).,RA,,01_Product_QMS/Uroflow_IntendedUse_Claims_ByRegion_Lock_v2.0_EN.docx
+США,Marketing,«Helps track voiding parameters over time»,ALLOWED,Monitoring/trend wording.,RA,,01_Product_QMS/Uroflow_IntendedUse_Claims_ByRegion_Lock_v2.0_EN.docx
+Китай,Privacy,"«Данные по умолчанию хранятся локально, без передачи»",ALLOWED,Align with PIPL/data minimization.,DPO/RA,,11_Region_Packs/CN_NMPA/*
+Все,Marketing,«Диагностирует обструкцию / ДГПЖ»,DISALLOWED,Diagnostic claim – class escalation and high-risk.,RA,,
+Все,UI,«Рекомендуем начать лечение...»,DISALLOWED,Treatment recommendation (therapeutic decision).,RA,,
+Все,Marketing,«Полностью заменяет клиническую урофлоуметрию»,DISALLOWED,Replacement claim without limitations.,RA,,
+Все,Marketing,«Предсказывает осложнения»,DISALLOWED,Predictive claim.,RA,,
+ЕС,Marketing,«Clinical decision support»,REVIEW,May trigger Rule 11 decision-making classification; requires RA review.,RA,,

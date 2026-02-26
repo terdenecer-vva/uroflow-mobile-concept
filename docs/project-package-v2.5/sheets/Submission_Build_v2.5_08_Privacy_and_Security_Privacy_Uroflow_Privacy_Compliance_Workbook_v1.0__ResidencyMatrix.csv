@@ -1,0 +1,5 @@
+Region,Default mode,Allowed storage/processing locations,Key constraints,Recommended architecture settings
+EU/EEA,On-device,EU/EEA cloud only if enabled,GDPR; special category data; DPIA; SCC for transfers,Disable global cloud; EU-only tenancy; ROI-only; no raw storage
+Russia,On-device,RF databases only if cloud enabled,Data localization requirements for Russian citizens; legal review,"Prefer fully on-device; if cloud, RF-hosted; avoid exporting raw media"
+China,On-device,PRC locations for cloud if used,Sensitive PI; separate consent; cross-border transfer controls,PRC tenancy; separate consent flows; minimal data; no raw media
+USA,On-device or cloud,US cloud if enabled,HIPAA applies in B2B; state privacy laws,BAA workflow for clinics; audit logs; encryption; least privilege

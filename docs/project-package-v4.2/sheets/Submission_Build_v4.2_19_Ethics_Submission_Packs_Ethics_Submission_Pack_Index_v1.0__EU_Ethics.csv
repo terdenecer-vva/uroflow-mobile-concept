@@ -1,0 +1,10 @@
+Doc_ID,Document name,Region,Required,Include_in_pack,Status,Build relative path,Notes
+EU-CL-001,Cover Letter (EN),EU,Y,Y,READY,05_Clinical/Uroflow_Ethics_Submission_Cover_Letter_v1.0_EN.docx,Translate if required by site
+EU-PR-001,Study Protocol (EN),EU,Y,Y,READY,18_Golden_Dataset_MultiSite/Protocol/Uroflow_Golden_Dataset_MultiSite_Protocol_v1.0_EN.docx,
+EU-SY-001,Study Synopsis (EN),EU,Y,Y,READY,05_Clinical/Uroflow_GoldenDataset_Study_Synopsis_v1.0_EN.docx,
+EU-ICF-001,Participant Info + Consent (EN),EU,Y,Y,READY,05_Clinical/Uroflow_PIS_ICF_GoldenDataset_v1.0_EN.docx,Translate to local language
+EU-RC-001,Recruitment Flyer (EN),EU,N,Y,READY,05_Clinical/Uroflow_Recruitment_Flyer_GoldenDataset_v1.0_EN.docx,Optional - per site rules
+EU-PRIV-001,Privacy Addendum (EN),EU,Y,Y,READY,05_Clinical/Uroflow_Ethics_Privacy_Addendum_Multimodal_v1.0_EN.docx,GDPR roles/retention
+EU-DMP-001,DMP Summary (EN),EU,Y,Y,READY,05_Clinical/Uroflow_DMP_Summary_GoldenDataset_v1.0_EN.docx,
+EU-SOP-001,Onsite SOP (EN),EU,Y,Y,READY,05_Clinical/Uroflow_Onsite_SOP_GoldenDataset_v1.0_EN.docx,
+EU-RISK-001,Risk Summary (EN),EU,Y,Y,READY,05_Clinical/Uroflow_Participant_Risk_Assessment_Summary_v1.0_EN.docx,

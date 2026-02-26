@@ -1,0 +1,9 @@
+New / Updated in v4.2
+""
+Key additions
+"Mandatory Pilot Freeze Kit: spec (EN/RU), template (XLSX), and executed output folder 15_Dataset_Model_Release/Freeze_Kits/"
+Automation: build_pilot_freeze_kit.py + run_freeze_kit_oneclick.(sh|bat)
+DatasetRelease builder patched (v4.2): auto-detect lock ids + auto-generate Freeze Kit + include lock file hashes in dataset_release_manifest.json
+Ethics/IRB pack: Ethics_Submission_Pack_Index_v1.0.xlsx + guide (EN/RU) + clinical templates in 05_Clinical/
+Automation: build_ethics_submission_pack.py + run_build_ethics_submission_pack_oneclick.(sh|bat)
+Pilot Automation README v2.1 and Submission Build README v4.2

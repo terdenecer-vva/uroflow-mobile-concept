@@ -1,0 +1,12 @@
+{
+  "precheck": {
+    "pass": true,
+    "reason": ""
+  },
+  "during": {
+    "pass": true,
+    "max_skin_fraction_border": 0.02,
+    "max_reflection_risk": 0.1,
+    "roi_lost_count": 0
+  }
+}
