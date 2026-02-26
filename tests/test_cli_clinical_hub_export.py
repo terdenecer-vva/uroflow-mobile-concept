@@ -64,6 +64,37 @@ def _pilot_report_payload() -> dict[str, object]:
     }
 
 
+def _capture_package_payload(
+    *,
+    session_id: str,
+    sync_id: str | None,
+    paired_measurement_id: int | None,
+) -> dict[str, object]:
+    return {
+        "session": {
+            "session_id": session_id,
+            "sync_id": sync_id,
+            "site_id": "SITE-001",
+            "subject_id": "SUBJ-002",
+            "operator_id": "OP-01",
+            "attempt_number": 1,
+            "measured_at": "2026-02-24T10:30:00Z",
+            "platform": "android",
+            "device_model": "Pixel 8",
+            "app_version": "0.2.0",
+            "capture_mode": "water_impact",
+        },
+        "package_type": "capture_contract_json",
+        "capture_payload": {
+            "schema_version": "ios_capture_v1",
+            "session": {"session_id": session_id},
+            "samples": [{"t_s": 0.0, "audio_rms_dbfs": -40.0}],
+        },
+        "paired_measurement_id": paired_measurement_id,
+        "notes": "capture package for export join test",
+    }
+
+
 def _sha256_hex(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
@@ -144,6 +175,218 @@ def test_cli_summarize_paired_measurements(tmp_path: Path) -> None:
     assert summary["records_considered"] == 2
     assert summary["quality_distribution"]["reject"] == 1
     assert any(metric["metric"] == "qmax_ml_s" for metric in summary["metrics"])
+
+
+def test_cli_export_paired_with_capture(tmp_path: Path) -> None:
+    db_path = tmp_path / "clinical_hub_join.db"
+    app = create_clinical_hub_app(db_path)
+
+    with TestClient(app) as client:
+        paired_direct = _payload(session_id="session-cli-join-001", sync_id="sync-join-001")
+        paired_fallback = _payload(session_id="session-cli-join-002", sync_id="sync-join-002")
+        paired_missing = _payload(session_id="session-cli-join-003", sync_id="sync-join-003")
+
+        paired_direct_response = client.post("/api/v1/paired-measurements", json=paired_direct)
+        paired_fallback_response = client.post("/api/v1/paired-measurements", json=paired_fallback)
+        paired_missing_response = client.post("/api/v1/paired-measurements", json=paired_missing)
+        assert paired_direct_response.status_code == 201
+        assert paired_fallback_response.status_code == 201
+        assert paired_missing_response.status_code == 201
+
+        paired_direct_id = int(paired_direct_response.json()["id"])
+
+        direct_capture = _capture_package_payload(
+            session_id="session-cli-join-001",
+            sync_id="sync-join-001",
+            paired_measurement_id=paired_direct_id,
+        )
+        fallback_capture = _capture_package_payload(
+            session_id="session-cli-join-002",
+            sync_id="sync-join-002",
+            paired_measurement_id=None,
+        )
+        assert client.post("/api/v1/capture-packages", json=direct_capture).status_code == 201
+        assert client.post("/api/v1/capture-packages", json=fallback_capture).status_code == 201
+
+    output_csv = tmp_path / "paired_with_capture.csv"
+    exit_code = cli_main(
+        [
+            "export-paired-with-capture",
+            "--db-path",
+            str(db_path),
+            "--output-csv",
+            str(output_csv),
+        ]
+    )
+
+    assert exit_code == 0
+    with output_csv.open("r", encoding="utf-8", newline="") as file:
+        reader = csv.DictReader(file)
+        rows = list(reader)
+
+    assert len(rows) == 3
+    row_by_session = {row["session_id"]: row for row in rows}
+
+    direct_row = row_by_session["session-cli-join-001"]
+    assert direct_row["has_capture_package"] == "1"
+    assert direct_row["capture_match_mode"] == "paired_id"
+    assert direct_row["capture_id"] != ""
+
+    fallback_row = row_by_session["session-cli-join-002"]
+    assert fallback_row["has_capture_package"] == "1"
+    assert fallback_row["capture_match_mode"] == "session_identity"
+    assert fallback_row["capture_id"] != ""
+
+    missing_row = row_by_session["session-cli-join-003"]
+    assert missing_row["has_capture_package"] == "0"
+    assert missing_row["capture_match_mode"] == "none"
+    assert missing_row["capture_id"] == ""
+
+
+def test_cli_export_capture_coverage_summary_csv(tmp_path: Path) -> None:
+    db_path = tmp_path / "clinical_hub_coverage.db"
+    app = create_clinical_hub_app(db_path)
+
+    with TestClient(app) as client:
+        paired_1 = client.post(
+            "/api/v1/paired-measurements",
+            json=_payload(session_id="session-coverage-cli-001", sync_id="sync-coverage-cli"),
+        )
+        paired_2 = client.post(
+            "/api/v1/paired-measurements",
+            json=_payload(session_id="session-coverage-cli-002", sync_id="sync-coverage-cli"),
+        )
+        assert paired_1.status_code == 201
+        assert paired_2.status_code == 201
+
+        capture = client.post(
+            "/api/v1/capture-packages",
+            json=_capture_package_payload(
+                session_id="session-coverage-cli-001",
+                sync_id="sync-coverage-cli",
+                paired_measurement_id=int(paired_1.json()["id"]),
+            ),
+        )
+        assert capture.status_code == 201
+
+    output_csv = tmp_path / "coverage_summary.csv"
+    exit_code = cli_main(
+        [
+            "export-capture-coverage-summary",
+            "--db-path",
+            str(db_path),
+            "--sync-id",
+            "sync-coverage-cli",
+            "--quality-status",
+            "all",
+            "--output-csv",
+            str(output_csv),
+        ]
+    )
+
+    assert exit_code == 0
+    with output_csv.open("r", encoding="utf-8", newline="") as file:
+        rows = list(csv.DictReader(file))
+    assert len(rows) == 1
+    assert rows[0]["sync_id"] == "sync-coverage-cli"
+    assert rows[0]["paired_total"] == "2"
+    assert rows[0]["paired_with_capture"] == "1"
+    assert rows[0]["paired_without_capture"] == "1"
+    assert float(rows[0]["coverage_ratio"]) == 0.5
+
+
+def test_cli_export_capture_coverage_summary_with_targets_report(tmp_path: Path) -> None:
+    db_path = tmp_path / "clinical_hub_coverage_targets.db"
+    app = create_clinical_hub_app(db_path)
+
+    with TestClient(app) as client:
+        paired = client.post(
+            "/api/v1/paired-measurements",
+            json=_payload(
+                session_id="session-coverage-targets-001",
+                sync_id="sync-coverage-targets",
+                quality_status="valid",
+            ),
+        )
+        assert paired.status_code == 201
+        capture = client.post(
+            "/api/v1/capture-packages",
+            json=_capture_package_payload(
+                session_id="session-coverage-targets-001",
+                sync_id="sync-coverage-targets",
+                paired_measurement_id=int(paired.json()["id"]),
+            ),
+        )
+        assert capture.status_code == 201
+
+    output_csv = tmp_path / "coverage_summary_targets.csv"
+    gates_json = tmp_path / "coverage_gates.json"
+    targets_config = Path("config/coverage_targets_config.v1.json")
+
+    exit_code = cli_main(
+        [
+            "export-capture-coverage-summary",
+            "--db-path",
+            str(db_path),
+            "--sync-id",
+            "sync-coverage-targets",
+            "--quality-status",
+            "all",
+            "--output-csv",
+            str(output_csv),
+            "--targets-config",
+            str(targets_config),
+            "--gates-output-json",
+            str(gates_json),
+        ]
+    )
+
+    assert exit_code == 0
+    assert output_csv.exists()
+    assert gates_json.exists()
+    report = json.loads(gates_json.read_text(encoding="utf-8"))
+    assert report["hard_passed"] is True
+    assert report["warning_passed"] is False
+    assert any(gate["metric"] == "coverage_ratio" for gate in report["gates"])
+
+
+def test_cli_export_capture_coverage_summary_fails_on_hard_gate(tmp_path: Path) -> None:
+    db_path = tmp_path / "clinical_hub_coverage_hard_fail.db"
+    app = create_clinical_hub_app(db_path)
+
+    with TestClient(app) as client:
+        paired = client.post(
+            "/api/v1/paired-measurements",
+            json=_payload(
+                session_id="session-coverage-hard-fail-001",
+                sync_id="sync-coverage-hard-fail",
+                quality_status="valid",
+            ),
+        )
+        assert paired.status_code == 201
+
+    output_csv = tmp_path / "coverage_summary_hard_fail.csv"
+    targets_config = Path("config/coverage_targets_config.v1.json")
+
+    exit_code = cli_main(
+        [
+            "export-capture-coverage-summary",
+            "--db-path",
+            str(db_path),
+            "--sync-id",
+            "sync-coverage-hard-fail",
+            "--quality-status",
+            "all",
+            "--output-csv",
+            str(output_csv),
+            "--targets-config",
+            str(targets_config),
+            "--fail-on-hard-gates",
+        ]
+    )
+
+    assert output_csv.exists()
+    assert exit_code == 1
 
 
 def test_cli_summarize_paired_measurements_with_sync_and_platform_filters(tmp_path: Path) -> None:

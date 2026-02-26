@@ -131,6 +131,27 @@ class MethodComparisonSummary(BaseModel):
     metrics: list[MetricComparisonSummary]
 
 
+class CaptureCoverageFilters(BaseModel):
+    site_id: str | None = None
+    sync_id: str | None = None
+    subject_id: str | None = None
+    operator_id: str | None = None
+    platform: PLATFORM | None = None
+    capture_mode: CAPTURE_MODE | None = None
+    quality_status: QUALITY_STATUS | None = None
+
+
+class CaptureCoverageSummary(BaseModel):
+    generated_at: datetime
+    filters: CaptureCoverageFilters
+    paired_total: int
+    paired_with_capture: int
+    paired_without_capture: int
+    coverage_ratio: float
+    quality_distribution: dict[str, int]
+    capture_match_distribution: dict[str, int]
+
+
 class CapturePackageCreate(BaseModel):
     session: SessionMeta
     package_type: Literal["capture_contract_json", "feature_bundle", "media_manifest"] = (
@@ -243,6 +264,68 @@ METRIC_COLUMNS: dict[str, tuple[str, str]] = {
     "flow_time_s": ("app_flow_time_s", "ref_flow_time_s"),
     "tqmax_s": ("app_tqmax_s", "ref_tqmax_s"),
 }
+
+PAIRED_WITH_CAPTURE_CSV_HEADERS = [
+    "paired_id",
+    "paired_created_at",
+    "measured_at",
+    "session_id",
+    "sync_id",
+    "site_id",
+    "subject_id",
+    "operator_id",
+    "attempt_number",
+    "platform",
+    "device_model",
+    "app_version",
+    "capture_mode",
+    "app_quality_status",
+    "app_quality_score",
+    "app_model_id",
+    "app_qmax_ml_s",
+    "app_qavg_ml_s",
+    "app_vvoid_ml",
+    "app_flow_time_s",
+    "app_tqmax_s",
+    "ref_qmax_ml_s",
+    "ref_qavg_ml_s",
+    "ref_vvoid_ml",
+    "ref_flow_time_s",
+    "ref_tqmax_s",
+    "ref_device_model",
+    "ref_device_serial",
+    "paired_notes",
+    "capture_id",
+    "capture_created_at",
+    "capture_measured_at",
+    "package_type",
+    "paired_measurement_id",
+    "capture_notes",
+    "capture_payload_json",
+    "has_capture_package",
+    "capture_match_mode",
+]
+
+CAPTURE_COVERAGE_CSV_HEADERS = [
+    "generated_at",
+    "site_id",
+    "sync_id",
+    "subject_id",
+    "operator_id",
+    "platform",
+    "capture_mode",
+    "quality_status",
+    "paired_total",
+    "paired_with_capture",
+    "paired_without_capture",
+    "coverage_ratio",
+    "quality_valid",
+    "quality_repeat",
+    "quality_reject",
+    "match_paired_id",
+    "match_session_identity",
+    "match_none",
+]
 
 
 def _normalize_site_id(site_id: str | None) -> str | None:
@@ -1387,6 +1470,77 @@ def _fetch_method_comparison_rows(
     return cursor.fetchall()
 
 
+def _build_capture_coverage_summary_from_rows(
+    rows: list[sqlite3.Row],
+    *,
+    filters: CaptureCoverageFilters,
+) -> CaptureCoverageSummary:
+    quality_distribution: dict[str, int] = {"valid": 0, "repeat": 0, "reject": 0}
+    capture_match_distribution: dict[str, int] = {
+        "paired_id": 0,
+        "session_identity": 0,
+        "none": 0,
+    }
+    paired_with_capture = 0
+
+    for row in rows:
+        status = str(row["app_quality_status"])
+        quality_distribution[status] = quality_distribution.get(status, 0) + 1
+
+        has_capture = bool(int(row["has_capture_package"]))
+        if has_capture:
+            paired_with_capture += 1
+
+        match_mode = (
+            str(row["capture_match_mode"])
+            if row["capture_match_mode"] is not None
+            else "none"
+        )
+        capture_match_distribution[match_mode] = (
+            capture_match_distribution.get(match_mode, 0) + 1
+        )
+
+    paired_total = len(rows)
+    paired_without_capture = paired_total - paired_with_capture
+    coverage_ratio = (paired_with_capture / paired_total) if paired_total > 0 else 0.0
+
+    return CaptureCoverageSummary(
+        generated_at=_utc_now(),
+        filters=filters,
+        paired_total=paired_total,
+        paired_with_capture=paired_with_capture,
+        paired_without_capture=paired_without_capture,
+        coverage_ratio=coverage_ratio,
+        quality_distribution=quality_distribution,
+        capture_match_distribution=capture_match_distribution,
+    )
+
+
+def _capture_coverage_summary_csv_row(
+    summary: CaptureCoverageSummary,
+) -> list[object | None]:
+    return [
+        _dt_to_iso(summary.generated_at),
+        summary.filters.site_id,
+        summary.filters.sync_id,
+        summary.filters.subject_id,
+        summary.filters.operator_id,
+        summary.filters.platform,
+        summary.filters.capture_mode,
+        summary.filters.quality_status,
+        summary.paired_total,
+        summary.paired_with_capture,
+        summary.paired_without_capture,
+        round(summary.coverage_ratio, 6),
+        summary.quality_distribution.get("valid", 0),
+        summary.quality_distribution.get("repeat", 0),
+        summary.quality_distribution.get("reject", 0),
+        summary.capture_match_distribution.get("paired_id", 0),
+        summary.capture_match_distribution.get("session_identity", 0),
+        summary.capture_match_distribution.get("none", 0),
+    ]
+
+
 def _row_to_audit_item(row: sqlite3.Row) -> AuditEventItem:
     return AuditEventItem(
         id=int(row["id"]),
@@ -1687,6 +1841,151 @@ def export_capture_packages_to_csv(db_path: Path, output_csv: Path) -> int:
     return len(rows)
 
 
+def _fetch_paired_with_capture_rows(
+    connection: sqlite3.Connection,
+    *,
+    paired_filters: list[tuple[str, object]] | None = None,
+) -> list[sqlite3.Row]:
+    where_sql = ""
+    where_values: list[object] = []
+    if paired_filters:
+        where_sql = "WHERE " + " AND ".join(f"p.{name} = ?" for name, _ in paired_filters)
+        where_values = [value for _, value in paired_filters]
+
+    cursor = connection.execute(
+        """
+        SELECT
+            p.id AS paired_id,
+            p.created_at AS paired_created_at,
+            p.measured_at,
+            p.session_id,
+            p.sync_id,
+            p.site_id,
+            p.subject_id,
+            p.operator_id,
+            p.attempt_number,
+            p.platform,
+            p.device_model,
+            p.app_version,
+            p.capture_mode,
+            p.app_quality_status,
+            p.app_quality_score,
+            p.app_model_id,
+            p.app_qmax_ml_s,
+            p.app_qavg_ml_s,
+            p.app_vvoid_ml,
+            p.app_flow_time_s,
+            p.app_tqmax_s,
+            p.ref_qmax_ml_s,
+            p.ref_qavg_ml_s,
+            p.ref_vvoid_ml,
+            p.ref_flow_time_s,
+            p.ref_tqmax_s,
+            p.ref_device_model,
+            p.ref_device_serial,
+            p.notes AS paired_notes,
+            c.id AS capture_id,
+            c.created_at AS capture_created_at,
+            c.measured_at AS capture_measured_at,
+            c.package_type,
+            c.paired_measurement_id,
+            c.notes AS capture_notes,
+            c.capture_payload_json,
+            CASE WHEN c.id IS NULL THEN 0 ELSE 1 END AS has_capture_package,
+            CASE
+                WHEN c.id IS NULL THEN 'none'
+                WHEN c.paired_measurement_id = p.id THEN 'paired_id'
+                ELSE 'session_identity'
+            END AS capture_match_mode
+        FROM paired_measurements AS p
+        LEFT JOIN capture_packages AS c
+          ON c.id = COALESCE(
+            (
+                SELECT cp_direct.id
+                FROM capture_packages AS cp_direct
+                WHERE cp_direct.paired_measurement_id = p.id
+                ORDER BY cp_direct.id DESC
+                LIMIT 1
+            ),
+            (
+                SELECT cp_fallback.id
+                FROM capture_packages AS cp_fallback
+                WHERE cp_fallback.paired_measurement_id IS NULL
+                  AND cp_fallback.site_id = p.site_id
+                  AND cp_fallback.subject_id = p.subject_id
+                  AND cp_fallback.session_id = p.session_id
+                  AND cp_fallback.attempt_number = p.attempt_number
+                ORDER BY cp_fallback.id DESC
+                LIMIT 1
+            )
+          )
+        """
+        + f"""
+        {where_sql}
+        ORDER BY p.measured_at DESC, p.id DESC
+        """,
+        tuple(where_values),
+    )
+    return cursor.fetchall()
+
+
+def _paired_with_capture_row_values(row: sqlite3.Row) -> list[object | None]:
+    return [
+        row["paired_id"],
+        row["paired_created_at"],
+        row["measured_at"],
+        row["session_id"],
+        row["sync_id"],
+        row["site_id"],
+        row["subject_id"],
+        row["operator_id"],
+        row["attempt_number"],
+        row["platform"],
+        row["device_model"],
+        row["app_version"],
+        row["capture_mode"],
+        row["app_quality_status"],
+        row["app_quality_score"],
+        row["app_model_id"],
+        row["app_qmax_ml_s"],
+        row["app_qavg_ml_s"],
+        row["app_vvoid_ml"],
+        row["app_flow_time_s"],
+        row["app_tqmax_s"],
+        row["ref_qmax_ml_s"],
+        row["ref_qavg_ml_s"],
+        row["ref_vvoid_ml"],
+        row["ref_flow_time_s"],
+        row["ref_tqmax_s"],
+        row["ref_device_model"],
+        row["ref_device_serial"],
+        row["paired_notes"],
+        row["capture_id"],
+        row["capture_created_at"],
+        row["capture_measured_at"],
+        row["package_type"],
+        row["paired_measurement_id"],
+        row["capture_notes"],
+        row["capture_payload_json"],
+        row["has_capture_package"],
+        row["capture_match_mode"],
+    ]
+
+
+def export_paired_with_capture_to_csv(db_path: Path, output_csv: Path) -> int:
+    ensure_clinical_hub_schema(db_path)
+    with _connect(db_path) as connection:
+        rows = _fetch_paired_with_capture_rows(connection)
+
+    output_csv.parent.mkdir(parents=True, exist_ok=True)
+    with output_csv.open("w", encoding="utf-8", newline="") as file:
+        writer = csv.writer(file)
+        writer.writerow(PAIRED_WITH_CAPTURE_CSV_HEADERS)
+        for row in rows:
+            writer.writerow(_paired_with_capture_row_values(row))
+    return len(rows)
+
+
 def export_pilot_automation_reports_to_csv(db_path: Path, output_csv: Path) -> int:
     ensure_clinical_hub_schema(db_path)
     with _connect(db_path) as connection:
@@ -1776,6 +2075,48 @@ def build_method_comparison_summary(
             capture_mode=capture_mode,
         )
     return _build_method_comparison_summary_from_rows(rows=rows, filters=filters)
+
+
+def build_capture_coverage_summary(
+    db_path: Path,
+    *,
+    site_id: str | None = None,
+    sync_id: str | None = None,
+    subject_id: str | None = None,
+    operator_id: str | None = None,
+    platform: PLATFORM | None = None,
+    capture_mode: CAPTURE_MODE | None = None,
+    quality_status: QUALITY_STATUS | None = None,
+) -> CaptureCoverageSummary:
+    ensure_clinical_hub_schema(db_path)
+    paired_filters: list[tuple[str, object]] = []
+    if site_id:
+        paired_filters.append(("site_id", site_id))
+    if sync_id:
+        paired_filters.append(("sync_id", sync_id))
+    if subject_id:
+        paired_filters.append(("subject_id", subject_id))
+    if operator_id:
+        paired_filters.append(("operator_id", operator_id))
+    if platform is not None:
+        paired_filters.append(("platform", platform))
+    if capture_mode is not None:
+        paired_filters.append(("capture_mode", capture_mode))
+    if quality_status is not None:
+        paired_filters.append(("app_quality_status", quality_status))
+
+    filters = CaptureCoverageFilters(
+        site_id=site_id,
+        sync_id=sync_id,
+        subject_id=subject_id,
+        operator_id=operator_id,
+        platform=platform,
+        capture_mode=capture_mode,
+        quality_status=quality_status,
+    )
+    with _connect(db_path) as connection:
+        rows = _fetch_paired_with_capture_rows(connection, paired_filters=paired_filters)
+    return _build_capture_coverage_summary_from_rows(rows, filters=filters)
 
 
 def create_clinical_hub_app(
@@ -2348,6 +2689,113 @@ def create_clinical_hub_app(
         )
         return _build_method_comparison_summary_from_rows(rows=rows, filters=filters)
 
+    @app.get("/api/v1/capture-coverage-summary", response_model=CaptureCoverageSummary)
+    def get_capture_coverage_summary(
+        request: Request,
+        site_id: str | None = None,
+        sync_id: str | None = None,
+        subject_id: str | None = None,
+        operator_id: str | None = None,
+        platform: PLATFORM | None = None,
+        capture_mode: CAPTURE_MODE | None = None,
+        quality_status: Literal["valid", "repeat", "reject", "all"] = Query(default="all"),
+        connection: sqlite3.Connection = Depends(get_connection),  # noqa: B008
+    ) -> CaptureCoverageSummary:
+        effective_site_id = _resolve_site_scope(request, site_id)
+        effective_operator_id = _resolve_operator_scope(request, operator_id)
+        normalized_quality: QUALITY_STATUS | None = (
+            None if quality_status == "all" else quality_status
+        )
+
+        paired_filters: list[tuple[str, object]] = []
+        if effective_site_id:
+            paired_filters.append(("site_id", effective_site_id))
+        if sync_id:
+            paired_filters.append(("sync_id", sync_id))
+        if subject_id:
+            paired_filters.append(("subject_id", subject_id))
+        if effective_operator_id:
+            paired_filters.append(("operator_id", effective_operator_id))
+        if platform is not None:
+            paired_filters.append(("platform", platform))
+        if capture_mode is not None:
+            paired_filters.append(("capture_mode", capture_mode))
+        if normalized_quality is not None:
+            paired_filters.append(("app_quality_status", normalized_quality))
+
+        rows = _fetch_paired_with_capture_rows(
+            connection,
+            paired_filters=paired_filters,
+        )
+        filters = CaptureCoverageFilters(
+            site_id=effective_site_id,
+            sync_id=sync_id,
+            subject_id=subject_id,
+            operator_id=effective_operator_id,
+            platform=platform,
+            capture_mode=capture_mode,
+            quality_status=normalized_quality,
+        )
+        return _build_capture_coverage_summary_from_rows(rows, filters=filters)
+
+    @app.get("/api/v1/capture-coverage-summary.csv")
+    def export_capture_coverage_summary_csv(
+        request: Request,
+        site_id: str | None = None,
+        sync_id: str | None = None,
+        subject_id: str | None = None,
+        operator_id: str | None = None,
+        platform: PLATFORM | None = None,
+        capture_mode: CAPTURE_MODE | None = None,
+        quality_status: Literal["valid", "repeat", "reject", "all"] = Query(default="all"),
+        connection: sqlite3.Connection = Depends(get_connection),  # noqa: B008
+    ) -> Response:
+        effective_site_id = _resolve_site_scope(request, site_id)
+        effective_operator_id = _resolve_operator_scope(request, operator_id)
+        normalized_quality: QUALITY_STATUS | None = (
+            None if quality_status == "all" else quality_status
+        )
+
+        paired_filters: list[tuple[str, object]] = []
+        if effective_site_id:
+            paired_filters.append(("site_id", effective_site_id))
+        if sync_id:
+            paired_filters.append(("sync_id", sync_id))
+        if subject_id:
+            paired_filters.append(("subject_id", subject_id))
+        if effective_operator_id:
+            paired_filters.append(("operator_id", effective_operator_id))
+        if platform is not None:
+            paired_filters.append(("platform", platform))
+        if capture_mode is not None:
+            paired_filters.append(("capture_mode", capture_mode))
+        if normalized_quality is not None:
+            paired_filters.append(("app_quality_status", normalized_quality))
+
+        rows = _fetch_paired_with_capture_rows(connection, paired_filters=paired_filters)
+        filters = CaptureCoverageFilters(
+            site_id=effective_site_id,
+            sync_id=sync_id,
+            subject_id=subject_id,
+            operator_id=effective_operator_id,
+            platform=platform,
+            capture_mode=capture_mode,
+            quality_status=normalized_quality,
+        )
+        summary = _build_capture_coverage_summary_from_rows(rows, filters=filters)
+
+        from io import StringIO
+
+        buffer = StringIO()
+        writer = csv.writer(buffer)
+        writer.writerow(CAPTURE_COVERAGE_CSV_HEADERS)
+        writer.writerow(_capture_coverage_summary_csv_row(summary))
+        return Response(
+            content=buffer.getvalue(),
+            media_type="text/csv",
+            headers={"Content-Disposition": "attachment; filename=capture_coverage_summary.csv"},
+        )
+
     @app.get("/api/v1/audit-events", response_model=list[AuditEventItem])
     def list_audit_events(
         request: Request,
@@ -2586,6 +3034,47 @@ def create_clinical_hub_app(
             content=buffer.getvalue(),
             media_type="text/csv",
             headers={"Content-Disposition": "attachment; filename=capture_packages.csv"},
+        )
+
+    @app.get("/api/v1/paired-with-capture.csv")
+    def export_paired_with_capture_csv(
+        request: Request,
+        site_id: str | None = None,
+        sync_id: str | None = None,
+        operator_id: str | None = None,
+        quality_status: Literal["valid", "repeat", "reject", "all"] = Query("all"),
+        connection: sqlite3.Connection = Depends(get_connection),  # noqa: B008
+    ) -> Response:
+        effective_site_id = _resolve_site_scope(request, site_id)
+        effective_operator_id = _resolve_operator_scope(request, operator_id)
+
+        paired_filters: list[tuple[str, object]] = []
+        if effective_site_id:
+            paired_filters.append(("site_id", effective_site_id))
+        if sync_id:
+            paired_filters.append(("sync_id", sync_id))
+        if effective_operator_id:
+            paired_filters.append(("operator_id", effective_operator_id))
+        if quality_status != "all":
+            paired_filters.append(("app_quality_status", quality_status))
+
+        rows = _fetch_paired_with_capture_rows(
+            connection,
+            paired_filters=paired_filters,
+        )
+
+        from io import StringIO
+
+        buffer = StringIO()
+        writer = csv.writer(buffer)
+        writer.writerow(PAIRED_WITH_CAPTURE_CSV_HEADERS)
+        for row in rows:
+            writer.writerow(_paired_with_capture_row_values(row))
+
+        return Response(
+            content=buffer.getvalue(),
+            media_type="text/csv",
+            headers={"Content-Disposition": "attachment; filename=paired_with_capture.csv"},
         )
 
     @app.get("/api/v1/paired-measurements.csv")
