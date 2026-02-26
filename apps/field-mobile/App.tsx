@@ -15,6 +15,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 type QualityStatus = "valid" | "repeat" | "reject";
 type SummaryQualityStatus = QualityStatus | "all";
+type SessionPlatform = "ios" | "android" | "windows" | "macos" | "web";
 
 type ComparisonMetricSummary = {
   metric: string;
@@ -120,6 +121,13 @@ const PENDING_SUBMISSIONS_KEY = "uroflow_pending_submissions_v1";
 const APP_SETTINGS_KEY = "uroflow_field_settings_v1";
 const DEFAULT_REQUEST_TIMEOUT_MS = "15000";
 const ALLOWED_ACTOR_ROLES = ["operator", "investigator", "data_manager", "admin"] as const;
+const SUPPORTED_SESSION_PLATFORMS: SessionPlatform[] = [
+  "ios",
+  "android",
+  "windows",
+  "macos",
+  "web",
+];
 
 const defaultMeasuredAt = new Date().toISOString().slice(0, 19) + "Z";
 
@@ -186,6 +194,21 @@ function normalizeActorRoleInput(rawValue: string | null | undefined): string {
     return normalized;
   }
   return "operator";
+}
+
+function isSessionPlatform(rawValue: string): rawValue is SessionPlatform {
+  return SUPPORTED_SESSION_PLATFORMS.includes(rawValue as SessionPlatform);
+}
+
+function normalizeSessionPlatformInput(
+  rawValue: string,
+  fallback: SessionPlatform,
+): SessionPlatform {
+  const normalized = rawValue.trim().toLowerCase();
+  if (isSessionPlatform(normalized)) {
+    return normalized;
+  }
+  return fallback;
 }
 
 function buildHeaderContextFromValues(
@@ -340,7 +363,14 @@ async function saveAppSettings(settings: AppSettings): Promise<void> {
 }
 
 export default function App() {
-  const defaultPlatform = Platform.OS === "ios" ? "ios" : "android";
+  const defaultPlatform: SessionPlatform =
+    Platform.OS === "ios" ||
+    Platform.OS === "android" ||
+    Platform.OS === "windows" ||
+    Platform.OS === "macos" ||
+    Platform.OS === "web"
+      ? Platform.OS
+      : "android";
 
   const [apiBaseUrl, setApiBaseUrl] = useState("http://127.0.0.1:8000");
   const [apiKey, setApiKey] = useState("");
@@ -353,7 +383,7 @@ export default function App() {
   const [operatorId, setOperatorId] = useState("OP-01");
   const [attemptNumber, setAttemptNumber] = useState("1");
   const [measuredAt, setMeasuredAt] = useState(defaultMeasuredAt);
-  const [platform, setPlatform] = useState(defaultPlatform);
+  const [platform, setPlatform] = useState<SessionPlatform>(defaultPlatform);
   const [deviceModel, setDeviceModel] = useState(Platform.OS);
   const [appVersion, setAppVersion] = useState("0.1.0");
   const [captureMode, setCaptureMode] = useState("water_impact");
@@ -907,7 +937,13 @@ export default function App() {
         <LabeledInput label="Operator ID" value={operatorId} onChangeText={setOperatorId} />
         <LabeledInput label="Attempt Number" value={attemptNumber} onChangeText={setAttemptNumber} keyboardType="number-pad" />
         <LabeledInput label="Measured At (ISO)" value={measuredAt} onChangeText={setMeasuredAt} />
-        <LabeledInput label="Platform (ios/android)" value={platform} onChangeText={setPlatform} />
+        <LabeledInput
+          label="Platform (ios/android)"
+          value={platform}
+          onChangeText={(value) =>
+            setPlatform((current) => normalizeSessionPlatformInput(value, current))
+          }
+        />
         <LabeledInput label="Device Model" value={deviceModel} onChangeText={setDeviceModel} />
         <LabeledInput label="App Version" value={appVersion} onChangeText={setAppVersion} />
         <LabeledInput label="Capture Mode" value={captureMode} onChangeText={setCaptureMode} />
