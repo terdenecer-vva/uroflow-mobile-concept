@@ -7,7 +7,7 @@ import math
 import sqlite3
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
-from datetime import UTC, date, datetime
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Literal
 
@@ -510,11 +510,11 @@ def ensure_clinical_hub_schema(db_path: Path) -> None:
 
 
 def _utc_now() -> datetime:
-    return datetime.now(UTC)
+    return datetime.now(timezone.utc)
 
 
 def _dt_to_iso(value: datetime) -> str:
-    normalized = value.astimezone(UTC).replace(microsecond=0)
+    normalized = value.astimezone(timezone.utc).replace(microsecond=0)
     return normalized.isoformat().replace("+00:00", "Z")
 
 
@@ -528,7 +528,7 @@ def _insert_paired_measurement(
     connection: sqlite3.Connection, payload: PairedMeasurementCreate
 ) -> int:
     created_at = _utc_now()
-    measured_at = payload.session.measured_at.astimezone(UTC)
+    measured_at = payload.session.measured_at.astimezone(timezone.utc)
     payload_json = json.dumps(payload.model_dump(mode="json"), ensure_ascii=False)
 
     cursor = connection.execute(
@@ -609,7 +609,7 @@ def _insert_capture_package(
     payload: CapturePackageCreate,
 ) -> int:
     created_at = _utc_now()
-    measured_at = payload.session.measured_at.astimezone(UTC)
+    measured_at = payload.session.measured_at.astimezone(timezone.utc)
     capture_payload_json = json.dumps(payload.capture_payload, ensure_ascii=False)
     cursor = connection.execute(
         """
@@ -809,7 +809,7 @@ def _capture_package_payload_matches_row(
     row: sqlite3.Row,
     payload: CapturePackageCreate,
 ) -> bool:
-    measured_at = _dt_to_iso(payload.session.measured_at.astimezone(UTC))
+    measured_at = _dt_to_iso(payload.session.measured_at.astimezone(timezone.utc))
     return (
         str(row["measured_at"]) == measured_at
         and str(row["session_id"]) == payload.session.session_id
