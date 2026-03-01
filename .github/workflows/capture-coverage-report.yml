@@ -89,6 +89,10 @@ on:
           - "true"
           - "false"
         default: ""
+      fallback_fixture_alert_days:
+        description: "Consecutive fallback fixture days before alert issue (empty = repo variable/default)"
+        required: false
+        type: string
 
 concurrency:
   group: capture-coverage-report-${{ github.workflow }}-${{ github.ref }}
@@ -108,6 +112,7 @@ jobs:
       DEFAULT_TARGETS_CONFIG: ${{ vars.CLINICAL_HUB_COVERAGE_TARGETS_CONFIG }}
       DEFAULT_ENFORCE_COVERAGE_GATES: ${{ vars.CLINICAL_HUB_ENFORCE_COVERAGE_GATES }}
       DEFAULT_TRACKING_ISSUE_NUMBER: ${{ vars.CLINICAL_HUB_COVERAGE_TRACKING_ISSUE }}
+      DEFAULT_FALLBACK_FIXTURE_ALERT_DAYS: ${{ vars.CLINICAL_HUB_FALLBACK_FIXTURE_ALERT_DAYS }}
 
     steps:
       - name: Checkout
@@ -536,6 +541,22 @@ jobs:
                   handle.write(f"existing_comment_body_path={body_path}\n")
           PY
 
+      - name: Resolve fallback fixture alert threshold
+        id: fallback_alert
+        if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          threshold_days="${{ github.event.inputs.fallback_fixture_alert_days }}"
+          if [[ -z "$threshold_days" ]]; then
+            threshold_days="${DEFAULT_FALLBACK_FIXTURE_ALERT_DAYS:-3}"
+          fi
+          if [[ ! "$threshold_days" =~ ^[0-9]+$ ]] || [[ "$threshold_days" -lt 1 ]]; then
+            echo "Invalid fallback_fixture_alert_days '$threshold_days', using default '3'."
+            threshold_days="3"
+          fi
+          echo "threshold_days=$threshold_days" >> "$GITHUB_OUTPUT"
+
       - name: Build tracking issue comment
         id: tracking_comment
         if: ${{ steps.tracking.outputs.post_tracking_comment == 'true' && steps.tracking.outputs.issue_number != '' }}
@@ -591,6 +612,9 @@ jobs:
           previous_body = ""
           previous_paired_total = None
           previous_coverage_ratio_pct = None
+          previous_source_variant = None
+          previous_streak_days = 0
+          previous_generated_date = None
           if previous_comment_path:
               previous_path = Path(previous_comment_path)
               if previous_path.exists():
@@ -601,6 +625,36 @@ jobs:
                   coverage_match = re.search(r"- Coverage ratio: `([0-9]+(?:\.[0-9]+)?)%`", previous_body)
                   if coverage_match:
                       previous_coverage_ratio_pct = float(coverage_match.group(1))
+                  source_variant_match = re.search(
+                      r"- Source variant: `([^`]+)`", previous_body
+                  )
+                  if source_variant_match:
+                      previous_source_variant = source_variant_match.group(1)
+                  streak_match = re.search(
+                      r"- Fallback fixture streak days: `([0-9]+)`", previous_body
+                  )
+                  if streak_match:
+                      previous_streak_days = int(streak_match.group(1))
+                  generated_match = re.search(
+                      r"- Generated at \(UTC\): `([^`]+)`", previous_body
+                  )
+                  if generated_match:
+                      previous_generated_date = generated_match.group(1)[:10]
+
+          current_generated_date = generated_at[:10] if generated_at else ""
+          fallback_streak_days = 0
+          if source_variant == "fallback_fixture":
+              if previous_source_variant == "fallback_fixture":
+                  if (
+                      previous_generated_date
+                      and current_generated_date
+                      and previous_generated_date == current_generated_date
+                  ):
+                      fallback_streak_days = max(previous_streak_days, 1)
+                  else:
+                      fallback_streak_days = max(previous_streak_days, 1) + 1
+              else:
+                  fallback_streak_days = 1
 
           delta_lines = []
           if previous_paired_total is None or previous_coverage_ratio_pct is None:
@@ -622,6 +676,7 @@ jobs:
               f"- Generated at (UTC): `{generated_at}`",
               f"- Source mode: `{source_mode}`",
               f"- Source variant: `{source_variant}`",
+              f"- Fallback fixture streak days: `{fallback_streak_days}`",
               f"- Site: `{site_id}`",
               f"- Quality filter: `{quality_status}`",
               f"- Paired total: `{paired_total}`",
@@ -641,6 +696,8 @@ jobs:
           comment_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
           with Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as handle:
               handle.write(f"comment_path={comment_path}\n")
+              handle.write(f"source_variant={source_variant}\n")
+              handle.write(f"fallback_streak_days={fallback_streak_days}\n")
           PY
 
       - name: Post tracking issue comment
@@ -757,6 +814,74 @@ jobs:
               --label bug \
               --body-file "$body_path")"
             echo "Created incident issue: $new_url"
+          fi
+
+      - name: Manage fallback fixture streak alert issue
+        if: ${{ github.event_name == 'schedule' && steps.tracking_comment.outputs.fallback_streak_days != '' }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          title="Alert: Capture coverage using fallback fixture source"
+          source_variant="${{ steps.tracking_comment.outputs.source_variant }}"
+          streak="${{ steps.tracking_comment.outputs.fallback_streak_days }}"
+          threshold="${{ steps.fallback_alert.outputs.threshold_days }}"
+          run_url="https://github.com/${GITHUB_REPOSITORY}/actions/runs/${{ github.run_id }}"
+
+          if [[ ! "$streak" =~ ^[0-9]+$ ]]; then
+            echo "Skipping fallback alert management: invalid streak '$streak'."
+            exit 0
+          fi
+          if [[ ! "$threshold" =~ ^[0-9]+$ ]] || [[ "$threshold" -lt 1 ]]; then
+            threshold="3"
+          fi
+
+          existing_issue_number="$(gh issue list \
+            --repo "${GITHUB_REPOSITORY}" \
+            --state open \
+            --search "\"${title}\" in:title" \
+            --json number,title \
+            --jq ".[] | select(.title == \"${title}\") | .number" | head -n 1)"
+
+          if [[ "$source_variant" == "fallback_fixture" && "$streak" -ge "$threshold" ]]; then
+            body_path="/tmp/fallback-fixture-alert-${{ github.run_id }}.md"
+            {
+              echo "<!-- coverage-fallback-fixture-alert:v1 -->"
+              echo "# Alert: Capture coverage uses fallback fixture source"
+              echo
+              echo "- Latest run: ${run_url}"
+              echo "- Source variant: \`${source_variant}\`"
+              echo "- Consecutive fallback fixture days: \`${streak}\`"
+              echo "- Alert threshold days: \`${threshold}\`"
+              echo
+              echo "## Action needed"
+              echo "- Configure real source via \`CLINICAL_HUB_URL\` or \`CLINICAL_HUB_DB_URL\` repository secret."
+            } > "$body_path"
+
+            if [[ -n "$existing_issue_number" ]]; then
+              gh issue edit "$existing_issue_number" \
+                --repo "${GITHUB_REPOSITORY}" \
+                --add-label warning \
+                --body-file "$body_path" > /dev/null
+              echo "Updated fallback-source alert issue #$existing_issue_number."
+            else
+              new_url="$(gh issue create \
+                --repo "${GITHUB_REPOSITORY}" \
+                --title "$title" \
+                --label warning \
+                --body-file "$body_path")"
+              echo "Created fallback-source alert issue: $new_url"
+            fi
+          elif [[ -n "$existing_issue_number" ]]; then
+            gh issue comment "$existing_issue_number" \
+              --repo "${GITHUB_REPOSITORY}" \
+              --body "Resolved in ${run_url}: source_variant=\`${source_variant}\`, streak=\`${streak}\`, threshold=\`${threshold}\`." > /dev/null
+            gh issue close "$existing_issue_number" \
+              --repo "${GITHUB_REPOSITORY}" > /dev/null
+            echo "Closed fallback-source alert issue #$existing_issue_number."
+          else
+            echo "Fallback-source alert conditions not met. No issue update required."
           fi
 
       - name: Enforce hard coverage gates
