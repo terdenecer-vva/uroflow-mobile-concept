@@ -194,11 +194,15 @@ jobs:
 
           if [[ -n "${{ secrets.CLINICAL_HUB_DB_URL }}" ]]; then
             echo "Downloading clinical hub DB from CLINICAL_HUB_DB_URL..."
+            source_variant="db_url_secret"
+            if [[ "${{ secrets.CLINICAL_HUB_DB_URL }}" == *"/releases/download/coverage-seed-db-v1/"* ]]; then
+              source_variant="db_url_seed_release"
+            fi
             curl --fail --location --silent --show-error \
               "${{ secrets.CLINICAL_HUB_DB_URL }}" \
               --output /tmp/clinical_hub.db
             echo "source_mode=db" >> "$GITHUB_OUTPUT"
-            echo "source_variant=db_url_secret" >> "$GITHUB_OUTPUT"
+            echo "source_variant=$source_variant" >> "$GITHUB_OUTPUT"
             echo "db_path=/tmp/clinical_hub.db" >> "$GITHUB_OUTPUT"
             exit 0
           fi
