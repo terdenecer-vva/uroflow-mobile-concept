@@ -182,6 +182,7 @@ jobs:
           if [[ -n "${{ secrets.CLINICAL_HUB_URL }}" ]]; then
             echo "Using Clinical Hub API source."
             echo "source_mode=api" >> "$GITHUB_OUTPUT"
+            echo "source_variant=api_secret" >> "$GITHUB_OUTPUT"
             echo "api_base_url=${{ secrets.CLINICAL_HUB_URL }}" >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -192,6 +193,7 @@ jobs:
               "${{ secrets.CLINICAL_HUB_DB_URL }}" \
               --output /tmp/clinical_hub.db
             echo "source_mode=db" >> "$GITHUB_OUTPUT"
+            echo "source_variant=db_url_secret" >> "$GITHUB_OUTPUT"
             echo "db_path=/tmp/clinical_hub.db" >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -206,10 +208,12 @@ jobs:
             PYTHONPATH=src python scripts/build_capture_coverage_fixture_db.py \
               --db-path /tmp/clinical_hub_fixture.db
             echo "source_mode=db" >> "$GITHUB_OUTPUT"
+            echo "source_variant=fallback_fixture" >> "$GITHUB_OUTPUT"
             echo "db_path=/tmp/clinical_hub_fixture.db" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           echo "source_mode=db" >> "$GITHUB_OUTPUT"
+          echo "source_variant=local_db_path" >> "$GITHUB_OUTPUT"
           echo "db_path=$db_path" >> "$GITHUB_OUTPUT"
 
       - name: Generate coverage CSV and PDF
@@ -436,6 +440,7 @@ jobs:
           summary_lines = [
               "## Capture Coverage Summary",
               f"- Source mode: `${{ steps.source.outputs.source_mode }}`",
+              f"- Source variant: `${{ steps.source.outputs.source_variant }}`",
               f"- Paired total: `{paired_total}`",
               f"- Paired with capture: `{paired_with_capture}`",
               f"- Coverage ratio: `{coverage_ratio * 100:.1f}%`",
@@ -578,6 +583,7 @@ jobs:
               f"https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           )
           source_mode = "${{ steps.source.outputs.source_mode }}"
+          source_variant = "${{ steps.source.outputs.source_variant }}"
           site_id = row.get("site_id", "") or "-"
           quality_status = row.get("quality_status", "") or "all"
           generated_at = row.get("generated_at", "") or "${{ github.run_started_at }}"
@@ -615,6 +621,7 @@ jobs:
               f"- Run: {run_url}",
               f"- Generated at (UTC): `{generated_at}`",
               f"- Source mode: `{source_mode}`",
+              f"- Source variant: `{source_variant}`",
               f"- Site: `{site_id}`",
               f"- Quality filter: `{quality_status}`",
               f"- Paired total: `{paired_total}`",
