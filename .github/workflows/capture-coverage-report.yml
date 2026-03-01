@@ -81,7 +81,7 @@ on:
         required: false
         type: string
       post_tracking_comment:
-        description: "Post tracking comment (schedule defaults to true)"
+        description: "Post tracking comment (defaults to true)"
         required: false
         type: choice
         options:
@@ -463,11 +463,7 @@ jobs:
 
           post_tracking_comment="${{ github.event.inputs.post_tracking_comment }}"
           if [[ -z "$post_tracking_comment" ]]; then
-            if [[ "${{ github.event_name }}" == "schedule" ]]; then
-              post_tracking_comment="true"
-            else
-              post_tracking_comment="false"
-            fi
+            post_tracking_comment="true"
           fi
           case "${post_tracking_comment,,}" in
             true|1|yes|y)
