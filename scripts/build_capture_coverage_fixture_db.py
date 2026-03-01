@@ -12,6 +12,11 @@ from pathlib import Path
 from uroflow_mobile.clinical_hub import ensure_clinical_hub_schema
 
 
+FIXTURE_PAIRED_TOTAL = 220
+FIXTURE_MISSING_CAPTURE_COUNT = 20
+FIXTURE_FALLBACK_MATCH_COUNT = 20
+
+
 def build_fixture_db(db_path: Path) -> None:
     if db_path.exists():
         db_path.unlink()
@@ -21,16 +26,19 @@ def build_fixture_db(db_path: Path) -> None:
     now = datetime.now(timezone.utc).replace(microsecond=0)
 
     with sqlite3.connect(db_path) as connection:
-        for index in range(10):
+        capture_package_count = FIXTURE_PAIRED_TOTAL - FIXTURE_MISSING_CAPTURE_COUNT
+        direct_match_count = capture_package_count - FIXTURE_FALLBACK_MATCH_COUNT
+
+        for index in range(FIXTURE_PAIRED_TOTAL):
             measured_at = (now - timedelta(minutes=index)).isoformat().replace("+00:00", "Z")
             session_id = f"SESSION-COV-{index + 1:03d}"
             sync_id = f"SYNC-COV-{(index // 2) + 1:03d}"
             subject_id = f"SUBJ-{index + 1:03d}"
             platform = "ios" if index % 2 == 0 else "android"
             quality_status = "valid"
-            if index == 8:
+            if index % 40 == 39:
                 quality_status = "repeat"
-            elif index == 9:
+            elif index % 70 == 69:
                 quality_status = "reject"
 
             paired_cursor = connection.execute(
@@ -106,11 +114,12 @@ def build_fixture_db(db_path: Path) -> None:
             )
             paired_id = int(paired_cursor.lastrowid)
 
-            # 7 packages linked by paired_measurement_id,
-            # 2 packages linked by session identity only,
-            # 1 paired row left without capture package.
-            if index < 9:
-                paired_measurement_id = paired_id if index < 7 else None
+            # Keep a deterministic healthy baseline:
+            # - total paired rows above volume warning thresholds
+            # - ~9.1% missing capture (hard gate remains green)
+            # - a mix of direct and fallback capture matches.
+            if index < capture_package_count:
+                paired_measurement_id = paired_id if index < direct_match_count else None
                 connection.execute(
                     """
                     INSERT INTO capture_packages (
