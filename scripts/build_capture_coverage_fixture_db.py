@@ -11,7 +11,6 @@ from pathlib import Path
 
 from uroflow_mobile.clinical_hub import ensure_clinical_hub_schema
 
-
 FIXTURE_PAIRED_TOTAL = 220
 FIXTURE_MISSING_CAPTURE_COUNT = 20
 FIXTURE_FALLBACK_MATCH_COUNT = 20
