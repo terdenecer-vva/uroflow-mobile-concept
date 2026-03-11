@@ -48,10 +48,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: "20"
           cache: "npm"
@@ -83,7 +83,7 @@ jobs:
             --schema-version ios_capture_v1
 
       - name: Upload release manifest
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: mobile-release-manifest
           path: /tmp/mobile-release-manifest.json
@@ -100,7 +100,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Check EXPO_TOKEN availability
         id: expo
@@ -119,7 +119,7 @@ jobs:
 
       - name: Set up Node.js
         if: ${{ steps.expo.outputs.available == 'true' }}
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: "20"
           cache: "npm"
@@ -159,7 +159,7 @@ jobs:
 
       - name: Upload EAS build result artifact
         if: ${{ steps.expo.outputs.available == 'true' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: mobile-eas-build-result-${{ github.run_id }}
           path: /tmp/eas-build-result.json
