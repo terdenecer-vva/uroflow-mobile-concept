@@ -545,7 +545,7 @@ jobs:
                   handle.write(f"existing_comment_body_path={body_path}\n")
           PY
 
-      - name: Resolve fallback fixture alert threshold
+      - name: Resolve non-production source alert threshold
         id: fallback_alert
         if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
         shell: bash
@@ -609,6 +609,7 @@ jobs:
           )
           source_mode = "${{ steps.source.outputs.source_mode }}"
           source_variant = "${{ steps.source.outputs.source_variant }}"
+          non_production_source_variants = {"fallback_fixture", "db_url_seed_release"}
           site_id = row.get("site_id", "") or "-"
           quality_status = row.get("quality_status", "") or "all"
           generated_at = row.get("generated_at", "") or "${{ github.run_started_at }}"
@@ -635,8 +636,12 @@ jobs:
                   if source_variant_match:
                       previous_source_variant = source_variant_match.group(1)
                   streak_match = re.search(
-                      r"- Fallback fixture streak days: `([0-9]+)`", previous_body
+                      r"- Non-production source streak days: `([0-9]+)`", previous_body
                   )
+                  if not streak_match:
+                      streak_match = re.search(
+                          r"- Fallback fixture streak days: `([0-9]+)`", previous_body
+                      )
                   if streak_match:
                       previous_streak_days = int(streak_match.group(1))
                   generated_match = re.search(
@@ -646,19 +651,21 @@ jobs:
                       previous_generated_date = generated_match.group(1)[:10]
 
           current_generated_date = generated_at[:10] if generated_at else ""
-          fallback_streak_days = 0
-          if source_variant == "fallback_fixture":
-              if previous_source_variant == "fallback_fixture":
+          non_production_streak_days = 0
+          if source_variant in non_production_source_variants:
+              if previous_source_variant in non_production_source_variants:
                   if (
                       previous_generated_date
                       and current_generated_date
                       and previous_generated_date == current_generated_date
                   ):
-                      fallback_streak_days = max(previous_streak_days, 1)
+                      non_production_streak_days = previous_streak_days or 1
                   else:
-                      fallback_streak_days = max(previous_streak_days, 1) + 1
+                      non_production_streak_days = (
+                          previous_streak_days + 1 if previous_streak_days > 0 else 1
+                      )
               else:
-                  fallback_streak_days = 1
+                  non_production_streak_days = 1
 
           delta_lines = []
           if previous_paired_total is None or previous_coverage_ratio_pct is None:
@@ -680,7 +687,7 @@ jobs:
               f"- Generated at (UTC): `{generated_at}`",
               f"- Source mode: `{source_mode}`",
               f"- Source variant: `{source_variant}`",
-              f"- Fallback fixture streak days: `{fallback_streak_days}`",
+              f"- Non-production source streak days: `{non_production_streak_days}`",
               f"- Site: `{site_id}`",
               f"- Quality filter: `{quality_status}`",
               f"- Paired total: `{paired_total}`",
@@ -701,7 +708,7 @@ jobs:
           with Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as handle:
               handle.write(f"comment_path={comment_path}\n")
               handle.write(f"source_variant={source_variant}\n")
-              handle.write(f"fallback_streak_days={fallback_streak_days}\n")
+              handle.write(f"non_production_streak_days={non_production_streak_days}\n")
           PY
 
       - name: Post tracking issue comment
@@ -820,21 +827,28 @@ jobs:
             echo "Created incident issue: $new_url"
           fi
 
-      - name: Manage fallback fixture streak alert issue
-        if: ${{ github.event_name == 'schedule' && steps.tracking_comment.outputs.fallback_streak_days != '' }}
+      - name: Manage non-production source streak alert issue
+        if: ${{ github.event_name == 'schedule' && steps.tracking_comment.outputs.non_production_streak_days != '' }}
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          title="Alert: Capture coverage using fallback fixture source"
+          title="Alert: Capture coverage using non-production source"
           source_variant="${{ steps.tracking_comment.outputs.source_variant }}"
-          streak="${{ steps.tracking_comment.outputs.fallback_streak_days }}"
+          streak="${{ steps.tracking_comment.outputs.non_production_streak_days }}"
           threshold="${{ steps.fallback_alert.outputs.threshold_days }}"
           run_url="https://github.com/${GITHUB_REPOSITORY}/actions/runs/${{ github.run_id }}"
+          is_non_production="false"
+
+          case "$source_variant" in
+            fallback_fixture|db_url_seed_release)
+              is_non_production="true"
+              ;;
+          esac
 
           if [[ ! "$streak" =~ ^[0-9]+$ ]]; then
-            echo "Skipping fallback alert management: invalid streak '$streak'."
+            echo "Skipping non-production source alert management: invalid streak '$streak'."
             exit 0
           fi
           if [[ ! "$threshold" =~ ^[0-9]+$ ]] || [[ "$threshold" -lt 1 ]]; then
@@ -848,19 +862,19 @@ jobs:
             --json number,title \
             --jq ".[] | select(.title == \"${title}\") | .number" | head -n 1)"
 
-          if [[ "$source_variant" == "fallback_fixture" && "$streak" -ge "$threshold" ]]; then
-            body_path="/tmp/fallback-fixture-alert-${{ github.run_id }}.md"
+          if [[ "$is_non_production" == "true" && "$streak" -ge "$threshold" ]]; then
+            body_path="/tmp/non-production-source-alert-${{ github.run_id }}.md"
             {
-              echo "<!-- coverage-fallback-fixture-alert:v1 -->"
-              echo "# Alert: Capture coverage uses fallback fixture source"
+              echo "<!-- coverage-non-production-source-alert:v1 -->"
+              echo "# Alert: Capture coverage uses non-production source"
               echo
               echo "- Latest run: ${run_url}"
               echo "- Source variant: \`${source_variant}\`"
-              echo "- Consecutive fallback fixture days: \`${streak}\`"
+              echo "- Consecutive non-production source days: \`${streak}\`"
               echo "- Alert threshold days: \`${threshold}\`"
               echo
               echo "## Action needed"
-              echo "- Configure real source via \`CLINICAL_HUB_URL\` or \`CLINICAL_HUB_DB_URL\` repository secret."
+              echo "- Replace bootstrap source with real \`CLINICAL_HUB_URL\` or real \`CLINICAL_HUB_DB_URL\` repository secret."
             } > "$body_path"
 
             if [[ -n "$existing_issue_number" ]]; then
@@ -868,14 +882,14 @@ jobs:
                 --repo "${GITHUB_REPOSITORY}" \
                 --add-label warning \
                 --body-file "$body_path" > /dev/null
-              echo "Updated fallback-source alert issue #$existing_issue_number."
+              echo "Updated non-production-source alert issue #$existing_issue_number."
             else
               new_url="$(gh issue create \
                 --repo "${GITHUB_REPOSITORY}" \
                 --title "$title" \
                 --label warning \
                 --body-file "$body_path")"
-              echo "Created fallback-source alert issue: $new_url"
+              echo "Created non-production-source alert issue: $new_url"
             fi
           elif [[ -n "$existing_issue_number" ]]; then
             gh issue comment "$existing_issue_number" \
@@ -883,9 +897,9 @@ jobs:
               --body "Resolved in ${run_url}: source_variant=\`${source_variant}\`, streak=\`${streak}\`, threshold=\`${threshold}\`." > /dev/null
             gh issue close "$existing_issue_number" \
               --repo "${GITHUB_REPOSITORY}" > /dev/null
-            echo "Closed fallback-source alert issue #$existing_issue_number."
+            echo "Closed non-production-source alert issue #$existing_issue_number."
           else
-            echo "Fallback-source alert conditions not met. No issue update required."
+            echo "Non-production-source alert conditions not met. No issue update required."
           fi
 
       - name: Enforce hard coverage gates
