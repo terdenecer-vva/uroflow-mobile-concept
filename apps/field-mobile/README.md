@@ -42,6 +42,14 @@ npm install
 npm run start
 ```
 
+If `npm run start` hits `EMFILE` on macOS without `watchman`, use the stable device-launch path:
+
+```bash
+npm run start:device
+```
+
+This mode keeps Metro up for Expo Go on a physical phone over LAN, publishes the laptop LAN IP into the Expo manifest, and disables live reload (`CI=1`) to avoid file-watcher exhaustion.
+
 Optional local check:
 
 ```bash
@@ -54,6 +62,10 @@ npm run typecheck
 npm run ios
 npm run android
 ```
+
+Notes:
+- `npm run start:device` is the recommended path for field smoke runs when the machine does not have `watchman`.
+- `.watchmanconfig` is checked in so a future `watchman` install can scope watches to `apps/field-mobile` instead of the repository root.
 
 ## Runtime Capture Flow
 

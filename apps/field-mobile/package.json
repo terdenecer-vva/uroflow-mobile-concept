@@ -5,6 +5,7 @@
   "main": "node_modules/expo/AppEntry.js",
   "scripts": {
     "start": "expo start",
+    "start:device": "sh -c 'HOST_IP=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || true); if [ -n \"$HOST_IP\" ]; then export REACT_NATIVE_PACKAGER_HOSTNAME=\"$HOST_IP\"; fi; CI=1 expo start --offline --clear'",
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",

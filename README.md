@@ -417,6 +417,15 @@ npm install
 npm run start
 ```
 
+Если на macOS обычный `npm run start` упирается в `EMFILE`, для реального запуска через Expo Go используйте стабильный путь:
+
+```bash
+cd apps/field-mobile
+npm run start:device
+```
+
+Этот режим поднимает Metro без live reload и публикует LAN IP ноутбука в Expo manifest, чтобы приложение открывалось на физическом телефоне.
+
 В мобильном клиенте есть встроенный раздел `Comparison Summary`, который подтягивает
 `/api/v1/comparison-summary` и показывает текущую сходимость с эталонным урофлоуметром.
 Также реализована offline-очередь отправки и ручная синхронизация pending-записей.
