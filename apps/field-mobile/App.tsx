@@ -8,13 +8,16 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { CameraView, useCameraPermissions } from "expo-camera";
-import * as SecureStore from "expo-secure-store";
+import {
+  attemptSubmitEndpoint,
+  buildBaseUrl,
+  buildRequestHeaders,
+  fetchWithTimeout,
+} from "./src/api/clinicalHub";
 import {
   buildCaptureContractPayload,
   buildCaptureContractPayloadFromSamples,
@@ -24,425 +27,43 @@ import {
   type RuntimeFlowPoint,
 } from "./src/capture/runtimeCaptureSession";
 import { estimateRoiSignalFromBase64 } from "./src/capture/roiSignalEstimator";
-
-type QualityStatus = "valid" | "repeat" | "reject";
-type SummaryQualityStatus = QualityStatus | "all";
-
-type ComparisonMetricSummary = {
-  metric: string;
-  paired_samples: number;
-  mean_error: number | null;
-  mean_absolute_error: number | null;
-  rmse: number | null;
-  pearson_r: number | null;
-};
-
-type ComparisonSummaryResponse = {
-  records_considered: number;
-  records_matched_filters: number;
-  quality_distribution: Record<string, number>;
-  metrics: ComparisonMetricSummary[];
-};
-
-type CaptureCoverageSummaryResponse = {
-  paired_total: number;
-  paired_with_capture: number;
-  paired_without_capture: number;
-  coverage_ratio: number;
-  quality_distribution: Record<string, number>;
-  capture_match_distribution: Record<string, number>;
-};
-
-type AuthContextResponse = {
-  auth_result: string;
-  actor_role: string | null;
-  actor_site_id: string | null;
-  actor_operator_id: string | null;
-  cross_site_allowed: boolean;
-};
-
-type PairedPayload = {
-  session: {
-    session_id: string;
-    sync_id: string | null;
-    site_id: string;
-    subject_id: string;
-    operator_id: string;
-    attempt_number: number | null;
-    measured_at: string;
-    platform: string;
-    device_model: string | null;
-    app_version: string | null;
-    capture_mode: string;
-  };
-  app: {
-    metrics: {
-      qmax_ml_s: number | null;
-      qavg_ml_s: number | null;
-      vvoid_ml: number | null;
-      flow_time_s: number | null;
-      tqmax_s: number | null;
-    };
-    quality_status: QualityStatus;
-    quality_score: number | null;
-    model_id: string | null;
-  };
-  reference: {
-    metrics: {
-      qmax_ml_s: number | null;
-      qavg_ml_s: number | null;
-      vvoid_ml: number | null;
-      flow_time_s: number | null;
-      tqmax_s: number | null;
-    };
-    device_model: string | null;
-    device_serial: string | null;
-  };
-  notes: string | null;
-};
-
-type CapturePackagePayload = {
-  session: PairedPayload["session"];
-  package_type: "capture_contract_json";
-  capture_payload: Record<string, unknown>;
-  paired_measurement_id: number | null;
-  notes: string | null;
-};
-
-type PendingEndpoint = "paired_measurements" | "capture_packages";
-
-type PendingSubmission = {
-  id: string;
-  created_at: string;
-  endpoint: PendingEndpoint;
-  payload: PairedPayload | CapturePackagePayload;
-  request_headers: RequestHeaderContext;
-  attempt_count: number;
-  last_attempt_at: string | null;
-  last_error: string | null;
-  last_status_code: number | null;
-};
-
-type AppSettings = {
-  api_base_url: string;
-  api_key: string;
-  actor_role: string;
-  site_id: string;
-  operator_id: string;
-  summary_quality_status: SummaryQualityStatus;
-  summary_sync_id: string;
-  request_timeout_ms: string;
-};
-
-type SubmitAttemptResult = {
-  ok: boolean;
-  statusCode: number | null;
-  body: string;
-  retryable: boolean;
-};
-
-type RequestHeaderContext = {
-  api_key: string;
-  actor_role: string;
-  site_id: string;
-  operator_id: string;
-};
-
-type RoiFrameAnalysisState = {
-  prevHash: number | null;
-  prevLength: number | null;
-};
-
-const PENDING_SUBMISSIONS_KEY = "uroflow_pending_submissions_v1";
-const APP_SETTINGS_KEY = "uroflow_field_settings_v1";
-const APP_SETTINGS_API_KEY_SECURE_KEY = "uroflow_field_api_key_secure_v1";
-const DEFAULT_REQUEST_TIMEOUT_MS = "15000";
-const COVERAGE_GOAL_RATIO = 0.9;
-const ALLOWED_ACTOR_ROLES = ["operator", "investigator", "data_manager", "admin"] as const;
+import { LabeledInput } from "./src/components/LabeledInput";
+import {
+  loadAppSettings,
+  loadPendingSubmissions,
+  saveAppSettings,
+  savePendingSubmissions,
+} from "./src/storage/appStorage";
+import type {
+  AppSettings,
+  AuthContextResponse,
+  CaptureCoverageSummaryResponse,
+  CapturePackagePayload,
+  ComparisonSummaryResponse,
+  PairedPayload,
+  PendingEndpoint,
+  PendingSubmission,
+  QualityStatus,
+  RequestHeaderContext,
+  RoiFrameAnalysisState,
+  SummaryQualityStatus,
+} from "./src/types";
+import {
+  COVERAGE_GOAL_RATIO,
+  DEFAULT_REQUEST_TIMEOUT_MS,
+  buildHeaderContextFromValues,
+  createPendingId,
+  createSessionId,
+  createSyncId,
+  extractCreatedRecordId,
+  formatNullable,
+  normalizeActorRoleInput,
+  parseNumber,
+  resolvePendingHeaderContext,
+  runtimeCaptureMatchesSession,
+} from "./src/utils/appHelpers";
 
 const defaultMeasuredAt = new Date().toISOString().slice(0, 19) + "Z";
-
-function parseNumber(value: string): number | null {
-  const trimmed = value.trim();
-  if (!trimmed) {
-    return null;
-  }
-  const parsed = Number(trimmed);
-  if (Number.isNaN(parsed)) {
-    return null;
-  }
-  return parsed;
-}
-
-function createSessionId(): string {
-  const now = new Date();
-  const y = now.getUTCFullYear();
-  const m = String(now.getUTCMonth() + 1).padStart(2, "0");
-  const d = String(now.getUTCDate()).padStart(2, "0");
-  const h = String(now.getUTCHours()).padStart(2, "0");
-  const min = String(now.getUTCMinutes()).padStart(2, "0");
-  const s = String(now.getUTCSeconds()).padStart(2, "0");
-  return `SESSION-${y}${m}${d}-${h}${min}${s}`;
-}
-
-function createSyncId(): string {
-  const now = new Date();
-  const y = now.getUTCFullYear();
-  const m = String(now.getUTCMonth() + 1).padStart(2, "0");
-  const d = String(now.getUTCDate()).padStart(2, "0");
-  const h = String(now.getUTCHours()).padStart(2, "0");
-  const min = String(now.getUTCMinutes()).padStart(2, "0");
-  const s = String(now.getUTCSeconds()).padStart(2, "0");
-  const randomPart = Math.random().toString(36).slice(2, 8).toUpperCase();
-  return `SYNC-${y}${m}${d}-${h}${min}${s}-${randomPart}`;
-}
-
-function formatNullable(value: number | null | undefined): string {
-  if (value == null || Number.isNaN(value)) {
-    return "n/a";
-  }
-  return value.toFixed(3);
-}
-
-function createPendingId(): string {
-  const randomPart = Math.random().toString(36).slice(2, 10);
-  return `PENDING-${Date.now()}-${randomPart}`;
-}
-
-function classifyRetryable(statusCode: number | null): boolean {
-  if (statusCode == null) {
-    return true;
-  }
-  if (statusCode >= 500) {
-    return true;
-  }
-  return statusCode === 408 || statusCode === 425 || statusCode === 429;
-}
-
-function normalizeActorRoleInput(rawValue: string | null | undefined): string {
-  const normalized = (rawValue ?? "").trim().toLowerCase();
-  if (ALLOWED_ACTOR_ROLES.includes(normalized as (typeof ALLOWED_ACTOR_ROLES)[number])) {
-    return normalized;
-  }
-  return "operator";
-}
-
-function buildHeaderContextFromValues(
-  apiKey: string,
-  actorRole: string,
-  siteId: string,
-  operatorId: string,
-): RequestHeaderContext {
-  return {
-    api_key: apiKey.trim(),
-    actor_role: normalizeActorRoleInput(actorRole),
-    site_id: siteId.trim(),
-    operator_id: operatorId.trim(),
-  };
-}
-
-function normalizeRequestHeaderContext(
-  raw: unknown,
-  payload: { session: { site_id: string; operator_id: string } },
-): RequestHeaderContext {
-  if (!raw || typeof raw !== "object") {
-    return buildHeaderContextFromValues(
-      "",
-      "operator",
-      payload.session.site_id ?? "",
-      payload.session.operator_id ?? "",
-    );
-  }
-  const candidate = raw as Record<string, unknown>;
-  return buildHeaderContextFromValues(
-    typeof candidate.api_key === "string" ? candidate.api_key : "",
-    typeof candidate.actor_role === "string" ? candidate.actor_role : "operator",
-    typeof candidate.site_id === "string" ? candidate.site_id : payload.session.site_id ?? "",
-    typeof candidate.operator_id === "string"
-      ? candidate.operator_id
-      : payload.session.operator_id ?? "",
-  );
-}
-
-function clampTimeoutMs(rawValue: string): number {
-  const parsed = Number(rawValue);
-  if (!Number.isFinite(parsed)) {
-    return 15000;
-  }
-  return Math.min(120000, Math.max(2000, Math.round(parsed)));
-}
-
-function normalizePendingEndpoint(raw: unknown): PendingEndpoint {
-  if (raw === "capture_packages") {
-    return "capture_packages";
-  }
-  return "paired_measurements";
-}
-
-function normalizePendingSubmission(raw: unknown): PendingSubmission | null {
-  if (!raw || typeof raw !== "object") {
-    return null;
-  }
-  const candidate = raw as Record<string, unknown>;
-  const payload = candidate.payload;
-  if (!payload || typeof payload !== "object") {
-    return null;
-  }
-
-  const id =
-    typeof candidate.id === "string" && candidate.id.trim()
-      ? candidate.id
-      : createPendingId();
-  const createdAt =
-    typeof candidate.created_at === "string" && candidate.created_at.trim()
-      ? candidate.created_at
-      : new Date().toISOString();
-  const attemptCountRaw = Number(candidate.attempt_count);
-  const attemptCount = Number.isFinite(attemptCountRaw)
-    ? Math.max(0, Math.round(attemptCountRaw))
-    : 0;
-
-  return {
-    id,
-    created_at: createdAt,
-    endpoint: normalizePendingEndpoint(candidate.endpoint),
-    payload: payload as PairedPayload | CapturePackagePayload,
-    request_headers: normalizeRequestHeaderContext(
-      candidate.request_headers,
-      payload as { session: { site_id: string; operator_id: string } },
-    ),
-    attempt_count: attemptCount,
-    last_attempt_at:
-      typeof candidate.last_attempt_at === "string" ? candidate.last_attempt_at : null,
-    last_error: typeof candidate.last_error === "string" ? candidate.last_error : null,
-    last_status_code:
-      typeof candidate.last_status_code === "number"
-        ? candidate.last_status_code
-        : null,
-  };
-}
-
-async function loadPendingSubmissions(): Promise<PendingSubmission[]> {
-  const raw = await AsyncStorage.getItem(PENDING_SUBMISSIONS_KEY);
-  if (!raw) {
-    return [];
-  }
-
-  try {
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-    return parsed
-      .map((item) => normalizePendingSubmission(item))
-      .filter((item): item is PendingSubmission => item != null);
-  } catch {
-    return [];
-  }
-}
-
-async function savePendingSubmissions(queue: PendingSubmission[]): Promise<void> {
-  await AsyncStorage.setItem(PENDING_SUBMISSIONS_KEY, JSON.stringify(queue));
-}
-
-async function loadAppSettings(): Promise<AppSettings | null> {
-  const raw = await AsyncStorage.getItem(APP_SETTINGS_KEY);
-  let secureApiKey = "";
-  try {
-    secureApiKey = (await SecureStore.getItemAsync(APP_SETTINGS_API_KEY_SECURE_KEY)) ?? "";
-  } catch {
-    secureApiKey = "";
-  }
-  if (!raw) {
-    if (!secureApiKey) {
-      return null;
-    }
-    return {
-      api_base_url: "http://127.0.0.1:8000",
-      api_key: secureApiKey,
-      actor_role: "operator",
-      site_id: "SITE-001",
-      operator_id: "OP-01",
-      summary_quality_status: "valid",
-      summary_sync_id: "",
-      request_timeout_ms: DEFAULT_REQUEST_TIMEOUT_MS,
-    };
-  }
-  try {
-    const parsed = JSON.parse(raw) as Partial<AppSettings>;
-    if (!parsed || typeof parsed !== "object") {
-      return null;
-    }
-    const summaryQualityStatus: SummaryQualityStatus =
-      parsed.summary_quality_status === "all" ||
-      parsed.summary_quality_status === "valid" ||
-      parsed.summary_quality_status === "repeat" ||
-      parsed.summary_quality_status === "reject"
-        ? parsed.summary_quality_status
-        : "valid";
-    return {
-      api_base_url:
-        typeof parsed.api_base_url === "string" && parsed.api_base_url.trim()
-          ? parsed.api_base_url
-          : "http://127.0.0.1:8000",
-      api_key: secureApiKey || (typeof parsed.api_key === "string" ? parsed.api_key : ""),
-      actor_role: normalizeActorRoleInput(
-        typeof parsed.actor_role === "string" ? parsed.actor_role : "operator",
-      ),
-      site_id: typeof parsed.site_id === "string" ? parsed.site_id : "SITE-001",
-      operator_id: typeof parsed.operator_id === "string" ? parsed.operator_id : "OP-01",
-      summary_quality_status: summaryQualityStatus,
-      summary_sync_id: typeof parsed.summary_sync_id === "string" ? parsed.summary_sync_id : "",
-      request_timeout_ms:
-        typeof parsed.request_timeout_ms === "string" && parsed.request_timeout_ms.trim()
-          ? parsed.request_timeout_ms
-          : DEFAULT_REQUEST_TIMEOUT_MS,
-    };
-  } catch {
-    return null;
-  }
-}
-
-async function saveAppSettings(settings: AppSettings): Promise<void> {
-  const { api_key: apiKeyValue, ...plainSettings } = settings;
-  await AsyncStorage.setItem(
-    APP_SETTINGS_KEY,
-    JSON.stringify({ ...plainSettings, api_key: "" }),
-  );
-  try {
-    await SecureStore.setItemAsync(APP_SETTINGS_API_KEY_SECURE_KEY, apiKeyValue);
-  } catch {
-    await AsyncStorage.setItem(APP_SETTINGS_KEY, JSON.stringify(settings));
-  }
-}
-
-function extractCreatedRecordId(responseBody: string): number | null {
-  try {
-    const parsed = JSON.parse(responseBody) as { id?: unknown };
-    return typeof parsed.id === "number" ? parsed.id : null;
-  } catch {
-    return null;
-  }
-}
-
-function runtimeCaptureMatchesSession(
-  runtimePayload: Record<string, unknown> | null,
-  session: PairedPayload["session"],
-): boolean {
-  if (!runtimePayload || typeof runtimePayload !== "object") {
-    return false;
-  }
-  const sessionNode = runtimePayload.session;
-  if (!sessionNode || typeof sessionNode !== "object") {
-    return false;
-  }
-  const candidate = sessionNode as { session_id?: unknown; sync_id?: unknown };
-  const sameSessionId =
-    typeof candidate.session_id === "string" && candidate.session_id === session.session_id;
-  const runtimeSyncId = typeof candidate.sync_id === "string" ? candidate.sync_id : null;
-  const sessionSyncId = session.sync_id ?? null;
-  return sameSessionId && runtimeSyncId === sessionSyncId;
-}
 
 export default function App() {
   const defaultPlatform = Platform.OS === "ios" ? "ios" : "android";
@@ -902,59 +523,6 @@ export default function App() {
     return buildHeaderContextFromValues(apiKey, actorRole, siteId, operatorId);
   }
 
-  function buildRequestHeaders(
-    includeContentType: boolean,
-    headerContext?: RequestHeaderContext,
-  ): Record<string, string> {
-    const context = headerContext ?? createCurrentRequestHeaderContext();
-    const headers: Record<string, string> = {};
-    if (includeContentType) {
-      headers["Content-Type"] = "application/json";
-    }
-    if (context.api_key) {
-      headers["x-api-key"] = context.api_key;
-    }
-    if (context.operator_id) {
-      headers["x-operator-id"] = context.operator_id;
-    }
-    if (context.site_id) {
-      headers["x-site-id"] = context.site_id;
-    }
-    if (context.actor_role) {
-      headers["x-actor-role"] = context.actor_role;
-    }
-    headers["x-request-id"] = createPendingId();
-    return headers;
-  }
-
-  async function fetchWithTimeout(url: string, init: RequestInit): Promise<Response> {
-    const timeoutMs = clampTimeoutMs(requestTimeoutMs);
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), timeoutMs);
-    try {
-      return await fetch(url, { ...init, signal: controller.signal });
-    } finally {
-      clearTimeout(timeout);
-    }
-  }
-
-  function resolvePendingHeaderContext(item: PendingSubmission): RequestHeaderContext {
-    const current = createCurrentRequestHeaderContext();
-    return {
-      api_key: item.request_headers.api_key || current.api_key,
-      actor_role: item.request_headers.actor_role || current.actor_role,
-      site_id: item.request_headers.site_id || current.site_id,
-      operator_id: item.request_headers.operator_id || current.operator_id,
-    };
-  }
-
-  function endpointPath(endpoint: PendingEndpoint): string {
-    if (endpoint === "capture_packages") {
-      return "/api/v1/capture-packages";
-    }
-    return "/api/v1/paired-measurements";
-  }
-
   function buildCapturePackagePayloadFromPaired(
     currentPayload: PairedPayload,
     pairedMeasurementId: number | null,
@@ -988,35 +556,6 @@ export default function App() {
     };
   }
 
-  async function attemptSubmitEndpoint(
-    endpoint: PendingEndpoint,
-    endpointPayload: PairedPayload | CapturePackagePayload,
-    headerContext?: RequestHeaderContext,
-  ): Promise<SubmitAttemptResult> {
-    const url = `${apiBaseUrl.replace(/\/$/, "")}${endpointPath(endpoint)}`;
-    try {
-      const response = await fetchWithTimeout(url, {
-        method: "POST",
-        headers: buildRequestHeaders(true, headerContext),
-        body: JSON.stringify(endpointPayload),
-      });
-      const body = await response.text();
-      return {
-        ok: response.ok,
-        statusCode: response.status,
-        body,
-        retryable: !response.ok ? classifyRetryable(response.status) : false,
-      };
-    } catch (error) {
-      const message = String(error);
-      return {
-        ok: false,
-        statusCode: null,
-        body: message,
-        retryable: true,
-      };
-    }
-  }
 
   async function enqueuePendingJob(
     endpoint: PendingEndpoint,
@@ -1060,8 +599,14 @@ export default function App() {
       let droppedNonRetryable = 0;
 
       for (const item of queue) {
-        const headerContext = resolvePendingHeaderContext(item);
-        const result = await attemptSubmitEndpoint(item.endpoint, item.payload, headerContext);
+        const headerContext = resolvePendingHeaderContext(item, createCurrentRequestHeaderContext());
+        const result = await attemptSubmitEndpoint({
+          apiBaseUrl,
+          requestTimeoutMs,
+          endpoint: item.endpoint,
+          endpointPayload: item.payload,
+          headerContext,
+        });
         const attemptedItem: PendingSubmission = {
           ...item,
           request_headers: headerContext,
@@ -1174,18 +719,26 @@ export default function App() {
   }
 
   async function testApiConnection(): Promise<void> {
-    const baseUrl = apiBaseUrl.replace(/\/$/, "");
+    const baseUrl = buildBaseUrl(apiBaseUrl);
     const authContextUrl = `${baseUrl}/api/v1/auth-context`;
     try {
-      const response = await fetchWithTimeout(authContextUrl, {
-        method: "GET",
-        headers: buildRequestHeaders(false),
-      });
-      if (response.status === 404) {
-        const healthResponse = await fetchWithTimeout(`${baseUrl}/health`, {
+      const response = await fetchWithTimeout(
+        authContextUrl,
+        {
           method: "GET",
-          headers: buildRequestHeaders(false),
-        });
+          headers: buildRequestHeaders(false, createCurrentRequestHeaderContext()),
+        },
+        requestTimeoutMs,
+      );
+      if (response.status === 404) {
+        const healthResponse = await fetchWithTimeout(
+          `${baseUrl}/health`,
+          {
+            method: "GET",
+            headers: buildRequestHeaders(false, createCurrentRequestHeaderContext()),
+          },
+          requestTimeoutMs,
+        );
         if (!healthResponse.ok) {
           setLastResponse(`Health check failed: HTTP ${healthResponse.status}`);
           Alert.alert("API check failed", `HTTP ${healthResponse.status}`);
@@ -1253,22 +806,26 @@ export default function App() {
 
     try {
       const requestHeaderContext = createCurrentRequestHeaderContext();
-      const result = await attemptSubmitEndpoint(
-        "paired_measurements",
-        payload,
-        requestHeaderContext,
-      );
+      const result = await attemptSubmitEndpoint({
+        apiBaseUrl,
+        requestTimeoutMs,
+        endpoint: "paired_measurements",
+        endpointPayload: payload,
+        headerContext: requestHeaderContext,
+      });
       if (result.ok) {
         const pairedMeasurementId = extractCreatedRecordId(result.body);
         const capturePayload = buildCapturePackagePayloadFromPaired(
           payload,
           pairedMeasurementId,
         );
-        const captureResult = await attemptSubmitEndpoint(
-          "capture_packages",
-          capturePayload,
-          requestHeaderContext,
-        );
+        const captureResult = await attemptSubmitEndpoint({
+          apiBaseUrl,
+          requestTimeoutMs,
+          endpoint: "capture_packages",
+          endpointPayload: capturePayload,
+          headerContext: requestHeaderContext,
+        });
         if (!captureResult.ok) {
           if (captureResult.retryable) {
             await enqueuePendingJob(
@@ -1359,7 +916,7 @@ export default function App() {
   }
 
   async function loadComparisonSummary() {
-    const baseUrl = apiBaseUrl.replace(/\/$/, "");
+    const baseUrl = buildBaseUrl(apiBaseUrl);
     const params = new URLSearchParams();
     if (siteId.trim()) {
       params.set("site_id", siteId.trim());
@@ -1374,10 +931,14 @@ export default function App() {
     setSummaryError("");
 
     try {
-      const response = await fetchWithTimeout(url, {
-        method: "GET",
-        headers: buildRequestHeaders(false),
-      });
+      const response = await fetchWithTimeout(
+        url,
+        {
+          method: "GET",
+          headers: buildRequestHeaders(false, createCurrentRequestHeaderContext()),
+        },
+        requestTimeoutMs,
+      );
       const body = await response.text();
       if (!response.ok) {
         setSummary(null);
@@ -1394,7 +955,7 @@ export default function App() {
   }
 
   async function loadCaptureCoverageSummary() {
-    const baseUrl = apiBaseUrl.replace(/\/$/, "");
+    const baseUrl = buildBaseUrl(apiBaseUrl);
     const params = new URLSearchParams();
     if (siteId.trim()) {
       params.set("site_id", siteId.trim());
@@ -1409,10 +970,14 @@ export default function App() {
     setCoverageError("");
 
     try {
-      const response = await fetchWithTimeout(url, {
-        method: "GET",
-        headers: buildRequestHeaders(false),
-      });
+      const response = await fetchWithTimeout(
+        url,
+        {
+          method: "GET",
+          headers: buildRequestHeaders(false, createCurrentRequestHeaderContext()),
+        },
+        requestTimeoutMs,
+      );
       const body = await response.text();
       if (!response.ok) {
         setCoverageSummary(null);
@@ -1779,38 +1344,6 @@ export default function App() {
   );
 }
 
-type InputProps = {
-  label: string;
-  value: string;
-  onChangeText: (text: string) => void;
-  keyboardType?: "default" | "number-pad" | "decimal-pad";
-  multiline?: boolean;
-  secureTextEntry?: boolean;
-};
-
-function LabeledInput({
-  label,
-  value,
-  onChangeText,
-  keyboardType = "default",
-  multiline = false,
-  secureTextEntry = false,
-}: InputProps) {
-  return (
-    <View style={styles.inputWrap}>
-      <Text style={styles.label}>{label}</Text>
-      <TextInput
-        style={[styles.input, multiline && styles.multilineInput]}
-        value={value}
-        onChangeText={onChangeText}
-        keyboardType={keyboardType}
-        multiline={multiline}
-        secureTextEntry={secureTextEntry}
-      />
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -1841,28 +1374,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     color: "#111827",
-  },
-  inputWrap: {
-    marginBottom: 8,
-  },
-  label: {
-    marginBottom: 4,
-    fontSize: 13,
-    color: "#334155",
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#cbd5e1",
-    borderRadius: 8,
-    backgroundColor: "#ffffff",
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    fontSize: 14,
-    color: "#111827",
-  },
-  multilineInput: {
-    minHeight: 70,
-    textAlignVertical: "top",
   },
   submitButton: {
     marginTop: 16,
