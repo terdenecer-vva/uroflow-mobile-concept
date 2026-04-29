@@ -38,6 +38,15 @@ Project path:
 cd /Users/denecer/Documents/uroflow-mobile-concept/apps/field-mobile
 ```
 
+For Expo Go smoke/install checks on macOS without `watchman`, start the app with:
+
+```bash
+npm install
+npm run start:device
+```
+
+This keeps Metro stable and publishes the laptop LAN IP into the Expo manifest for a physical phone on the same network.
+
 iOS internal build:
 
 ```bash

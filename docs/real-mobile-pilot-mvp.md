@@ -72,6 +72,14 @@ npm install
 npm run start
 ```
 
+If `npm run start` hits `EMFILE` on macOS, use:
+
+```bash
+npm run start:device
+```
+
+This publishes the laptop LAN IP into the Expo manifest and keeps Metro alive for Expo Go without live reload.
+
 In app set `API Base URL`:
 - Simulator on same machine: `http://127.0.0.1:8000`
 - Physical phone: `http://<LAN_IP_OF_LAPTOP>:8000`
