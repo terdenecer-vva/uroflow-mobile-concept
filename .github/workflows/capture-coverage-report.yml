@@ -855,6 +855,16 @@ jobs:
             threshold="3"
           fi
 
+          has_warning_label="false"
+          if gh label list \
+            --repo "${GITHUB_REPOSITORY}" \
+            --json name \
+            --jq '.[].name' | grep -Fxq "warning"; then
+            has_warning_label="true"
+          else
+            echo "Label 'warning' not found. Continuing without label assignment."
+          fi
+
           existing_issue_number="$(gh issue list \
             --repo "${GITHUB_REPOSITORY}" \
             --state open \
@@ -878,17 +888,27 @@ jobs:
             } > "$body_path"
 
             if [[ -n "$existing_issue_number" ]]; then
-              gh issue edit "$existing_issue_number" \
-                --repo "${GITHUB_REPOSITORY}" \
-                --add-label warning \
-                --body-file "$body_path" > /dev/null
+              edit_args=(
+                gh issue edit "$existing_issue_number"
+                --repo "${GITHUB_REPOSITORY}"
+                --body-file "$body_path"
+              )
+              if [[ "$has_warning_label" == "true" ]]; then
+                edit_args+=(--add-label warning)
+              fi
+              "${edit_args[@]}" > /dev/null
               echo "Updated non-production-source alert issue #$existing_issue_number."
             else
-              new_url="$(gh issue create \
-                --repo "${GITHUB_REPOSITORY}" \
-                --title "$title" \
-                --label warning \
-                --body-file "$body_path")"
+              create_args=(
+                gh issue create
+                --repo "${GITHUB_REPOSITORY}"
+                --title "$title"
+                --body-file "$body_path"
+              )
+              if [[ "$has_warning_label" == "true" ]]; then
+                create_args+=(--label warning)
+              fi
+              new_url="$("${create_args[@]}")"
               echo "Created non-production-source alert issue: $new_url"
             fi
           elif [[ -n "$existing_issue_number" ]]; then
