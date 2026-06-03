@@ -33,7 +33,7 @@ Cross-platform mobile client (Expo React Native) for collecting paired measureme
 
 ```bash
 cd apps/field-mobile
-npm install
+npm ci
 ```
 
 2. Start Expo:

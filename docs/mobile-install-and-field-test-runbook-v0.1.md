@@ -41,7 +41,7 @@ cd /Users/denecer/Documents/uroflow-mobile-concept/apps/field-mobile
 For Expo Go smoke/install checks on macOS without `watchman`, start the app with:
 
 ```bash
-npm install
+npm ci
 npm run start:device
 ```
 
