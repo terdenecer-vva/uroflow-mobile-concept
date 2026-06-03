@@ -413,7 +413,7 @@ uroflow-mobile evaluate-gates examples/gates/gate_metrics.json \
 
 ```bash
 cd apps/field-mobile
-npm install
+npm ci
 npm run start
 ```
 
