@@ -414,8 +414,12 @@ uroflow-mobile evaluate-gates examples/gates/gate_metrics.json \
 ```bash
 cd apps/field-mobile
 npm ci
+npm run validate:ci
 npm run start
 ```
+
+`npm run validate:ci` mirrors Mobile CI: TypeScript, Expo Doctor, production
+dependency audit, and Expo export bundle builds for iOS and Android.
 
 Если на macOS обычный `npm run start` упирается в `EMFILE`, для реального запуска через Expo Go используйте стабильный путь:
 

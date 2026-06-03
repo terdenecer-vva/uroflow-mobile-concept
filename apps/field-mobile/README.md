@@ -50,11 +50,15 @@ npm run start:device
 
 This mode keeps Metro up for Expo Go on a physical phone over LAN, publishes the laptop LAN IP into the Expo manifest, and disables live reload (`CI=1`) to avoid file-watcher exhaustion.
 
-Optional local check:
+Optional local checks:
 
 ```bash
 npm run typecheck
+npm run validate:ci
 ```
+
+`validate:ci` mirrors Mobile CI: TypeScript, Expo Doctor, production dependency audit,
+and Expo export bundle builds for both iOS and Android.
 
 3. Open on iPhone/Android via Expo Go (QR code), or run native:
 
@@ -104,7 +108,8 @@ When backend is configured with API key policy map (`--api-key-map-json`), set i
 - `Test API` calls `/api/v1/auth-context` to show effective auth/role/site resolution.
 
 CI:
-- `.github/workflows/mobile-ci.yml` runs TypeScript typecheck for `apps/field-mobile/**` changes.
+- `.github/workflows/mobile-ci.yml` runs `npm run validate:ci` for `apps/field-mobile/**` changes.
+- `validate:ci` covers TypeScript, Expo Doctor, production dependency audit, and iOS/Android Expo exports.
 - `.github/workflows/mobile-build.yml` provides manual EAS build trigger (`workflow_dispatch`) with inputs:
   - `build_profile` (`preview` / `development` / `production`)
   - `build_platform` (`all` / `ios` / `android`)
