@@ -11,7 +11,16 @@
     "plugins": [
       "expo-secure-store",
       "expo-camera",
-      "expo-av"
+      "expo-status-bar",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Microphone is used to capture uroflow acoustic signal.",
+          "enableBackgroundPlayback": false,
+          "enableBackgroundRecording": false
+        }
+      ],
+      "expo-asset"
     ],
     "ios": {
       "supportsTablet": true,

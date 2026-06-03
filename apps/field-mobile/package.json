@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "main": "node_modules/expo/AppEntry.js",
+  "engines": {
+    "node": ">=22.13.0"
+  },
   "scripts": {
     "start": "expo start",
     "start:device": "sh -c 'HOST_IP=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || true); if [ -n \"$HOST_IP\" ]; then export REACT_NATIVE_PACKAGER_HOSTNAME=\"$HOST_IP\"; fi; CI=1 expo start --offline --clear'",
@@ -14,20 +17,25 @@
     "build:production": "eas build --platform all --profile production"
   },
   "dependencies": {
-    "@react-native-async-storage/async-storage": "1.23.1",
-    "expo": "~51.0.39",
-    "expo-av": "~14.0.7",
-    "expo-camera": "~15.0.16",
-    "expo-device": "~6.0.2",
-    "expo-secure-store": "~13.0.2",
-    "expo-sensors": "~13.0.9",
-    "expo-status-bar": "~1.12.1",
-    "react": "18.2.0",
-    "react-native": "0.74.5"
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "expo": "56.0.8",
+    "expo-asset": "~56.0.15",
+    "expo-audio": "~56.0.11",
+    "expo-camera": "~56.0.7",
+    "expo-device": "~56.0.4",
+    "expo-secure-store": "~56.0.4",
+    "expo-sensors": "~56.0.5",
+    "expo-status-bar": "~56.0.4",
+    "react": "19.2.3",
+    "react-native": "0.85.3"
   },
   "devDependencies": {
-    "typescript": "~5.3.3",
-    "@types/react": "~18.2.79",
-    "@types/react-native": "~0.73.0"
+    "@types/react": "~19.2.16",
+    "typescript": "~6.0.3"
+  },
+  "overrides": {
+    "xcode": {
+      "uuid": "11.1.1"
+    }
   }
 }
