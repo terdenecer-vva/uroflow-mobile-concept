@@ -5,7 +5,6 @@ import {
   Pressable,
   SafeAreaView,
   ScrollView,
-  StyleSheet,
   Text,
   View,
 } from "react-native";
@@ -27,6 +26,9 @@ import {
 } from "./src/capture/runtimeCaptureSession";
 import { estimateRoiSignalFromBase64 } from "./src/capture/roiSignalEstimator";
 import { LabeledInput } from "./src/components/LabeledInput";
+import { PendingQueuePreview } from "./src/components/PendingQueuePreview";
+import { RuntimeCurvePreview } from "./src/components/RuntimeCurvePreview";
+import { styles } from "./src/styles/appStyles";
 import { usePendingSyncQueue } from "./src/hooks/usePendingSyncQueue";
 import {
   loadAppSettings,
@@ -230,32 +232,6 @@ export default function App() {
     siteId,
     subjectId,
   ]);
-
-  const runtimeCurvePreview = useMemo<RuntimeFlowPoint[]>(() => {
-    if (runtimeFlowSeries.length <= 32) {
-      return runtimeFlowSeries;
-    }
-    const step = Math.ceil(runtimeFlowSeries.length / 32);
-    const selected: RuntimeFlowPoint[] = [];
-    for (let index = 0; index < runtimeFlowSeries.length; index += step) {
-      selected.push(runtimeFlowSeries[index]);
-    }
-    const lastPoint = runtimeFlowSeries[runtimeFlowSeries.length - 1];
-    if (selected[selected.length - 1] !== lastPoint) {
-      selected.push(lastPoint);
-    }
-    return selected;
-  }, [runtimeFlowSeries]);
-
-  const runtimeCurveMaxFlow = useMemo(() => {
-    if (runtimeCurvePreview.length === 0) {
-      return 1;
-    }
-    return Math.max(
-      1,
-      ...runtimeCurvePreview.map((point) => (Number.isFinite(point.flow_ml_s) ? point.flow_ml_s : 0)),
-    );
-  }, [runtimeCurvePreview]);
 
   useEffect(() => {
     void (async () => {
@@ -858,24 +834,7 @@ export default function App() {
           onChangeText={setRequestTimeoutMs}
           keyboardType="number-pad"
         />
-        <View style={styles.pendingRow}>
-          <Text style={styles.pendingText}>Pending submissions: {pendingQueue.length}</Text>
-        </View>
-        {pendingQueue.slice(0, 3).map((item) => (
-          <Text key={item.id} style={styles.pendingItemText}>
-            {item.id}: endpoint={item.endpoint}, attempts={item.attempt_count}
-            {item.payload.session.sync_id ? `, sync=${item.payload.session.sync_id}` : ""}
-            {item.request_headers.site_id ? `, site=${item.request_headers.site_id}` : ""}
-            {item.request_headers.actor_role ? `, role=${item.request_headers.actor_role}` : ""}
-            {item.last_status_code != null ? `, last_status=${item.last_status_code}` : ""}
-            {item.last_error ? `, last_error=${item.last_error.slice(0, 80)}` : ""}
-          </Text>
-        ))}
-        {pendingQueue.length > 3 ? (
-          <Text style={styles.pendingItemText}>
-            ...and {pendingQueue.length - 3} more pending submissions
-          </Text>
-        ) : null}
+        <PendingQueuePreview pendingQueue={pendingQueue} />
         <View style={styles.buttonRow}>
           <Pressable
             style={[styles.summaryButton, styles.buttonGrow]}
@@ -988,24 +947,7 @@ export default function App() {
         </View>
 
         <Text style={styles.sectionTitle}>Runtime Q(t) Preview</Text>
-        <View style={styles.curveBox}>
-          {runtimeCurvePreview.length === 0 ? (
-            <Text style={styles.responseText}>No runtime curve yet. Run capture and press Stop.</Text>
-          ) : (
-            runtimeCurvePreview.map((point, index) => {
-              const widthPct = Math.min(100, Math.max(0, (point.flow_ml_s / runtimeCurveMaxFlow) * 100));
-              return (
-                <View key={`${point.t_s.toFixed(3)}-${index}`} style={styles.curveRow}>
-                  <Text style={styles.curveTimeText}>{point.t_s.toFixed(1)}s</Text>
-                  <View style={styles.curveBarTrack}>
-                    <View style={[styles.curveBarFill, { width: `${widthPct}%` }]} />
-                  </View>
-                  <Text style={styles.curveValueText}>{point.flow_ml_s.toFixed(1)}</Text>
-                </View>
-              );
-            })
-          )}
-        </View>
+        <RuntimeCurvePreview flowSeries={runtimeFlowSeries} />
 
         <Text style={styles.sectionTitle}>Session</Text>
         <LabeledInput label="Session ID" value={sessionId} onChangeText={setSessionId} />
@@ -1174,182 +1116,3 @@ export default function App() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#f6f7f8",
-  },
-  container: {
-    padding: 16,
-    paddingBottom: 40,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "700",
-    color: "#15202b",
-  },
-  subtitle: {
-    marginTop: 4,
-    marginBottom: 16,
-    color: "#475467",
-  },
-  helperText: {
-    marginBottom: 10,
-    fontSize: 12,
-    color: "#334155",
-  },
-  sectionTitle: {
-    marginTop: 14,
-    marginBottom: 8,
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#111827",
-  },
-  submitButton: {
-    marginTop: 16,
-    borderRadius: 10,
-    backgroundColor: "#0f766e",
-    paddingVertical: 12,
-    alignItems: "center",
-  },
-  submitButtonDisabled: {
-    opacity: 0.6,
-  },
-  submitButtonText: {
-    color: "#ffffff",
-    fontWeight: "600",
-  },
-  responseBox: {
-    marginTop: 8,
-    borderWidth: 1,
-    borderColor: "#d1d5db",
-    backgroundColor: "#ffffff",
-    borderRadius: 8,
-    padding: 10,
-    minHeight: 80,
-  },
-  responseText: {
-    color: "#0f172a",
-    fontSize: 12,
-  },
-  summaryButton: {
-    marginTop: 8,
-    borderRadius: 10,
-    backgroundColor: "#1f4f97",
-    paddingVertical: 12,
-    alignItems: "center",
-  },
-  dangerButton: {
-    marginTop: 8,
-    borderRadius: 10,
-    backgroundColor: "#b91c1c",
-    paddingVertical: 12,
-    alignItems: "center",
-  },
-  buttonRow: {
-    marginTop: 8,
-    flexDirection: "row",
-    gap: 8,
-  },
-  buttonGrow: {
-    flex: 1,
-  },
-  summaryErrorText: {
-    marginTop: 8,
-    color: "#b91c1c",
-    fontSize: 12,
-  },
-  captureStatusText: {
-    color: "#0f172a",
-    fontSize: 12,
-    marginBottom: 4,
-  },
-  cameraPreviewWrap: {
-    marginTop: 8,
-    marginBottom: 8,
-    borderRadius: 10,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: "#cbd5e1",
-    backgroundColor: "#0f172a",
-  },
-  cameraPreview: {
-    width: "100%",
-    height: 180,
-  },
-  curveBox: {
-    marginTop: 8,
-    borderWidth: 1,
-    borderColor: "#d1d5db",
-    backgroundColor: "#ffffff",
-    borderRadius: 8,
-    padding: 10,
-  },
-  curveRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 6,
-  },
-  curveTimeText: {
-    width: 42,
-    color: "#334155",
-    fontSize: 11,
-  },
-  curveBarTrack: {
-    flex: 1,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#e2e8f0",
-    overflow: "hidden",
-    marginHorizontal: 8,
-  },
-  curveBarFill: {
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#0f766e",
-  },
-  curveValueText: {
-    width: 44,
-    textAlign: "right",
-    color: "#0f172a",
-    fontSize: 11,
-  },
-  pendingRow: {
-    marginTop: 8,
-    marginBottom: 4,
-  },
-  pendingText: {
-    color: "#0f172a",
-    fontSize: 13,
-    fontWeight: "500",
-  },
-  pendingItemText: {
-    color: "#334155",
-    fontSize: 12,
-    marginTop: 2,
-  },
-  syncStatusText: {
-    marginTop: 8,
-    color: "#0f172a",
-    fontSize: 12,
-  },
-  summaryText: {
-    color: "#0f172a",
-    fontSize: 12,
-    marginBottom: 6,
-  },
-  summaryMetricText: {
-    color: "#0f172a",
-    fontSize: 12,
-    marginBottom: 4,
-  },
-  coverageGoodText: {
-    color: "#166534",
-    fontWeight: "700",
-  },
-  coverageBadText: {
-    color: "#b91c1c",
-    fontWeight: "700",
-  },
-});
