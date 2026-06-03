@@ -60,8 +60,8 @@ jobs:
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
 
-      - name: Typecheck
-        run: npm run typecheck
+      - name: Validate Expo project
+        run: npm run validate:ci
 
       - name: Build release manifest
         env:
@@ -74,7 +74,7 @@ jobs:
           elif [[ "$profile" == "production" ]]; then
             channel="production"
           fi
-          python ../../scripts/build_mobile_release_manifest.py \
+          python3 ../../scripts/build_mobile_release_manifest.py \
             --app-json app.json \
             --output /tmp/mobile-release-manifest.json \
             --profile "$profile" \
@@ -131,7 +131,7 @@ jobs:
 
       - name: Install EAS CLI
         if: ${{ steps.expo.outputs.available == 'true' }}
-        run: npm install -g eas-cli
+        run: npm install -g eas-cli@20.0.0
 
       - name: Trigger EAS build
         if: ${{ steps.expo.outputs.available == 'true' }}
@@ -175,7 +175,7 @@ jobs:
           WORKFLOW_WAIT_FOR_BUILD: ${{ github.event.inputs.wait_for_build || 'false' }}
         run: |
           set -euo pipefail
-          python - <<'PY'
+          python3 - <<'PY'
           import json
           import os
           from pathlib import Path
