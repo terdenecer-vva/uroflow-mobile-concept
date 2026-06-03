@@ -116,8 +116,9 @@ CI:
   - `wait_for_build` (`true` / `false`)
 - `mobile-build` uploads:
   - `mobile-release-manifest` (version + git SHA + model/schema traceability)
+  - `mobile-release-readiness` (local readiness checks + explicit external credential blockers)
   - `mobile-eas-build-result-<run_id>` (raw EAS JSON response for build IDs/URLs)
-- Workflow summary includes direct EAS build links for operator/release use.
+- Workflow summary includes release readiness status and direct EAS build links for operator/release use.
 
 ## Installable Build (EAS)
 
