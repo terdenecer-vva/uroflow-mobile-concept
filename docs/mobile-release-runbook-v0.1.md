@@ -8,7 +8,11 @@ Scope: pilot installable builds for Uroflow Field Mobile
 1. App code merged to target branch.
 2. `apps/field-mobile/eas.json` profiles updated.
 3. GitHub secret `EXPO_TOKEN` configured.
-4. Expo project credentials configured for iOS and Android signing.
+4. `EAS_PROJECT_ID` configured as a GitHub repo variable or `expo.extra.eas.projectId` set in `app.json`.
+5. Expo project credentials configured for iOS and Android signing.
+6. Clinical Hub secrets configured when live API smoke/report push is part of the release:
+   - `CLINICAL_HUB_URL`
+   - `CLINICAL_HUB_API_KEY`
 
 ## 2) Trigger preview build
 
@@ -19,9 +23,12 @@ From GitHub Actions:
    - `build_platform` (`all`/`ios`/`android`),
    - `wait_for_build` (`false` for fast trigger, `true` for full wait mode).
 3. Verify `preflight` passes.
-4. Verify `eas-build` starts.
-5. Open workflow summary (`Mobile EAS Build`) and copy build links.
-6. Download artifact `mobile-eas-build-result-<run_id>` for traceability JSON.
+4. Open workflow summary (`Mobile Release Readiness`) and confirm:
+   - `Local checks` is `pass`,
+   - missing external items are understood and either configured or accepted as blockers for this run.
+5. Verify `eas-build` starts.
+6. Open workflow summary (`Mobile EAS Build`) and copy build links.
+7. Download artifact `mobile-eas-build-result-<run_id>` for traceability JSON.
 
 Local fallback:
 
@@ -38,14 +45,30 @@ Workflow generates artifact `mobile-release-manifest` containing:
 - model_id and capture schema version.
 - selected build profile/channel.
 
+Workflow also generates artifact `mobile-release-readiness` containing:
+- local mobile readiness checks (`app.json`, `eas.json`, package scripts, lockfile, pinned tooling),
+- external credential state without secret values,
+- manual release requirements for Apple Developer and Google Play accounts.
+
 Manifest script:
 
 ```bash
-python scripts/build_mobile_release_manifest.py \
+python3 scripts/build_mobile_release_manifest.py \
   --app-json apps/field-mobile/app.json \
   --output /tmp/mobile-release-manifest.json \
   --profile preview \
   --channel preview
+```
+
+Readiness script:
+
+```bash
+python3 scripts/check_mobile_release_readiness.py \
+  --app-json apps/field-mobile/app.json \
+  --eas-json apps/field-mobile/eas.json \
+  --package-json apps/field-mobile/package.json \
+  --package-lock apps/field-mobile/package-lock.json \
+  --output /tmp/mobile-release-readiness.json
 ```
 
 ## 4) Distribution channels
@@ -70,7 +93,8 @@ Android:
 ## 6) Evidence to archive per build
 
 1. Mobile release manifest JSON.
-2. Build links (iOS + Android).
-3. Smoke test log with device model and OS version.
-4. Clinical Hub sample export (paired + capture package rows).
-5. Go/No-Go note for pilot usage.
+2. Mobile release readiness JSON.
+3. Build links (iOS + Android).
+4. Smoke test log with device model and OS version.
+5. Clinical Hub sample export (paired + capture package rows).
+6. Go/No-Go note for pilot usage.

@@ -63,6 +63,52 @@ jobs:
       - name: Validate Expo project
         run: npm run validate:ci
 
+      - name: Build release readiness report
+        env:
+          CLINICAL_HUB_API_KEY: ${{ secrets.CLINICAL_HUB_API_KEY }}
+          CLINICAL_HUB_URL: ${{ secrets.CLINICAL_HUB_URL }}
+          EAS_PROJECT_ID: ${{ vars.EAS_PROJECT_ID }}
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          python3 ../../scripts/check_mobile_release_readiness.py \
+            --app-json app.json \
+            --eas-json eas.json \
+            --package-json package.json \
+            --package-lock package-lock.json \
+            --output /tmp/mobile-release-readiness.json
+
+      - name: Publish release readiness summary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          payload = json.loads(Path("/tmp/mobile-release-readiness.json").read_text(encoding="utf-8"))
+          missing = [
+              item["id"]
+              for item in payload.get("external_items", [])
+              if item.get("status") == "missing"
+          ]
+          manual = [
+              item["id"]
+              for item in payload.get("manual_external_items", [])
+              if item.get("status") == "manual_required"
+          ]
+          lines = [
+              "## Mobile Release Readiness",
+              f"- Status: `{payload.get('status')}`",
+              f"- Local checks: `{payload.get('local_checks_status')}`",
+              f"- External readiness: `{payload.get('external_readiness_status')}`",
+              f"- Missing external items: `{', '.join(missing) if missing else 'none'}`",
+              f"- Manual external items: `{', '.join(manual) if manual else 'none'}`",
+          ]
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as handle:
+              handle.write("\n".join(lines) + "\n")
+          PY
+
       - name: Build release manifest
         env:
           WORKFLOW_BUILD_PROFILE: ${{ github.event.inputs.build_profile || 'preview' }}
@@ -87,6 +133,12 @@ jobs:
         with:
           name: mobile-release-manifest
           path: /tmp/mobile-release-manifest.json
+
+      - name: Upload release readiness report
+        uses: actions/upload-artifact@v7
+        with:
+          name: mobile-release-readiness
+          path: /tmp/mobile-release-readiness.json
 
   eas-build:
     runs-on: ubuntu-latest

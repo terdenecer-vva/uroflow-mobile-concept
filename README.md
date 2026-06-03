@@ -420,6 +420,8 @@ npm run start
 
 `npm run validate:ci` mirrors Mobile CI: TypeScript, Expo Doctor, production
 dependency audit, and Expo export bundle builds for iOS and Android.
+`scripts/check_mobile_release_readiness.py` builds a JSON readiness report that
+separates local release checks from external Expo/Apple/Google/Clinical Hub blockers.
 
 Если на macOS обычный `npm run start` упирается в `EMFILE`, для реального запуска через Expo Go используйте стабильный путь:
 
