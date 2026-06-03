@@ -1,5 +1,12 @@
 import { Platform } from "react-native";
-import { Audio } from "expo-av";
+import {
+  AudioModule,
+  RecordingPresets,
+  requestRecordingPermissionsAsync,
+  setAudioModeAsync,
+  type AudioRecorder,
+  type RecordingOptions,
+} from "expo-audio";
 import { Accelerometer } from "expo-sensors";
 import { Camera } from "expo-camera";
 import * as Device from "expo-device";
@@ -82,7 +89,7 @@ function integrateTrapezoid(series: RuntimeFlowPoint[]): number {
 }
 
 export class RuntimeCaptureSession {
-  private recording: Audio.Recording | null = null;
+  private recording: AudioRecorder | null = null;
 
   private accelerometerSubscription: { remove: () => void } | null = null;
 
@@ -135,7 +142,7 @@ export class RuntimeCaptureSession {
   }
 
   async requestPermissions(): Promise<RuntimeCapturePermissions> {
-    const mic = await Audio.requestPermissionsAsync();
+    const mic = await requestRecordingPermissionsAsync();
     const camera = await Camera.requestCameraPermissionsAsync();
 
     let motionGranted = true;
@@ -166,28 +173,23 @@ export class RuntimeCaptureSession {
 
     await this.resetRuntimeState();
 
-    const recording = new Audio.Recording();
-    const preset = Audio.RecordingOptionsPresets.HIGH_QUALITY as Audio.RecordingOptions;
-    const recordingOptions: Audio.RecordingOptions = {
-      ...preset,
-      ios: {
-        ...(preset.ios ?? {}),
-      },
+    const recordingOptions: RecordingOptions = {
+      ...RecordingPresets.HIGH_QUALITY,
+      isMeteringEnabled: true,
     };
-    (
-      recordingOptions as Audio.RecordingOptions & { isMeteringEnabled?: boolean }
-    ).isMeteringEnabled = true;
 
-    await Audio.setAudioModeAsync({
-      allowsRecordingIOS: true,
-      playsInSilentModeIOS: true,
-      shouldDuckAndroid: true,
-      playThroughEarpieceAndroid: false,
-      staysActiveInBackground: false,
+    await setAudioModeAsync({
+      allowsRecording: true,
+      playsInSilentMode: true,
+      shouldRouteThroughEarpiece: false,
+      shouldPlayInBackground: false,
+      allowsBackgroundRecording: false,
+      interruptionMode: "duckOthers",
     });
 
+    const recording = new AudioModule.AudioRecorder(recordingOptions);
     await recording.prepareToRecordAsync(recordingOptions);
-    await recording.startAsync();
+    recording.record();
 
     this.recording = recording;
     this.startedAtMs = Date.now();
@@ -208,7 +210,7 @@ export class RuntimeCaptureSession {
 
     if (this.recording) {
       try {
-        await this.recording.stopAndUnloadAsync();
+        await this.recording.stop();
       } catch {
         // Recording may already be stopped.
       }
@@ -397,7 +399,7 @@ export class RuntimeCaptureSession {
 
     if (this.recording) {
       try {
-        await this.recording.stopAndUnloadAsync();
+        await this.recording.stop();
       } catch {
         // best effort cleanup
       }
@@ -451,8 +453,7 @@ export class RuntimeCaptureSession {
 
     let meteringDbfs = -60;
     try {
-      const status = await this.recording.getStatusAsync();
-      const maybeMetering = (status as { metering?: unknown }).metering;
+      const maybeMetering = this.recording.getStatus().metering;
       if (typeof maybeMetering === "number" && Number.isFinite(maybeMetering)) {
         meteringDbfs = maybeMetering;
       }
