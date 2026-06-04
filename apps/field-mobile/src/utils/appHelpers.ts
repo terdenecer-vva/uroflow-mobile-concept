@@ -64,6 +64,36 @@ export function classifyRetryable(statusCode: number | null): boolean {
   return statusCode === 408 || statusCode === 425 || statusCode === 429;
 }
 
+export function summarizePendingError(error: string | null): string | null {
+  if (!error) {
+    return null;
+  }
+  const normalized = error.toLowerCase();
+  if (
+    normalized.includes("abort") ||
+    normalized.includes("network") ||
+    normalized.includes("timed out") ||
+    normalized.includes("failed to fetch")
+  ) {
+    return "network_or_timeout";
+  }
+  if (
+    normalized.includes("unauthorized") ||
+    normalized.includes("forbidden") ||
+    normalized.includes("api key")
+  ) {
+    return "auth_or_permission";
+  }
+  if (
+    normalized.includes("validation") ||
+    normalized.includes("field required") ||
+    normalized.includes("unprocessable")
+  ) {
+    return "validation";
+  }
+  return "server_or_client_response";
+}
+
 export function normalizeActorRoleInput(rawValue: string | null | undefined): string {
   const normalized = (rawValue ?? "").trim().toLowerCase();
   if (ALLOWED_ACTOR_ROLES.includes(normalized as (typeof ALLOWED_ACTOR_ROLES)[number])) {
