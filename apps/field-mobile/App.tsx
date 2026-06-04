@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   Platform,
-  Pressable,
   SafeAreaView,
   ScrollView,
   Text,
@@ -25,7 +24,7 @@ import {
 } from "./src/capture/runtimeCaptureSession";
 import { estimateRoiSignalFromBase64 } from "./src/capture/roiSignalEstimator";
 import { ApiConnectionSection } from "./src/components/ApiConnectionSection";
-import { LabeledInput } from "./src/components/LabeledInput";
+import { MeasurementFormSection } from "./src/components/MeasurementFormSection";
 import { ResponseAndSummarySection } from "./src/components/ResponseAndSummarySection";
 import { RuntimeCaptureSection } from "./src/components/RuntimeCaptureSection";
 import { styles } from "./src/styles/appStyles";
@@ -861,48 +860,64 @@ export default function App() {
           onToggleRoiLock={() => setRoiLocked((current) => !current)}
         />
 
-        <Text style={styles.sectionTitle}>Session</Text>
-        <LabeledInput label="Session ID" value={sessionId} onChangeText={setSessionId} />
-        <LabeledInput label="Sync ID" value={syncId} onChangeText={setSyncId} />
-        <LabeledInput label="Site ID" value={siteId} onChangeText={setSiteId} />
-        <LabeledInput label="Subject ID" value={subjectId} onChangeText={setSubjectId} />
-        <LabeledInput label="Operator ID" value={operatorId} onChangeText={setOperatorId} />
-        <LabeledInput label="Attempt Number" value={attemptNumber} onChangeText={setAttemptNumber} keyboardType="number-pad" />
-        <LabeledInput label="Measured At (ISO)" value={measuredAt} onChangeText={setMeasuredAt} />
-        <LabeledInput
-          label="Platform (ios/android)"
-          value={platform}
-          onChangeText={setPlatform}
+        <MeasurementFormSection
+          appFlowTime={appFlowTime}
+          appModelId={appModelId}
+          appQavg={appQavg}
+          appQmax={appQmax}
+          appQualityScore={appQualityScore}
+          appQualityStatus={appQualityStatus}
+          appTqmax={appTqmax}
+          appVersion={appVersion}
+          appVvoid={appVvoid}
+          attemptNumber={attemptNumber}
+          captureMode={captureMode}
+          deviceModel={deviceModel}
+          measuredAt={measuredAt}
+          notes={notes}
+          operatorId={operatorId}
+          platform={platform}
+          refDeviceModel={refDeviceModel}
+          refDeviceSerial={refDeviceSerial}
+          refFlowTime={refFlowTime}
+          refQavg={refQavg}
+          refQmax={refQmax}
+          refTqmax={refTqmax}
+          refVvoid={refVvoid}
+          sessionId={sessionId}
+          siteId={siteId}
+          subjectId={subjectId}
+          submitting={submitting}
+          syncId={syncId}
+          onAppFlowTimeChange={setAppFlowTime}
+          onAppModelIdChange={setAppModelId}
+          onAppQavgChange={setAppQavg}
+          onAppQmaxChange={setAppQmax}
+          onAppQualityScoreChange={setAppQualityScore}
+          onAppQualityStatusChange={setAppQualityStatus}
+          onAppTqmaxChange={setAppTqmax}
+          onAppVersionChange={setAppVersion}
+          onAppVvoidChange={setAppVvoid}
+          onAttemptNumberChange={setAttemptNumber}
+          onCaptureModeChange={setCaptureMode}
+          onDeviceModelChange={setDeviceModel}
+          onMeasuredAtChange={setMeasuredAt}
+          onNotesChange={setNotes}
+          onOperatorIdChange={setOperatorId}
+          onPlatformChange={setPlatform}
+          onRefDeviceModelChange={setRefDeviceModel}
+          onRefDeviceSerialChange={setRefDeviceSerial}
+          onRefFlowTimeChange={setRefFlowTime}
+          onRefQavgChange={setRefQavg}
+          onRefQmaxChange={setRefQmax}
+          onRefTqmaxChange={setRefTqmax}
+          onRefVvoidChange={setRefVvoid}
+          onSessionIdChange={setSessionId}
+          onSiteIdChange={setSiteId}
+          onSubjectIdChange={setSubjectId}
+          onSubmit={submitPayload}
+          onSyncIdChange={setSyncId}
         />
-        <LabeledInput label="Device Model" value={deviceModel} onChangeText={setDeviceModel} />
-        <LabeledInput label="App Version" value={appVersion} onChangeText={setAppVersion} />
-        <LabeledInput label="Capture Mode" value={captureMode} onChangeText={setCaptureMode} />
-
-        <Text style={styles.sectionTitle}>App Measurement</Text>
-        <LabeledInput label="Qmax (ml/s)" value={appQmax} onChangeText={setAppQmax} keyboardType="decimal-pad" />
-        <LabeledInput label="Qavg (ml/s)" value={appQavg} onChangeText={setAppQavg} keyboardType="decimal-pad" />
-        <LabeledInput label="Vvoid (ml)" value={appVvoid} onChangeText={setAppVvoid} keyboardType="decimal-pad" />
-        <LabeledInput label="Flow Time (s)" value={appFlowTime} onChangeText={setAppFlowTime} keyboardType="decimal-pad" />
-        <LabeledInput label="TQmax (s)" value={appTqmax} onChangeText={setAppTqmax} keyboardType="decimal-pad" />
-        <LabeledInput label="Quality Status" value={appQualityStatus} onChangeText={(value) => setAppQualityStatus((value as QualityStatus) || "valid")} />
-        <LabeledInput label="Quality Score (0-100)" value={appQualityScore} onChangeText={setAppQualityScore} keyboardType="decimal-pad" />
-        <LabeledInput label="Model ID" value={appModelId} onChangeText={setAppModelId} />
-
-        <Text style={styles.sectionTitle}>Reference Uroflowmeter</Text>
-        <LabeledInput label="Qmax (ml/s)" value={refQmax} onChangeText={setRefQmax} keyboardType="decimal-pad" />
-        <LabeledInput label="Qavg (ml/s)" value={refQavg} onChangeText={setRefQavg} keyboardType="decimal-pad" />
-        <LabeledInput label="Vvoid (ml)" value={refVvoid} onChangeText={setRefVvoid} keyboardType="decimal-pad" />
-        <LabeledInput label="Flow Time (s)" value={refFlowTime} onChangeText={setRefFlowTime} keyboardType="decimal-pad" />
-        <LabeledInput label="TQmax (s)" value={refTqmax} onChangeText={setRefTqmax} keyboardType="decimal-pad" />
-        <LabeledInput label="Reference Device Model" value={refDeviceModel} onChangeText={setRefDeviceModel} />
-        <LabeledInput label="Reference Device Serial" value={refDeviceSerial} onChangeText={setRefDeviceSerial} />
-
-        <Text style={styles.sectionTitle}>Notes</Text>
-        <LabeledInput label="Notes" value={notes} onChangeText={setNotes} multiline />
-
-        <Pressable style={[styles.submitButton, submitting && styles.submitButtonDisabled]} onPress={submitPayload} disabled={submitting}>
-          <Text style={styles.submitButtonText}>{submitting ? "Submitting..." : "Submit Paired Measurement"}</Text>
-        </Pressable>
 
         <ResponseAndSummarySection
           coverageError={coverageError}
