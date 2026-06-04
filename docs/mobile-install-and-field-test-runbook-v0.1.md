@@ -90,6 +90,7 @@ Per subject/attempt:
 5. Enter reference metrics (`Qmax/Qavg/Vvoid` and optional time metrics).
 6. Submit paired measurement.
 7. If network failed, ensure queue item exists and run `Sync Queue` later.
+8. For retry/audit troubleshooting, match the pending item `request_id` to Clinical Hub request logs.
 
 ## 6. Daily Export For Analysis
 

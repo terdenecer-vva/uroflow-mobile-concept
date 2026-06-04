@@ -48,6 +48,7 @@ import type {
 import {
   DEFAULT_REQUEST_TIMEOUT_MS,
   buildHeaderContextFromValues,
+  createRequestId,
   createSessionId,
   createSyncId,
   extractCreatedRecordId,
@@ -609,12 +610,16 @@ export default function App() {
 
     try {
       const requestHeaderContext = createCurrentRequestHeaderContext();
+      const pairedRequestHeaderContext: RequestHeaderContext = {
+        ...requestHeaderContext,
+        request_id: createRequestId(),
+      };
       const result = await attemptSubmitEndpoint({
         apiBaseUrl,
         requestTimeoutMs,
         endpoint: "paired_measurements",
         endpointPayload: payload,
-        headerContext: requestHeaderContext,
+        headerContext: pairedRequestHeaderContext,
       });
       if (result.ok) {
         const pairedMeasurementId = extractCreatedRecordId(result.body);
@@ -622,19 +627,23 @@ export default function App() {
           payload,
           pairedMeasurementId,
         );
+        const captureRequestHeaderContext: RequestHeaderContext = {
+          ...requestHeaderContext,
+          request_id: createRequestId(),
+        };
         const captureResult = await attemptSubmitEndpoint({
           apiBaseUrl,
           requestTimeoutMs,
           endpoint: "capture_packages",
           endpointPayload: capturePayload,
-          headerContext: requestHeaderContext,
+          headerContext: captureRequestHeaderContext,
         });
         if (!captureResult.ok) {
           if (captureResult.retryable) {
             await enqueuePendingJob(
               "capture_packages",
               capturePayload,
-              requestHeaderContext,
+              captureRequestHeaderContext,
               captureResult.body,
               captureResult.statusCode,
             );
@@ -681,17 +690,21 @@ export default function App() {
       }
 
       const capturePayloadWithoutPair = buildCapturePackagePayloadFromPaired(payload, null);
+      const captureRetryHeaderContext: RequestHeaderContext = {
+        ...requestHeaderContext,
+        request_id: createRequestId(),
+      };
       await enqueuePendingJob(
         "paired_measurements",
         payload,
-        requestHeaderContext,
+        pairedRequestHeaderContext,
         result.body,
         result.statusCode,
       );
       await enqueuePendingJob(
         "capture_packages",
         capturePayloadWithoutPair,
-        requestHeaderContext,
+        captureRetryHeaderContext,
         "queued_with_paired_retry",
         null,
       );

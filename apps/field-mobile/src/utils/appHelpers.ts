@@ -54,6 +54,10 @@ export function createPendingId(): string {
   return `PENDING-${Date.now()}-${randomPart}`;
 }
 
+export function createRequestId(): string {
+  return createPendingId();
+}
+
 export function classifyRetryable(statusCode: number | null): boolean {
   if (statusCode == null) {
     return true;
@@ -107,12 +111,14 @@ export function buildHeaderContextFromValues(
   actorRole: string,
   siteId: string,
   operatorId: string,
+  requestId?: string,
 ): RequestHeaderContext {
   return {
     api_key: apiKey.trim(),
     actor_role: normalizeActorRoleInput(actorRole),
     site_id: siteId.trim(),
     operator_id: operatorId.trim(),
+    request_id: requestId?.trim() || undefined,
   };
 }
 
@@ -168,5 +174,6 @@ export function resolvePendingHeaderContext(
     actor_role: item.request_headers.actor_role || current.actor_role,
     site_id: item.request_headers.site_id || current.site_id,
     operator_id: item.request_headers.operator_id || current.operator_id,
+    request_id: item.request_headers.request_id || item.id || current.request_id,
   };
 }

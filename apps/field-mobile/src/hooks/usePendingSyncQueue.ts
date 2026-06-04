@@ -51,12 +51,16 @@ export function usePendingSyncQueue({
       lastStatusCode: number | null,
     ): Promise<void> => {
       const queue = await loadPendingSubmissions();
+      const pendingId = createPendingId();
       const pendingItem: PendingSubmission = {
-        id: createPendingId(),
+        id: pendingId,
         created_at: new Date().toISOString(),
         endpoint,
         payload: endpointPayload,
-        request_headers: headerContext,
+        request_headers: {
+          ...headerContext,
+          request_id: headerContext.request_id || pendingId,
+        },
         attempt_count: 0,
         last_attempt_at: null,
         last_error: lastError,
