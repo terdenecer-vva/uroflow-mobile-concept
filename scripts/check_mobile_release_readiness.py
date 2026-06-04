@@ -262,6 +262,7 @@ def build_readiness_report(
     unit_runner_path = mobile_root / "scripts" / "run-unit-tests.sh"
     helper_tests_path = mobile_root / "tests" / "appHelpers.test.js"
     capture_tests_path = mobile_root / "tests" / "captureContract.test.js"
+    roi_signal_tests_path = mobile_root / "tests" / "roiSignalEstimator.test.js"
     _check(
         checks,
         "unit_test_script",
@@ -291,6 +292,12 @@ def build_readiness_report(
         "capture_contract_unit_tests_present",
         capture_tests_path.is_file(),
         f"path={capture_tests_path}",
+    )
+    _check(
+        checks,
+        "roi_signal_unit_tests_present",
+        roi_signal_tests_path.is_file(),
+        f"path={roi_signal_tests_path}",
     )
     _check(
         checks,
