@@ -27,7 +27,7 @@ import {
 import { estimateRoiSignalFromBase64 } from "./src/capture/roiSignalEstimator";
 import { ApiConnectionSection } from "./src/components/ApiConnectionSection";
 import { LabeledInput } from "./src/components/LabeledInput";
-import { RuntimeCurvePreview } from "./src/components/RuntimeCurvePreview";
+import { RuntimeCaptureSection } from "./src/components/RuntimeCaptureSection";
 import { styles } from "./src/styles/appStyles";
 import { usePendingSyncQueue } from "./src/hooks/usePendingSyncQueue";
 import {
@@ -831,88 +831,37 @@ export default function App() {
           onClearPendingSubmissions={clearPendingSubmissions}
         />
 
-        <Text style={styles.sectionTitle}>Runtime Capture (Audio + IMU + Camera Permission)</Text>
-        <Text style={styles.captureStatusText}>{captureStatus}</Text>
-        <Text style={styles.captureStatusText}>
-          Camera permission: {cameraPermission?.granted ? "granted" : "not granted"}, preview:{" "}
-          {cameraPreviewReady ? "ready" : "not ready"}, ROI lock: {roiLocked ? "on" : "off"}
-        </Text>
-        <Text style={styles.captureStatusText}>
-          Samples: {captureSampleCount}, avg motion norm: {captureAvgMotionNorm.toFixed(3)}
-        </Text>
-        <Text style={styles.captureStatusText}>
-          quality flags: roi_valid_ratio={captureRoiValidRatio.toFixed(3)}, low_confidence_ratio=
-          {captureLowConfidenceRatio.toFixed(3)}
-        </Text>
-        <Text style={styles.captureStatusText}>
-          Contract payload: {runtimeCaptureContractPayload ? "ready" : "not ready (scaffold fallback)"}
-        </Text>
-        {!cameraPermission?.granted ? (
-          <Pressable style={styles.summaryButton} onPress={() => void requestCameraPermission()}>
-            <Text style={styles.submitButtonText}>Grant Camera Permission</Text>
-          </Pressable>
-        ) : (
-          <View style={styles.cameraPreviewWrap}>
-            <CameraView
-              ref={cameraPreviewRef}
-              style={styles.cameraPreview}
-              facing="back"
-              onCameraReady={() => setCameraPreviewReady(true)}
-              onMountError={() => {
-                setCameraPreviewReady(false);
-                setCaptureStatus("Camera preview mount error; ROI validity may fail.");
-              }}
-            />
-          </View>
-        )}
-        <Pressable
-          style={[styles.summaryButton, !cameraPermission?.granted && styles.submitButtonDisabled]}
-          onPress={() => setRoiLocked((current) => !current)}
-          disabled={!cameraPermission?.granted}
-        >
-          <Text style={styles.submitButtonText}>{roiLocked ? "Unlock ROI" : "Lock ROI"}</Text>
-        </Pressable>
-        <Text style={styles.captureStatusText}>
-          ROI frames: {roiFrameCount}, valid: {roiFrameValid ? "yes" : "no"}, motion proxy:{" "}
-          {roiMotionProxy.toFixed(3)}, texture proxy: {roiTextureProxy.toFixed(3)}
-        </Text>
-        <Pressable
-          style={styles.summaryButton}
-          onPress={() => setManualAppMetricsOverride((current) => !current)}
-        >
-          <Text style={styles.submitButtonText}>
-            App metrics mode: {manualAppMetricsOverride ? "manual" : "runtime auto-fill"}
-          </Text>
-        </Pressable>
-        <View style={styles.buttonRow}>
-          <Pressable
-            style={[
-              styles.summaryButton,
-              styles.buttonGrow,
-              captureRunning && styles.submitButtonDisabled,
-            ]}
-            onPress={() => void startRuntimeCapture()}
-            disabled={captureRunning}
-          >
-            <Text style={styles.submitButtonText}>
-              {captureRunning ? "Capture running..." : "Start Capture"}
-            </Text>
-          </Pressable>
-          <Pressable
-            style={[
-              styles.dangerButton,
-              styles.buttonGrow,
-              !captureRunning && styles.submitButtonDisabled,
-            ]}
-            onPress={() => void stopRuntimeCapture()}
-            disabled={!captureRunning}
-          >
-            <Text style={styles.submitButtonText}>Stop Capture</Text>
-          </Pressable>
-        </View>
-
-        <Text style={styles.sectionTitle}>Runtime Q(t) Preview</Text>
-        <RuntimeCurvePreview flowSeries={runtimeFlowSeries} />
+        <RuntimeCaptureSection
+          cameraPermissionGranted={cameraPermission?.granted ?? false}
+          cameraPreviewReady={cameraPreviewReady}
+          cameraPreviewRef={cameraPreviewRef}
+          captureAvgMotionNorm={captureAvgMotionNorm}
+          captureLowConfidenceRatio={captureLowConfidenceRatio}
+          captureRoiValidRatio={captureRoiValidRatio}
+          captureRunning={captureRunning}
+          captureSampleCount={captureSampleCount}
+          captureStatus={captureStatus}
+          flowSeries={runtimeFlowSeries}
+          manualAppMetricsOverride={manualAppMetricsOverride}
+          roiFrameCount={roiFrameCount}
+          roiFrameValid={roiFrameValid}
+          roiLocked={roiLocked}
+          roiMotionProxy={roiMotionProxy}
+          roiTextureProxy={roiTextureProxy}
+          runtimeCaptureContractReady={runtimeCaptureContractPayload !== null}
+          onCameraMountError={() => {
+            setCameraPreviewReady(false);
+            setCaptureStatus("Camera preview mount error; ROI validity may fail.");
+          }}
+          onCameraReady={() => setCameraPreviewReady(true)}
+          onRequestCameraPermission={requestCameraPermission}
+          onStartRuntimeCapture={startRuntimeCapture}
+          onStopRuntimeCapture={stopRuntimeCapture}
+          onToggleManualAppMetricsOverride={() =>
+            setManualAppMetricsOverride((current) => !current)
+          }
+          onToggleRoiLock={() => setRoiLocked((current) => !current)}
+        />
 
         <Text style={styles.sectionTitle}>Session</Text>
         <LabeledInput label="Session ID" value={sessionId} onChangeText={setSessionId} />
