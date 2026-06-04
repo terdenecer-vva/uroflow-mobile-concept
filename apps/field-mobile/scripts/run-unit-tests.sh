@@ -8,6 +8,7 @@ tsc --ignoreConfig \
   src/utils/appHelpers.ts \
   src/api/clinicalHub.ts \
   src/capture/buildCaptureContract.ts \
+  src/capture/runtimeMetrics.ts \
   src/capture/roiSignalEstimator.ts \
   --outDir "$BUILD_DIR" \
   --module Node16 \

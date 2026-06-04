@@ -1,0 +1,151 @@
+const assert = require("node:assert/strict");
+const path = require("node:path");
+const test = require("node:test");
+
+const buildDir = process.env.MOBILE_UNIT_BUILD_DIR ?? "/tmp/uroflow-field-mobile-unit";
+const runtime = require(path.join(buildDir, "capture/runtimeMetrics.js"));
+
+function sample(overrides = {}) {
+  return {
+    t_s: 0,
+    depth_level_mm: 0,
+    rgb_level_mm: 0,
+    depth_confidence: 0.9,
+    audio_rms_dbfs: -45,
+    motion_norm: 0.05,
+    roi_valid: true,
+    ...overrides,
+  };
+}
+
+test("deriveRuntimeCaptureMetrics computes event bounds and flow metrics", () => {
+  const metrics = runtime.deriveRuntimeCaptureMetrics({
+    permissions: { cameraGranted: true },
+    samples: [
+      sample({ t_s: 0 }),
+      sample({ t_s: 1 }),
+      sample({ t_s: 2 }),
+      sample({ t_s: 3 }),
+      sample({ t_s: 4 }),
+    ],
+    flowSeries: [
+      { t_s: 0, flow_ml_s: 0.5 },
+      { t_s: 1, flow_ml_s: 2 },
+      { t_s: 2, flow_ml_s: 4 },
+      { t_s: 3, flow_ml_s: 1 },
+      { t_s: 4, flow_ml_s: 0.4 },
+    ],
+  });
+
+  assert.deepEqual(metrics, {
+    qmaxMlS: 4,
+    qavgMlS: 2.3333,
+    vvoidMl: 7.45,
+    flowTimeS: 2,
+    tqmaxS: 1,
+    eventStartTs: 1,
+    eventEndTs: 3,
+  });
+});
+
+test("deriveRuntimeCaptureMetrics uses ROI gates when enough valid ROI samples exist", () => {
+  const metrics = runtime.deriveRuntimeCaptureMetrics({
+    permissions: { cameraGranted: true },
+    samples: [
+      sample({ t_s: 0, roi_valid: false }),
+      sample({ t_s: 1, roi_valid: true }),
+      sample({ t_s: 2, roi_valid: true }),
+      sample({ t_s: 3, roi_valid: true }),
+    ],
+    flowSeries: [
+      { t_s: 0, flow_ml_s: 5 },
+      { t_s: 1, flow_ml_s: 1.5 },
+      { t_s: 2, flow_ml_s: 0.9 },
+      { t_s: 3, flow_ml_s: 0.2 },
+    ],
+  });
+
+  assert.equal(metrics.eventStartTs, 1);
+  assert.equal(metrics.eventEndTs, 2);
+  assert.equal(metrics.tqmaxS, 0);
+});
+
+test("deriveRuntimeCaptureMetrics falls back to flow-only bounds when ROI is unavailable", () => {
+  const metrics = runtime.deriveRuntimeCaptureMetrics({
+    permissions: { cameraGranted: true },
+    samples: [
+      sample({ t_s: 0, roi_valid: false }),
+      sample({ t_s: 1, roi_valid: false }),
+      sample({ t_s: 2, roi_valid: false }),
+    ],
+    flowSeries: [
+      { t_s: 0, flow_ml_s: 2 },
+      { t_s: 1, flow_ml_s: 1 },
+      { t_s: 2, flow_ml_s: 0.1 },
+    ],
+  });
+
+  assert.equal(metrics.eventStartTs, 0);
+  assert.equal(metrics.eventEndTs, 1);
+});
+
+test("scoreRuntimeCaptureQuality classifies valid, repeat, and reject captures", () => {
+  assert.equal(
+    runtime.scoreRuntimeCaptureQuality({
+      averageMotionNorm: 0.1,
+      samples: [sample(), sample(), sample(), sample()],
+    }).qualityStatus,
+    "valid",
+  );
+
+  const repeat = runtime.scoreRuntimeCaptureQuality({
+    averageMotionNorm: 0.05,
+    samples: [
+      sample(),
+      sample(),
+      sample(),
+      sample({ roi_valid: false }),
+    ],
+  });
+  assert.equal(repeat.qualityStatus, "repeat");
+  assert.equal(repeat.roiValidRatio, 0.75);
+
+  const reject = runtime.scoreRuntimeCaptureQuality({
+    averageMotionNorm: 0.05,
+    samples: [
+      sample(),
+      sample({ roi_valid: false }),
+      sample({ roi_valid: false }),
+      sample({ roi_valid: false }),
+    ],
+  });
+  assert.equal(reject.qualityStatus, "reject");
+  assert.equal(reject.roiValidRatio, 0.25);
+});
+
+test("scoreRuntimeCaptureQuality repeats high low-confidence captures", () => {
+  const quality = runtime.scoreRuntimeCaptureQuality({
+    averageMotionNorm: 0.05,
+    samples: [
+      sample(),
+      sample(),
+      sample({ depth_confidence: 0.4 }),
+      sample({ depth_confidence: 0.4 }),
+      sample(),
+    ],
+  });
+
+  assert.equal(quality.qualityStatus, "repeat");
+  assert.equal(quality.lowConfidenceRatio, 0.4);
+});
+
+test("calculateAverageMotionNorm handles empty samples", () => {
+  assert.equal(runtime.calculateAverageMotionNorm([]), 0);
+  assert.equal(
+    runtime.calculateAverageMotionNorm([
+      sample({ motion_norm: 0.1 }),
+      sample({ motion_norm: 0.3 }),
+    ]),
+    0.2,
+  );
+});
