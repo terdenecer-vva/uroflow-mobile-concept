@@ -171,6 +171,7 @@ def build_readiness_report(
     scripts = package_payload.get("scripts", {})
     root_lock = lock_payload.get("packages", {}).get("", {})
     eas_build = eas_payload.get("build", {})
+    mobile_root = package_json.parent
 
     checks: list[dict[str, Any]] = []
 
@@ -255,6 +256,41 @@ def build_readiness_report(
         "validate_ci_script",
         "validate:ci" in scripts,
         "package script validate:ci is present",
+    )
+    validate_ci_script = scripts.get("validate:ci", "")
+    test_unit_script = scripts.get("test:unit", "")
+    unit_runner_path = mobile_root / "scripts" / "run-unit-tests.sh"
+    helper_tests_path = mobile_root / "tests" / "appHelpers.test.js"
+    capture_tests_path = mobile_root / "tests" / "captureContract.test.js"
+    _check(
+        checks,
+        "unit_test_script",
+        bool(test_unit_script),
+        "package script test:unit is present",
+    )
+    _check(
+        checks,
+        "validate_ci_runs_unit_tests",
+        "npm run test:unit" in validate_ci_script,
+        f"validate:ci={validate_ci_script!r}",
+    )
+    _check(
+        checks,
+        "unit_test_runner_script",
+        unit_runner_path.is_file(),
+        f"path={unit_runner_path}",
+    )
+    _check(
+        checks,
+        "mobile_helper_unit_tests_present",
+        helper_tests_path.is_file(),
+        f"path={helper_tests_path}",
+    )
+    _check(
+        checks,
+        "capture_contract_unit_tests_present",
+        capture_tests_path.is_file(),
+        f"path={capture_tests_path}",
     )
     _check(
         checks,
