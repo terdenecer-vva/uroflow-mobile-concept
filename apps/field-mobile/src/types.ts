@@ -121,6 +121,7 @@ export type RequestHeaderContext = {
   actor_role: string;
   site_id: string;
   operator_id: string;
+  request_id?: string;
 };
 
 export type RoiFrameAnalysisState = {

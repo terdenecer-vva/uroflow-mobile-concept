@@ -21,6 +21,7 @@ export function PendingQueuePreview({ pendingQueue }: PendingQueuePreviewProps) 
           <Text key={item.id} style={styles.pendingItemText}>
             {item.id}: endpoint={item.endpoint}, attempts={item.attempt_count}
             {item.payload.session.sync_id ? `, sync=${item.payload.session.sync_id}` : ""}
+            {item.request_headers.request_id ? `, request=${item.request_headers.request_id}` : ""}
             {item.request_headers.site_id ? `, site=${item.request_headers.site_id}` : ""}
             {item.request_headers.actor_role ? `, role=${item.request_headers.actor_role}` : ""}
             {item.last_attempt_at ? `, last_attempt=${item.last_attempt_at}` : ""}

@@ -33,6 +33,7 @@ function normalizeRequestHeaderContext(
     typeof candidate.operator_id === "string"
       ? candidate.operator_id
       : payload.session.operator_id ?? "",
+    typeof candidate.request_id === "string" ? candidate.request_id : "",
   );
 }
 

@@ -4,7 +4,7 @@ import type {
   RequestHeaderContext,
   SubmitAttemptResult,
 } from "../types";
-import { clampTimeoutMs, classifyRetryable, createPendingId } from "../utils/appHelpers";
+import { clampTimeoutMs, classifyRetryable, createRequestId } from "../utils/appHelpers";
 
 export function buildBaseUrl(apiBaseUrl: string): string {
   return apiBaseUrl.replace(/\/$/, "");
@@ -37,7 +37,7 @@ export function buildRequestHeaders(
   if (headerContext.actor_role) {
     headers["x-actor-role"] = headerContext.actor_role;
   }
-  headers["x-request-id"] = createPendingId();
+  headers["x-request-id"] = headerContext.request_id?.trim() || createRequestId();
   return headers;
 }
 
