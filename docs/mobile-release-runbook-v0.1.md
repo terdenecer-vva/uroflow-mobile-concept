@@ -25,6 +25,8 @@ From GitHub Actions:
 3. Verify `preflight` passes.
 4. Open workflow summary (`Mobile Release Readiness`) and confirm:
    - `Local checks` is `pass`,
+   - `Authenticated EAS readiness` is `pass` before attempting an EAS build trigger,
+   - `Clinical Hub live API` is `present` before live API smoke/report push is expected,
    - missing external items are understood and either configured or accepted as blockers for this run.
    - `Next actions` maps the remaining external blockers to concrete setup tasks.
 5. Verify `eas-build` starts.
@@ -49,6 +51,8 @@ Workflow generates artifact `mobile-release-manifest` containing:
 Workflow also generates artifact `mobile-release-readiness` containing:
 - local mobile readiness checks (`app.json`, `eas.json`, package scripts, lockfile, pinned tooling),
 - external credential state without secret values,
+- authenticated EAS readiness status and specific EAS blockers,
+- live Clinical Hub API readiness status,
 - manual release requirements for Apple Developer and Google Play accounts,
 - machine-readable `next_actions` for configuring missing GitHub secrets/variables and manual store-account handoff.
 
