@@ -6,7 +6,6 @@ import {
   SafeAreaView,
   ScrollView,
   Text,
-  View,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { CameraView, useCameraPermissions } from "expo-camera";
@@ -27,6 +26,7 @@ import {
 import { estimateRoiSignalFromBase64 } from "./src/capture/roiSignalEstimator";
 import { ApiConnectionSection } from "./src/components/ApiConnectionSection";
 import { LabeledInput } from "./src/components/LabeledInput";
+import { ResponseAndSummarySection } from "./src/components/ResponseAndSummarySection";
 import { RuntimeCaptureSection } from "./src/components/RuntimeCaptureSection";
 import { styles } from "./src/styles/appStyles";
 import { usePendingSyncQueue } from "./src/hooks/usePendingSyncQueue";
@@ -47,13 +47,11 @@ import type {
   SummaryQualityStatus,
 } from "./src/types";
 import {
-  COVERAGE_GOAL_RATIO,
   DEFAULT_REQUEST_TIMEOUT_MS,
   buildHeaderContextFromValues,
   createSessionId,
   createSyncId,
   extractCreatedRecordId,
-  formatNullable,
   parseNumber,
   runtimeCaptureMatchesSession,
 } from "./src/utils/appHelpers";
@@ -906,126 +904,22 @@ export default function App() {
           <Text style={styles.submitButtonText}>{submitting ? "Submitting..." : "Submit Paired Measurement"}</Text>
         </Pressable>
 
-        <Text style={styles.sectionTitle}>Last API Response</Text>
-        <View style={styles.responseBox}>
-          <Text style={styles.responseText}>{lastResponse || "No response yet"}</Text>
-        </View>
-
-        <Text style={styles.sectionTitle}>Comparison Summary (App vs Reference)</Text>
-        <Text style={styles.helperText}>
-          Uses current filters: site_id + optional sync_id + quality status.
-        </Text>
-        <Pressable
-          style={[
-            styles.summaryButton,
-            (summaryLoading || coverageLoading) && styles.submitButtonDisabled,
-          ]}
-          onPress={() => void loadBothSummaries()}
-          disabled={summaryLoading || coverageLoading}
-        >
-          <Text style={styles.submitButtonText}>
-            {summaryLoading || coverageLoading
-              ? "Loading both summaries..."
-              : "Load Both Summaries"}
-          </Text>
-        </Pressable>
-        <LabeledInput
-          label="Summary Quality Status (valid/repeat/reject/all)"
-          value={summaryQualityStatus}
-          onChangeText={(value) =>
-            setSummaryQualityStatus((value as SummaryQualityStatus) || "valid")
-          }
+        <ResponseAndSummarySection
+          coverageError={coverageError}
+          coverageLoading={coverageLoading}
+          coverageSummary={coverageSummary}
+          lastResponse={lastResponse}
+          summary={summary}
+          summaryError={summaryError}
+          summaryLoading={summaryLoading}
+          summaryQualityStatus={summaryQualityStatus}
+          summarySyncId={summarySyncId}
+          onLoadBothSummaries={loadBothSummaries}
+          onLoadCaptureCoverageSummary={loadCaptureCoverageSummary}
+          onLoadComparisonSummary={loadComparisonSummary}
+          onSummaryQualityStatusChange={setSummaryQualityStatus}
+          onSummarySyncIdChange={setSummarySyncId}
         />
-        <LabeledInput
-          label="Summary Sync ID (optional)"
-          value={summarySyncId}
-          onChangeText={setSummarySyncId}
-        />
-        <Pressable
-          style={[styles.summaryButton, summaryLoading && styles.submitButtonDisabled]}
-          onPress={loadComparisonSummary}
-          disabled={summaryLoading}
-        >
-          <Text style={styles.submitButtonText}>
-            {summaryLoading ? "Loading..." : "Load Comparison Summary"}
-          </Text>
-        </Pressable>
-        {summaryError ? (
-          <Text style={styles.summaryErrorText}>{summaryError}</Text>
-        ) : null}
-        <View style={styles.responseBox}>
-          {summary ? (
-            <>
-              <Text style={styles.summaryText}>
-                Records considered: {summary.records_considered} / {summary.records_matched_filters}
-              </Text>
-              <Text style={styles.summaryText}>
-                Quality distribution: valid={summary.quality_distribution.valid ?? 0} repeat=
-                {summary.quality_distribution.repeat ?? 0} reject=
-                {summary.quality_distribution.reject ?? 0}
-              </Text>
-              {summary.metrics.map((metric) => (
-                <Text key={metric.metric} style={styles.summaryMetricText}>
-                  {metric.metric}: n={metric.paired_samples}, MAE=
-                  {formatNullable(metric.mean_absolute_error)}, bias=
-                  {formatNullable(metric.mean_error)}, RMSE={formatNullable(metric.rmse)}, r=
-                  {formatNullable(metric.pearson_r)}
-                </Text>
-              ))}
-            </>
-          ) : (
-            <Text style={styles.responseText}>No summary loaded yet</Text>
-          )}
-        </View>
-
-        <Text style={styles.sectionTitle}>Capture Coverage Summary</Text>
-        <Pressable
-          style={[styles.summaryButton, coverageLoading && styles.submitButtonDisabled]}
-          onPress={loadCaptureCoverageSummary}
-          disabled={coverageLoading}
-        >
-          <Text style={styles.submitButtonText}>
-            {coverageLoading ? "Loading..." : "Load Coverage Summary"}
-          </Text>
-        </Pressable>
-        {coverageError ? <Text style={styles.summaryErrorText}>{coverageError}</Text> : null}
-        <View style={styles.responseBox}>
-          {coverageSummary ? (
-            <>
-              <Text style={styles.summaryText}>
-                Paired total: {coverageSummary.paired_total}, with capture:{" "}
-                {coverageSummary.paired_with_capture}, without capture:{" "}
-                {coverageSummary.paired_without_capture}
-              </Text>
-              <Text style={styles.summaryText}>
-                Coverage ratio:{" "}
-                <Text
-                  style={
-                    coverageSummary.coverage_ratio >= COVERAGE_GOAL_RATIO
-                      ? styles.coverageGoodText
-                      : styles.coverageBadText
-                  }
-                >
-                  {(coverageSummary.coverage_ratio * 100).toFixed(1)}%
-                </Text>{" "}
-                (target: {(COVERAGE_GOAL_RATIO * 100).toFixed(0)}%)
-              </Text>
-              <Text style={styles.summaryText}>
-                Match modes: paired_id=
-                {coverageSummary.capture_match_distribution.paired_id ?? 0}, session_identity=
-                {coverageSummary.capture_match_distribution.session_identity ?? 0}, none=
-                {coverageSummary.capture_match_distribution.none ?? 0}
-              </Text>
-              <Text style={styles.summaryText}>
-                Quality: valid={coverageSummary.quality_distribution.valid ?? 0}, repeat=
-                {coverageSummary.quality_distribution.repeat ?? 0}, reject=
-                {coverageSummary.quality_distribution.reject ?? 0}
-              </Text>
-            </>
-          ) : (
-            <Text style={styles.responseText}>No coverage summary loaded yet</Text>
-          )}
-        </View>
       </ScrollView>
     </SafeAreaView>
   );
