@@ -263,6 +263,7 @@ def build_readiness_report(
     helper_tests_path = mobile_root / "tests" / "appHelpers.test.js"
     capture_tests_path = mobile_root / "tests" / "captureContract.test.js"
     roi_signal_tests_path = mobile_root / "tests" / "roiSignalEstimator.test.js"
+    runtime_metrics_tests_path = mobile_root / "tests" / "runtimeMetrics.test.js"
     _check(
         checks,
         "unit_test_script",
@@ -298,6 +299,12 @@ def build_readiness_report(
         "roi_signal_unit_tests_present",
         roi_signal_tests_path.is_file(),
         f"path={roi_signal_tests_path}",
+    )
+    _check(
+        checks,
+        "runtime_metrics_unit_tests_present",
+        runtime_metrics_tests_path.is_file(),
+        f"path={runtime_metrics_tests_path}",
     )
     _check(
         checks,

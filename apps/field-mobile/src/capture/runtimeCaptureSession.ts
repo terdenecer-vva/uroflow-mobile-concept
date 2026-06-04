@@ -11,29 +11,24 @@ import { Accelerometer } from "expo-sensors";
 import { Camera } from "expo-camera";
 import * as Device from "expo-device";
 import type { CaptureContractSample } from "./buildCaptureContract";
+import {
+  calculateAverageMotionNorm,
+  clamp,
+  deriveRuntimeCaptureMetrics,
+  round4,
+  scoreRuntimeCaptureQuality,
+  type RuntimeCaptureDerivedMetrics,
+  type RuntimeCapturePermissions,
+  type RuntimeCaptureQuality,
+  type RuntimeFlowPoint,
+} from "./runtimeMetrics";
 
-export type RuntimeCapturePermissions = {
-  microphoneGranted: boolean;
-  cameraGranted: boolean;
-  motionGranted: boolean;
-};
-
-export type RuntimeCaptureDerivedMetrics = {
-  qmaxMlS: number;
-  qavgMlS: number;
-  vvoidMl: number;
-  flowTimeS: number;
-  tqmaxS: number;
-  eventStartTs: number | null;
-  eventEndTs: number | null;
-};
-
-export type RuntimeCaptureQuality = {
-  qualityScore: number;
-  qualityStatus: "valid" | "repeat" | "reject";
-  roiValidRatio: number;
-  lowConfidenceRatio: number;
-};
+export type {
+  RuntimeCaptureDerivedMetrics,
+  RuntimeCapturePermissions,
+  RuntimeCaptureQuality,
+  RuntimeFlowPoint,
+} from "./runtimeMetrics";
 
 export type RuntimeCaptureStopResult = {
   startedAtIso: string;
@@ -57,36 +52,9 @@ export type RuntimeCameraSignal = {
   roiValidByFrame?: boolean;
 };
 
-export type RuntimeFlowPoint = {
-  t_s: number;
-  flow_ml_s: number;
-};
-
 type AccelerometerWithPermissions = typeof Accelerometer & {
   requestPermissionsAsync?: () => Promise<{ granted: boolean }>;
 };
-
-function clamp(value: number, minValue: number, maxValue: number): number {
-  return Math.max(minValue, Math.min(maxValue, value));
-}
-
-function round4(value: number): number {
-  return Math.round(value * 10000) / 10000;
-}
-
-function integrateTrapezoid(series: RuntimeFlowPoint[]): number {
-  if (series.length < 2) {
-    return 0;
-  }
-  let sum = 0;
-  for (let index = 1; index < series.length; index += 1) {
-    const prev = series[index - 1];
-    const curr = series[index];
-    const dt = Math.max(0, curr.t_s - prev.t_s);
-    sum += ((prev.flow_ml_s + curr.flow_ml_s) * 0.5) * dt;
-  }
-  return sum;
-}
 
 export class RuntimeCaptureSession {
   private recording: AudioRecorder | null = null;
@@ -238,12 +206,16 @@ export class RuntimeCaptureSession {
       this.flowSeries = this.samples.map((sample) => ({ t_s: sample.t_s, flow_ml_s: 0 }));
     }
 
-    const avgMotionNorm =
-      this.samples.reduce((sum, item) => sum + item.motion_norm, 0) /
-      Math.max(1, this.samples.length);
-
-    const derived = this.computeDerivedMetrics();
-    const quality = this.computeQuality(avgMotionNorm);
+    const avgMotionNorm = calculateAverageMotionNorm(this.samples);
+    const derived = deriveRuntimeCaptureMetrics({
+      samples: this.samples,
+      flowSeries: this.flowSeries,
+      permissions: this.permissions,
+    });
+    const quality = scoreRuntimeCaptureQuality({
+      samples: this.samples,
+      averageMotionNorm: avgMotionNorm,
+    });
 
     return {
       startedAtIso: this.startedAtIso || new Date().toISOString(),
@@ -257,131 +229,6 @@ export class RuntimeCaptureSession {
       flowSeries: [...this.flowSeries],
       derived,
       quality,
-    };
-  }
-
-  private computeDerivedMetrics(): RuntimeCaptureDerivedMetrics {
-    if (this.flowSeries.length === 0) {
-      return {
-        qmaxMlS: 0,
-        qavgMlS: 0,
-        vvoidMl: 0,
-        flowTimeS: 0,
-        tqmaxS: 0,
-        eventStartTs: null,
-        eventEndTs: null,
-      };
-    }
-
-    const startThreshold = 1.0;
-    const stopThreshold = 0.8;
-    const sampleCount = Math.max(1, this.samples.length);
-    const roiValidRatio =
-      this.samples.filter((sample) => sample.roi_valid).length / sampleCount;
-    const enforceRoiForEventBounds = this.permissions.cameraGranted && roiValidRatio >= 0.25;
-
-    let startIndex = -1;
-    for (let i = 0; i < this.flowSeries.length; i += 1) {
-      const roiGate = !enforceRoiForEventBounds || this.samples[i]?.roi_valid;
-      if (this.flowSeries[i].flow_ml_s >= startThreshold && roiGate) {
-        startIndex = i;
-        break;
-      }
-    }
-    if (startIndex < 0) {
-      for (let i = 0; i < this.flowSeries.length; i += 1) {
-        if (this.flowSeries[i].flow_ml_s >= startThreshold) {
-          startIndex = i;
-          break;
-        }
-      }
-    }
-
-    let endIndex = -1;
-    for (let i = this.flowSeries.length - 1; i >= 0; i -= 1) {
-      const roiGate = !enforceRoiForEventBounds || this.samples[i]?.roi_valid;
-      if (this.flowSeries[i].flow_ml_s >= stopThreshold && roiGate) {
-        endIndex = i;
-        break;
-      }
-    }
-    if (endIndex < 0) {
-      for (let i = this.flowSeries.length - 1; i >= 0; i -= 1) {
-        if (this.flowSeries[i].flow_ml_s >= stopThreshold) {
-          endIndex = i;
-          break;
-        }
-      }
-    }
-
-    const eventStartTs = startIndex >= 0 ? this.flowSeries[startIndex].t_s : null;
-    const eventEndTs =
-      endIndex >= 0 && startIndex >= 0 && endIndex >= startIndex
-        ? this.flowSeries[endIndex].t_s
-        : null;
-
-    const qmax = this.flowSeries.reduce(
-      (acc, point) => Math.max(acc, point.flow_ml_s),
-      0,
-    );
-
-    const vvoid = integrateTrapezoid(this.flowSeries);
-
-    let flowTimeS = 0;
-    let qavg = 0;
-    let tqmax = 0;
-
-    if (eventStartTs != null && eventEndTs != null && eventEndTs >= eventStartTs) {
-      flowTimeS = eventEndTs - eventStartTs;
-      const activeSeries = this.flowSeries.filter(
-        (point) => point.t_s >= eventStartTs && point.t_s <= eventEndTs,
-      );
-      if (activeSeries.length > 0) {
-        qavg = activeSeries.reduce((sum, point) => sum + point.flow_ml_s, 0) / activeSeries.length;
-        const qmaxPoint = activeSeries.reduce((best, point) =>
-          point.flow_ml_s > best.flow_ml_s ? point : best,
-        activeSeries[0]);
-        tqmax = Math.max(0, qmaxPoint.t_s - eventStartTs);
-      }
-    }
-
-    return {
-      qmaxMlS: round4(qmax),
-      qavgMlS: round4(qavg),
-      vvoidMl: round4(vvoid),
-      flowTimeS: round4(flowTimeS),
-      tqmaxS: round4(tqmax),
-      eventStartTs,
-      eventEndTs,
-    };
-  }
-
-  private computeQuality(averageMotionNorm: number): RuntimeCaptureQuality {
-    const sampleCount = Math.max(1, this.samples.length);
-    const roiValidCount = this.samples.filter((sample) => sample.roi_valid).length;
-    const lowConfidenceCount = this.samples.filter((sample) => sample.depth_confidence < 0.6).length;
-
-    const roiValidRatio = roiValidCount / sampleCount;
-    const lowConfidenceRatio = lowConfidenceCount / sampleCount;
-
-    let score = 100;
-    score -= clamp(averageMotionNorm * 80, 0, 60);
-    score -= clamp((1 - roiValidRatio) * 70, 0, 50);
-    score -= clamp(lowConfidenceRatio * 40, 0, 25);
-    score = clamp(score, 0, 100);
-
-    let qualityStatus: RuntimeCaptureQuality["qualityStatus"] = "valid";
-    if (score < 50 || roiValidRatio < 0.55) {
-      qualityStatus = "reject";
-    } else if (score < 75 || roiValidRatio < 0.8 || lowConfidenceRatio > 0.35) {
-      qualityStatus = "repeat";
-    }
-
-    return {
-      qualityScore: round4(score),
-      qualityStatus,
-      roiValidRatio: round4(roiValidRatio),
-      lowConfidenceRatio: round4(lowConfidenceRatio),
     };
   }
 

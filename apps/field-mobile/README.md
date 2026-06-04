@@ -61,8 +61,8 @@ npm run validate:ci
 ```
 
 `validate:ci` mirrors Mobile CI: TypeScript, Node unit tests for mobile helper/API,
-capture-contract, and ROI signal invariants, Expo Doctor, production dependency audit,
-and Expo export bundle builds for both iOS and Android.
+capture-contract, ROI signal, and runtime metric/quality invariants, Expo Doctor,
+production dependency audit, and Expo export bundle builds for both iOS and Android.
 
 3. Open on iPhone/Android via Expo Go (QR code), or run native:
 
@@ -113,7 +113,7 @@ When backend is configured with API key policy map (`--api-key-map-json`), set i
 
 CI:
 - `.github/workflows/mobile-ci.yml` runs `npm run validate:ci` for `apps/field-mobile/**` changes.
-- `validate:ci` covers TypeScript, mobile helper/API + capture-contract + ROI signal unit tests, Expo Doctor, production dependency audit, and iOS/Android Expo exports.
+- `validate:ci` covers TypeScript, mobile helper/API + capture-contract + ROI signal + runtime metric unit tests, Expo Doctor, production dependency audit, and iOS/Android Expo exports.
 - `.github/workflows/mobile-build.yml` provides manual EAS build trigger (`workflow_dispatch`) with inputs:
   - `build_profile` (`preview` / `development` / `production`)
   - `build_platform` (`all` / `ios` / `android`)
