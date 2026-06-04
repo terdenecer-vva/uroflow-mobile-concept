@@ -13,11 +13,12 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
+    "test:unit": "rm -rf /tmp/uroflow-field-mobile-unit && tsc --ignoreConfig src/utils/appHelpers.ts src/api/clinicalHub.ts --outDir /tmp/uroflow-field-mobile-unit --module Node16 --target ES2022 --moduleResolution node16 --lib ES2022,DOM --skipLibCheck --esModuleInterop && MOBILE_UNIT_BUILD_DIR=/tmp/uroflow-field-mobile-unit node --test tests/*.test.js",
     "doctor": "CI=1 expo-doctor",
     "audit:prod": "npm audit --omit=dev",
     "export:ios": "CI=1 expo export --platform ios --clear --output-dir /tmp/uroflow-field-mobile-export-ios",
     "export:android": "CI=1 expo export --platform android --clear --output-dir /tmp/uroflow-field-mobile-export-android",
-    "validate:ci": "npm run typecheck && npm run doctor && npm run audit:prod && npm run export:ios && npm run export:android",
+    "validate:ci": "npm run typecheck && npm run test:unit && npm run doctor && npm run audit:prod && npm run export:ios && npm run export:android",
     "build:preview": "eas build --platform all --profile preview",
     "build:production": "eas build --platform all --profile production"
   },
