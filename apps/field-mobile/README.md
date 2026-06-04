@@ -16,6 +16,8 @@ Cross-platform mobile client (Expo React Native) for collecting paired measureme
 - Retry policy: non-retryable API errors are not re-queued
 - Pending items store request header context (`x-api-key`, `x-site-id`, `x-actor-role`, `x-operator-id`)
 - Sync reuses stored header context per item (prevents wrong-site replay after settings change)
+- Pending queue preview shows error categories, not raw server response bodies
+- Sync runs in bounded batches of 10 queued jobs to avoid long foreground stalls on large offline queues
 - Auto-sync retries queued jobs every ~25s while queue is non-empty and when app becomes active
 - Queue controls: `Test API`, `Sync Queue`, `Clear Queue`
 - Persisted local settings (`API URL`, `site/operator`, timeout, summary filter)

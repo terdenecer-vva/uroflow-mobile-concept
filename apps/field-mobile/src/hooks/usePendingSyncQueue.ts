@@ -14,6 +14,8 @@ import type {
 } from "../types";
 import { createPendingId, resolvePendingHeaderContext } from "../utils/appHelpers";
 
+const MAX_PENDING_SYNC_BATCH_SIZE = 10;
+
 type UsePendingSyncQueueOptions = {
   apiBaseUrl: string;
   requestTimeoutMs: string;
@@ -81,12 +83,14 @@ export function usePendingSyncQueue({
           return;
         }
 
-        const remaining: PendingSubmission[] = [];
+        const batch = queue.slice(0, MAX_PENDING_SYNC_BATCH_SIZE);
+        const deferred = queue.slice(MAX_PENDING_SYNC_BATCH_SIZE);
+        const retryableBatchItems: PendingSubmission[] = [];
         let syncedPaired = 0;
         let syncedCapture = 0;
         let droppedNonRetryable = 0;
 
-        for (const item of queue) {
+        for (const item of batch) {
           const headerContext = resolvePendingHeaderContext(item, requestHeaderContext);
           const result = await attemptSubmitEndpoint({
             apiBaseUrl,
@@ -112,18 +116,20 @@ export function usePendingSyncQueue({
             continue;
           }
           if (result.retryable) {
-            remaining.push(attemptedItem);
+            retryableBatchItems.push(attemptedItem);
             continue;
           }
           droppedNonRetryable += 1;
         }
 
+        const remaining = [...retryableBatchItems, ...deferred];
         await persistPendingQueue(remaining);
 
         const statusMessage =
-          `Sync completed. Synced paired: ${syncedPaired}, synced capture: ${syncedCapture}, ` +
-          `remaining retryable: ${remaining.length}, ` +
-          `dropped non-retryable: ${droppedNonRetryable}.`;
+          `Sync batch completed (${batch.length}/${queue.length}). ` +
+          `Synced paired: ${syncedPaired}, synced capture: ${syncedCapture}, ` +
+          `remaining queued: ${remaining.length}, ` +
+          `deferred: ${deferred.length}, dropped non-retryable: ${droppedNonRetryable}.`;
         setSyncStatusMessage(statusMessage);
         onLastResponse(statusMessage);
         if (showAlert) {
