@@ -44,6 +44,9 @@ def test_mobile_release_readiness_reports_external_blockers(tmp_path: Path) -> N
     assert payload["status"] == "ready_except_external_credentials"
     assert payload["local_checks_status"] == "pass"
     assert payload["external_readiness_status"] == "blocked"
+    assert payload["authenticated_eas_status"] == "blocked"
+    assert payload["authenticated_eas_blockers"] == ["expo_token", "eas_project_identity"]
+    assert payload["clinical_hub_live_api_status"] == "missing"
     assert {item["id"] for item in payload["external_items"] if item["status"] == "missing"} == {
         "clinical_hub_live_api",
         "eas_project_identity",
@@ -79,9 +82,36 @@ def test_mobile_release_readiness_passes_authenticated_preflight_env(tmp_path: P
     assert payload["status"] == "ready_for_authenticated_eas_preflight"
     assert payload["local_checks_status"] == "pass"
     assert payload["external_readiness_status"] == "pass"
+    assert payload["authenticated_eas_status"] == "pass"
+    assert payload["authenticated_eas_blockers"] == []
+    assert payload["clinical_hub_live_api_status"] == "present"
     assert all(item["status"] == "present" for item in payload["external_items"])
     assert {item["status"] for item in payload["manual_external_items"]} == {"manual_required"}
     assert {item["id"] for item in payload["next_actions"]} == {
+        "provision_apple_developer_account",
+        "provision_google_play_account",
+    }
+
+
+def test_mobile_release_readiness_separates_eas_from_clinical_hub(
+    tmp_path: Path,
+) -> None:
+    payload = _run_readiness(
+        tmp_path / "readiness.json",
+        env={
+            "PATH": os.environ.get("PATH", ""),
+            "EAS_PROJECT_ID": "00000000-0000-0000-0000-000000000000",
+            "EXPO_TOKEN": "test-token",
+        },
+    )
+
+    assert payload["status"] == "ready_except_external_credentials"
+    assert payload["external_readiness_status"] == "blocked"
+    assert payload["authenticated_eas_status"] == "pass"
+    assert payload["authenticated_eas_blockers"] == []
+    assert payload["clinical_hub_live_api_status"] == "missing"
+    assert {item["id"] for item in payload["next_actions"]} == {
+        "configure_clinical_hub_live_api",
         "provision_apple_developer_account",
         "provision_google_play_account",
     }

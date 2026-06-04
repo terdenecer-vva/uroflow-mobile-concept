@@ -123,8 +123,14 @@ CI:
 ## Release Readiness Handoff
 
 `mobile-release-readiness` intentionally separates local readiness from external account and
-secret blockers. When status is `ready_except_external_credentials`, use `next_actions` in the
-artifact as the release handoff checklist:
+secret blockers. The artifact has separate machine-readable gates:
+
+- `authenticated_eas_status`: whether `EXPO_TOKEN` and deterministic EAS project identity are ready for an authenticated EAS build trigger.
+- `clinical_hub_live_api_status`: whether live Clinical Hub API smoke/report-push credentials are configured.
+- `external_readiness_status`: aggregate external status across Expo/EAS + Clinical Hub.
+
+When status is `ready_except_external_credentials`, use `next_actions` in the artifact as the
+release handoff checklist:
 
 | next action | Required setup | Verification |
 | --- | --- | --- |

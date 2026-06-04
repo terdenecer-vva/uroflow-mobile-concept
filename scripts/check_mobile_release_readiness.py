@@ -330,6 +330,19 @@ def build_readiness_report(
         item for item in checks if item["status"] == "fail" and item["severity"] == "error"
     ]
     external_missing = [item for item in external_items if item["status"] == "missing"]
+    authenticated_eas_item_ids = {"expo_token", "eas_project_identity"}
+    authenticated_eas_blockers = [
+        item["id"] for item in external_items if item["id"] in authenticated_eas_item_ids
+        and item["status"] == "missing"
+    ]
+    clinical_hub_live_api_status = next(
+        (
+            item["status"]
+            for item in external_items
+            if item["id"] == "clinical_hub_live_api"
+        ),
+        "missing",
+    )
     if local_failures:
         status = "not_ready"
     elif external_missing:
@@ -344,6 +357,9 @@ def build_readiness_report(
         "status": status,
         "local_checks_status": "pass" if not local_failures else "fail",
         "external_readiness_status": "pass" if not external_missing else "blocked",
+        "authenticated_eas_status": "pass" if not authenticated_eas_blockers else "blocked",
+        "authenticated_eas_blockers": authenticated_eas_blockers,
+        "clinical_hub_live_api_status": clinical_hub_live_api_status,
         "app": {
             "name": expo.get("name"),
             "slug": expo.get("slug"),
