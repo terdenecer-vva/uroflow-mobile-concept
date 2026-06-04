@@ -25,8 +25,8 @@ import {
   type RuntimeFlowPoint,
 } from "./src/capture/runtimeCaptureSession";
 import { estimateRoiSignalFromBase64 } from "./src/capture/roiSignalEstimator";
+import { ApiConnectionSection } from "./src/components/ApiConnectionSection";
 import { LabeledInput } from "./src/components/LabeledInput";
-import { PendingQueuePreview } from "./src/components/PendingQueuePreview";
 import { RuntimeCurvePreview } from "./src/components/RuntimeCurvePreview";
 import { styles } from "./src/styles/appStyles";
 import { usePendingSyncQueue } from "./src/hooks/usePendingSyncQueue";
@@ -54,7 +54,6 @@ import {
   createSyncId,
   extractCreatedRecordId,
   formatNullable,
-  normalizeActorRoleInput,
   parseNumber,
   runtimeCaptureMatchesSession,
 } from "./src/utils/appHelpers";
@@ -815,56 +814,22 @@ export default function App() {
           fallback.
         </Text>
 
-        <Text style={styles.sectionTitle}>API</Text>
-        <LabeledInput label="API Base URL" value={apiBaseUrl} onChangeText={setApiBaseUrl} />
-        <LabeledInput
-          label="API Key (x-api-key)"
-          value={apiKey}
-          onChangeText={setApiKey}
-          secureTextEntry
+        <ApiConnectionSection
+          apiBaseUrl={apiBaseUrl}
+          apiKey={apiKey}
+          actorRole={actorRole}
+          requestTimeoutMs={requestTimeoutMs}
+          pendingQueue={pendingQueue}
+          syncingPending={syncingPending}
+          syncStatusMessage={syncStatusMessage}
+          onApiBaseUrlChange={setApiBaseUrl}
+          onApiKeyChange={setApiKey}
+          onActorRoleChange={setActorRole}
+          onRequestTimeoutMsChange={setRequestTimeoutMs}
+          onTestApiConnection={testApiConnection}
+          onSyncPendingSubmissions={syncPendingSubmissions}
+          onClearPendingSubmissions={clearPendingSubmissions}
         />
-        <LabeledInput
-          label="Actor Role (x-actor-role)"
-          value={actorRole}
-          onChangeText={(value) => setActorRole(normalizeActorRoleInput(value))}
-        />
-        <LabeledInput
-          label="Request Timeout (ms)"
-          value={requestTimeoutMs}
-          onChangeText={setRequestTimeoutMs}
-          keyboardType="number-pad"
-        />
-        <PendingQueuePreview pendingQueue={pendingQueue} />
-        <View style={styles.buttonRow}>
-          <Pressable
-            style={[styles.summaryButton, styles.buttonGrow]}
-            onPress={() => void testApiConnection()}
-          >
-            <Text style={styles.submitButtonText}>Test API</Text>
-          </Pressable>
-          <Pressable
-            style={[
-              styles.summaryButton,
-              styles.buttonGrow,
-              syncingPending && styles.submitButtonDisabled,
-            ]}
-            onPress={() => void syncPendingSubmissions()}
-            disabled={syncingPending}
-          >
-            <Text style={styles.submitButtonText}>
-              {syncingPending ? "Syncing..." : "Sync Queue"}
-            </Text>
-          </Pressable>
-          <Pressable
-            style={[styles.dangerButton, styles.buttonGrow]}
-            onPress={() => void clearPendingSubmissions()}
-          >
-            <Text style={styles.submitButtonText}>Clear Queue</Text>
-          </Pressable>
-        </View>
-        {syncStatusMessage ? (
-          <Text style={styles.syncStatusText}>{syncStatusMessage}</Text>
-        ) : null}
 
         <Text style={styles.sectionTitle}>Runtime Capture (Audio + IMU + Camera Permission)</Text>
         <Text style={styles.captureStatusText}>{captureStatus}</Text>
