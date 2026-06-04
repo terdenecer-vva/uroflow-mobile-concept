@@ -143,6 +143,10 @@ release handoff checklist:
 Do not commit secret values. Keep live Clinical Hub keys in GitHub Actions secrets and device-local
 app settings only.
 
+On manual `Mobile Build` dispatch, the `eas-build` job runs only when `authenticated_eas_status`
+is `pass`. If it is `blocked`, the run still uploads readiness/manifest artifacts and skips the EAS
+trigger by design.
+
 ## Installable Build (EAS)
 
 EAS profiles are configured in `apps/field-mobile/eas.json`:
