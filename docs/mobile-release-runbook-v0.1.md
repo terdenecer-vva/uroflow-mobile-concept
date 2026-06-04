@@ -48,7 +48,8 @@ Workflow generates artifact `mobile-release-manifest` containing:
 Workflow also generates artifact `mobile-release-readiness` containing:
 - local mobile readiness checks (`app.json`, `eas.json`, package scripts, lockfile, pinned tooling),
 - external credential state without secret values,
-- manual release requirements for Apple Developer and Google Play accounts.
+- manual release requirements for Apple Developer and Google Play accounts,
+- machine-readable `next_actions` for configuring missing GitHub secrets/variables and manual store-account handoff.
 
 Manifest script:
 

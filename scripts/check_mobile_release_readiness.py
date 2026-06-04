@@ -47,6 +47,110 @@ def _check(
     )
 
 
+def _build_next_actions(
+    external_items: list[dict[str, Any]],
+    manual_external_items: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    external_action_map = {
+        "expo_token": {
+            "id": "configure_expo_token",
+            "blocked_item": "expo_token",
+            "status": "required",
+            "owner": "release_engineer",
+            "action": "Create an Expo access token and add it as GitHub Actions secret EXPO_TOKEN.",
+            "verification": (
+                "Re-run Mobile Build; external_items.expo_token status should become present."
+            ),
+            "secret_names": ["EXPO_TOKEN"],
+            "variable_names": [],
+            "file_paths": [],
+            "doc": "docs/mobile-release-runbook-v0.1.md",
+        },
+        "eas_project_identity": {
+            "id": "configure_eas_project_identity",
+            "blocked_item": "eas_project_identity",
+            "status": "required",
+            "owner": "release_engineer",
+            "action": (
+                "Set GitHub repository variable EAS_PROJECT_ID or commit expo.extra.eas.projectId "
+                "in apps/field-mobile/app.json."
+            ),
+            "verification": (
+                "Re-run Mobile Build; external_items.eas_project_identity status should become "
+                "present."
+            ),
+            "secret_names": [],
+            "variable_names": ["EAS_PROJECT_ID"],
+            "file_paths": ["apps/field-mobile/app.json"],
+            "doc": "docs/mobile-release-runbook-v0.1.md",
+        },
+        "clinical_hub_live_api": {
+            "id": "configure_clinical_hub_live_api",
+            "blocked_item": "clinical_hub_live_api",
+            "status": "required",
+            "owner": "clinical_hub_admin",
+            "action": (
+                "Add GitHub Actions secrets CLINICAL_HUB_URL and CLINICAL_HUB_API_KEY for live "
+                "Clinical Hub smoke tests and report push."
+            ),
+            "verification": (
+                "Re-run Mobile Build; external_items.clinical_hub_live_api status should become "
+                "present."
+            ),
+            "secret_names": ["CLINICAL_HUB_URL", "CLINICAL_HUB_API_KEY"],
+            "variable_names": [],
+            "file_paths": [],
+            "doc": "docs/mobile-release-runbook-v0.1.md",
+        },
+    }
+    manual_action_map = {
+        "apple_developer_account": {
+            "id": "provision_apple_developer_account",
+            "blocked_item": "apple_developer_account",
+            "status": "manual_required",
+            "owner": "account_admin",
+            "action": (
+                "Provision Apple Developer access, signing certificates/profiles, and TestFlight "
+                "distribution permissions."
+            ),
+            "verification": (
+                "Trigger a signed iOS EAS build and confirm TestFlight upload readiness."
+            ),
+            "secret_names": [],
+            "variable_names": [],
+            "file_paths": [],
+            "doc": "docs/mobile-release-runbook-v0.1.md",
+        },
+        "google_play_account": {
+            "id": "provision_google_play_account",
+            "blocked_item": "google_play_account",
+            "status": "manual_required",
+            "owner": "account_admin",
+            "action": (
+                "Provision Google Play Console access, Android signing, and internal testing track "
+                "permissions."
+            ),
+            "verification": (
+                "Trigger a signed Android EAS build and confirm Play Internal Testing upload "
+                "readiness."
+            ),
+            "secret_names": [],
+            "variable_names": [],
+            "file_paths": [],
+            "doc": "docs/mobile-release-runbook-v0.1.md",
+        },
+    }
+
+    next_actions: list[dict[str, Any]] = []
+    for item in external_items:
+        if item["status"] == "missing" and item["id"] in external_action_map:
+            next_actions.append(external_action_map[item["id"]])
+    for item in manual_external_items:
+        if item["status"] == "manual_required" and item["id"] in manual_action_map:
+            next_actions.append(manual_action_map[item["id"]])
+    return next_actions
+
+
 def build_readiness_report(
     *,
     app_json: Path,
@@ -233,6 +337,8 @@ def build_readiness_report(
     else:
         status = "ready_for_authenticated_eas_preflight"
 
+    next_actions = _build_next_actions(external_items, manual_external_items)
+
     return {
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
         "status": status,
@@ -248,6 +354,7 @@ def build_readiness_report(
         "local_checks": checks,
         "external_items": external_items,
         "manual_external_items": manual_external_items,
+        "next_actions": next_actions,
     }
 
 
