@@ -50,6 +50,18 @@ def test_mobile_release_readiness_reports_external_blockers(tmp_path: Path) -> N
         "expo_token",
     }
     assert all(item["status"] == "pass" for item in payload["local_checks"])
+    assert {item["id"] for item in payload["next_actions"]} == {
+        "configure_clinical_hub_live_api",
+        "configure_eas_project_identity",
+        "configure_expo_token",
+        "provision_apple_developer_account",
+        "provision_google_play_account",
+    }
+    expo_action = next(
+        item for item in payload["next_actions"] if item["id"] == "configure_expo_token"
+    )
+    assert expo_action["secret_names"] == ["EXPO_TOKEN"]
+    assert expo_action["verification"]
 
 
 def test_mobile_release_readiness_passes_authenticated_preflight_env(tmp_path: Path) -> None:
@@ -69,3 +81,7 @@ def test_mobile_release_readiness_passes_authenticated_preflight_env(tmp_path: P
     assert payload["external_readiness_status"] == "pass"
     assert all(item["status"] == "present" for item in payload["external_items"])
     assert {item["status"] for item in payload["manual_external_items"]} == {"manual_required"}
+    assert {item["id"] for item in payload["next_actions"]} == {
+        "provision_apple_developer_account",
+        "provision_google_play_account",
+    }

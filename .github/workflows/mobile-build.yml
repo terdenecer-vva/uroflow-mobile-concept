@@ -97,6 +97,11 @@ jobs:
               for item in payload.get("manual_external_items", [])
               if item.get("status") == "manual_required"
           ]
+          next_actions = [
+              item["id"]
+              for item in payload.get("next_actions", [])
+              if item.get("id")
+          ]
           lines = [
               "## Mobile Release Readiness",
               f"- Status: `{payload.get('status')}`",
@@ -104,6 +109,7 @@ jobs:
               f"- External readiness: `{payload.get('external_readiness_status')}`",
               f"- Missing external items: `{', '.join(missing) if missing else 'none'}`",
               f"- Manual external items: `{', '.join(manual) if manual else 'none'}`",
+              f"- Next actions: `{', '.join(next_actions) if next_actions else 'none'}`",
           ]
           with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as handle:
               handle.write("\n".join(lines) + "\n")
