@@ -53,6 +53,14 @@ def test_mobile_release_readiness_reports_external_blockers(tmp_path: Path) -> N
         "expo_token",
     }
     assert all(item["status"] == "pass" for item in payload["local_checks"])
+    local_check_ids = {item["id"] for item in payload["local_checks"]}
+    assert {
+        "unit_test_script",
+        "validate_ci_runs_unit_tests",
+        "unit_test_runner_script",
+        "mobile_helper_unit_tests_present",
+        "capture_contract_unit_tests_present",
+    }.issubset(local_check_ids)
     assert {item["id"] for item in payload["next_actions"]} == {
         "configure_clinical_hub_live_api",
         "configure_eas_project_identity",
