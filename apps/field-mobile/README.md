@@ -120,6 +120,23 @@ CI:
   - `mobile-eas-build-result-<run_id>` (raw EAS JSON response for build IDs/URLs)
 - Workflow summary includes release readiness status and direct EAS build links for operator/release use.
 
+## Release Readiness Handoff
+
+`mobile-release-readiness` intentionally separates local readiness from external account and
+secret blockers. When status is `ready_except_external_credentials`, use `next_actions` in the
+artifact as the release handoff checklist:
+
+| next action | Required setup | Verification |
+| --- | --- | --- |
+| `configure_expo_token` | `gh secret set EXPO_TOKEN --body "<expo_access_token>"` | Re-run `Mobile Build`; `external_items.expo_token` becomes `present`. |
+| `configure_eas_project_identity` | `gh variable set EAS_PROJECT_ID --body "<eas_project_uuid>"` or commit `expo.extra.eas.projectId` in `app.json` | Re-run `Mobile Build`; `external_items.eas_project_identity` becomes `present`. |
+| `configure_clinical_hub_live_api` | `gh secret set CLINICAL_HUB_URL --body "https://<clinical-hub>"` and `gh secret set CLINICAL_HUB_API_KEY --body "<api_key>"` | Re-run `Mobile Build`; `external_items.clinical_hub_live_api` becomes `present`. |
+| `provision_apple_developer_account` | Apple Developer access, signing certificates/profiles, and TestFlight permissions | Trigger signed iOS EAS build and confirm TestFlight upload readiness. |
+| `provision_google_play_account` | Google Play Console access, Android signing, and internal testing track permissions | Trigger signed Android EAS build and confirm Play Internal Testing upload readiness. |
+
+Do not commit secret values. Keep live Clinical Hub keys in GitHub Actions secrets and device-local
+app settings only.
+
 ## Installable Build (EAS)
 
 EAS profiles are configured in `apps/field-mobile/eas.json`:

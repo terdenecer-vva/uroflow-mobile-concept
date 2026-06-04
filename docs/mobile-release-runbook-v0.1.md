@@ -26,6 +26,7 @@ From GitHub Actions:
 4. Open workflow summary (`Mobile Release Readiness`) and confirm:
    - `Local checks` is `pass`,
    - missing external items are understood and either configured or accepted as blockers for this run.
+   - `Next actions` maps the remaining external blockers to concrete setup tasks.
 5. Verify `eas-build` starts.
 6. Open workflow summary (`Mobile EAS Build`) and copy build links.
 7. Download artifact `mobile-eas-build-result-<run_id>` for traceability JSON.
@@ -71,6 +72,19 @@ python3 scripts/check_mobile_release_readiness.py \
   --package-lock apps/field-mobile/package-lock.json \
   --output /tmp/mobile-release-readiness.json
 ```
+
+External handoff commands, using placeholders only:
+
+```bash
+gh secret set EXPO_TOKEN --body "<expo_access_token>"
+gh variable set EAS_PROJECT_ID --body "<eas_project_uuid>"
+gh secret set CLINICAL_HUB_URL --body "https://<clinical-hub>"
+gh secret set CLINICAL_HUB_API_KEY --body "<api_key>"
+```
+
+Manual store-account handoff remains outside GitHub secrets:
+- `provision_apple_developer_account`: Apple Developer access, signing certificates/profiles, and TestFlight permissions.
+- `provision_google_play_account`: Google Play Console access, Android signing, and internal testing track permissions.
 
 ## 4) Distribution channels
 
