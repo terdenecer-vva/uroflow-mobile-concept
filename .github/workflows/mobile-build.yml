@@ -41,6 +41,9 @@ jobs:
   preflight:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    outputs:
+      authenticated_eas_status: ${{ steps.readiness.outputs.authenticated_eas_status }}
+      authenticated_eas_blockers: ${{ steps.readiness.outputs.authenticated_eas_blockers }}
 
     defaults:
       run:
@@ -77,6 +80,25 @@ jobs:
             --package-lock package-lock.json \
             --output /tmp/mobile-release-readiness.json
 
+      - name: Export release readiness outputs
+        id: readiness
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          payload = json.loads(Path("/tmp/mobile-release-readiness.json").read_text(encoding="utf-8"))
+          blockers = payload.get("authenticated_eas_blockers", [])
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as handle:
+              handle.write(
+                  f"authenticated_eas_status={payload.get('authenticated_eas_status', 'blocked')}\n"
+              )
+              handle.write(f"authenticated_eas_blockers={','.join(blockers)}\n")
+          PY
+
       - name: Publish release readiness summary
         shell: bash
         run: |
@@ -102,13 +124,16 @@ jobs:
               for item in payload.get("next_actions", [])
               if item.get("id")
           ]
+          authenticated_eas_status = payload.get("authenticated_eas_status")
+          eas_trigger_status = "enabled" if authenticated_eas_status == "pass" else "blocked"
           lines = [
               "## Mobile Release Readiness",
               f"- Status: `{payload.get('status')}`",
               f"- Local checks: `{payload.get('local_checks_status')}`",
               f"- External readiness: `{payload.get('external_readiness_status')}`",
-              f"- Authenticated EAS readiness: `{payload.get('authenticated_eas_status')}`",
+              f"- Authenticated EAS readiness: `{authenticated_eas_status}`",
               f"- Authenticated EAS blockers: `{', '.join(payload.get('authenticated_eas_blockers', [])) if payload.get('authenticated_eas_blockers') else 'none'}`",
+              f"- Authenticated EAS build trigger: `{eas_trigger_status}`",
               f"- Clinical Hub live API: `{payload.get('clinical_hub_live_api_status')}`",
               f"- Missing external items: `{', '.join(missing) if missing else 'none'}`",
               f"- Manual external items: `{', '.join(manual) if manual else 'none'}`",
@@ -153,7 +178,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     needs: preflight
-    if: ${{ github.event_name == 'workflow_dispatch' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && needs.preflight.outputs.authenticated_eas_status == 'pass' }}
 
     defaults:
       run:
@@ -163,23 +188,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Check EXPO_TOKEN availability
-        id: expo
-        shell: bash
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: |
-          set -euo pipefail
-          if [[ -z "${EXPO_TOKEN:-}" ]]; then
-            echo "available=false" >> "$GITHUB_OUTPUT"
-            echo "EXPO_TOKEN is not configured; EAS build steps will be skipped."
-          else
-            echo "available=true" >> "$GITHUB_OUTPUT"
-            echo "EXPO_TOKEN is configured."
-          fi
-
       - name: Set up Node.js
-        if: ${{ steps.expo.outputs.available == 'true' }}
         uses: actions/setup-node@v6
         with:
           node-version: "22.13.x"
@@ -187,15 +196,12 @@ jobs:
           cache-dependency-path: apps/field-mobile/package-lock.json
 
       - name: Install dependencies
-        if: ${{ steps.expo.outputs.available == 'true' }}
         run: npm ci --no-audit --no-fund
 
       - name: Install EAS CLI
-        if: ${{ steps.expo.outputs.available == 'true' }}
         run: npm install -g eas-cli@20.0.0
 
       - name: Trigger EAS build
-        if: ${{ steps.expo.outputs.available == 'true' }}
         id: eas
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
@@ -219,7 +225,6 @@ jobs:
           echo "result_json=/tmp/eas-build-result.json" >> "$GITHUB_OUTPUT"
 
       - name: Upload EAS build result artifact
-        if: ${{ steps.expo.outputs.available == 'true' }}
         uses: actions/upload-artifact@v7
         with:
           name: mobile-eas-build-result-${{ github.run_id }}
@@ -227,7 +232,6 @@ jobs:
           if-no-files-found: error
 
       - name: Publish EAS build summary
-        if: ${{ steps.expo.outputs.available == 'true' }}
         shell: bash
         env:
           RESULT_JSON: ${{ steps.eas.outputs.result_json }}

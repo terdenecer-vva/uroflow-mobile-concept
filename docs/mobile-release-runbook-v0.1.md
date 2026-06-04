@@ -29,7 +29,7 @@ From GitHub Actions:
    - `Clinical Hub live API` is `present` before live API smoke/report push is expected,
    - missing external items are understood and either configured or accepted as blockers for this run.
    - `Next actions` maps the remaining external blockers to concrete setup tasks.
-5. Verify `eas-build` starts.
+5. Verify `eas-build` starts. If `Authenticated EAS readiness` is `blocked`, `eas-build` is skipped by design and the readiness artifact is the handoff output.
 6. Open workflow summary (`Mobile EAS Build`) and copy build links.
 7. Download artifact `mobile-eas-build-result-<run_id>` for traceability JSON.
 
