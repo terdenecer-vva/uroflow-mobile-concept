@@ -60,7 +60,7 @@ Workflow generates artifact `mobile-release-manifest` containing:
 
 Workflow also generates artifact `mobile-release-readiness` containing:
 - git SHA/ref/run-id/workflow traceability,
-- local mobile readiness checks (`app.json`, `eas.json`, runtime release metadata/config/defaults, endpoint set/data residency/debug gates, in-app release identity evidence, pending sync connectivity restore, deterministic mobile E2E sync smoke, physical-device smoke log template/validator, store rollout handoff template/validator, release bundle verifier, runtime motion quality gates, derivatives-only feature/media manifest gates, package scripts, lockfile, pinned tooling, API response + submit exception + runtime exception PHI redaction, unit-test coverage wiring),
+- local mobile readiness checks (`app.json`, `eas.json`, runtime release metadata/config/defaults, endpoint set/data residency/debug gates, Expo Device identity defaults, in-app release identity evidence, pending sync connectivity restore, deterministic mobile E2E sync smoke, physical-device smoke log template/validator, store rollout handoff template/validator, release bundle verifier, runtime motion quality gates, derivatives-only feature/media manifest gates, package scripts, lockfile, pinned tooling, API response + submit exception + runtime exception PHI redaction, unit-test coverage wiring),
 - external credential state without secret values,
 - authenticated EAS readiness status and specific EAS blockers,
 - live Clinical Hub API readiness status (`present`, `missing`, or `invalid`),
@@ -179,12 +179,13 @@ python3 scripts/validate_mobile_store_rollout_handoff.py \
 
 1. App starts and opens settings screen.
 2. `Release Identity` shows app version, model/schema, runtime mode, endpoint set, privacy/data-residency flags, and `Payload traceability: aligned`.
-3. `Start Capture` and `Stop Capture` work on real device.
-4. `Contract payload: ready` after stop.
-5. Submit produces `paired-measurements` and `capture-packages` records.
-6. Offline mode queues both endpoint jobs.
-7. Returning online triggers successful auto-sync through connectivity restore, interval, or AppState fallback.
-8. Repository-level deterministic smoke confirms queued paired+capture replay drains after network restore.
+3. `Device Model` is auto-filled from the physical device model or a platform fallback, and matches the smoke-log device entry after any field correction.
+4. `Start Capture` and `Stop Capture` work on real device.
+5. `Contract payload: ready` after stop.
+6. Submit produces `paired-measurements` and `capture-packages` records.
+7. Offline mode queues both endpoint jobs.
+8. Returning online triggers successful auto-sync through connectivity restore, interval, or AppState fallback.
+9. Repository-level deterministic smoke confirms queued paired+capture replay drains after network restore.
 
 ## 6) Evidence to archive per build
 

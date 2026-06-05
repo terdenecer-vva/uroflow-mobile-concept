@@ -740,6 +740,7 @@ def build_readiness_report(
     app_ts_path = mobile_root / "App.tsx"
     app_config_tests_path = mobile_root / "tests" / "appConfig.test.js"
     app_helpers_path = mobile_root / "src" / "utils" / "appHelpers.ts"
+    device_identity_source_path = mobile_root / "src" / "utils" / "deviceIdentity.ts"
     release_identity_source_path = mobile_root / "src" / "utils" / "releaseIdentity.ts"
     release_identity_component_path = (
         mobile_root / "src" / "components" / "ReleaseIdentitySection.tsx"
@@ -756,6 +757,9 @@ def build_readiness_report(
     connection_check_tests_path = mobile_root / "tests" / "connectionCheck.test.js"
     capture_package_payload_tests_path = mobile_root / "tests" / "capturePackagePayload.test.js"
     capture_contract_source_path = mobile_root / "src" / "capture" / "buildCaptureContract.ts"
+    runtime_capture_session_source_path = (
+        mobile_root / "src" / "capture" / "runtimeCaptureSession.ts"
+    )
     capture_tests_path = mobile_root / "tests" / "captureContract.test.js"
     repo_root = package_json.resolve().parent.parent.parent
     backend_capture_contract_path = repo_root / "src" / "uroflow_mobile" / "capture_contract.py"
@@ -797,6 +801,7 @@ def build_readiness_report(
     unit_runner_source = _read_file_text(unit_runner_path)
     app_ts_source = _read_file_text(app_ts_path)
     app_helpers_source = _read_file_text(app_helpers_path)
+    device_identity_source = _read_file_text(device_identity_source_path)
     release_identity_source = _read_file_text(release_identity_source_path)
     release_identity_component_source = _read_file_text(release_identity_component_path)
     clinical_hub_source = _read_file_text(clinical_hub_source_path)
@@ -806,6 +811,8 @@ def build_readiness_report(
     pending_storage_source = _read_file_text(pending_storage_source_path)
     submit_outcome_source = _read_file_text(submit_outcome_source_path)
     helper_tests_source = _read_file_text(helper_tests_path)
+    device_identity_tests_path = mobile_root / "tests" / "deviceIdentity.test.js"
+    device_identity_tests_source = _read_file_text(device_identity_tests_path)
     release_identity_tests_path = mobile_root / "tests" / "releaseIdentity.test.js"
     release_identity_tests_source = _read_file_text(release_identity_tests_path)
     clinical_hub_tests_source = _read_file_text(clinical_hub_api_tests_path)
@@ -816,6 +823,7 @@ def build_readiness_report(
     )
     submit_outcome_tests_source = _read_file_text(submit_outcome_tests_path)
     capture_contract_source = _read_file_text(capture_contract_source_path)
+    runtime_capture_session_source = _read_file_text(runtime_capture_session_source_path)
     capture_tests_source = _read_file_text(capture_tests_path)
     backend_capture_contract_source = _read_file_text(backend_capture_contract_path)
     backend_capture_tests_source = _read_file_text(backend_capture_tests_path)
@@ -862,6 +870,41 @@ def build_readiness_report(
         "mobile_helper_unit_tests_present",
         helper_tests_path.is_file(),
         f"path={helper_tests_path}",
+    )
+    device_identity_source_requirements = {
+        "helper_file": device_identity_source_path.is_file(),
+        "expo_device_dependency": "expo-device" in package_dependencies,
+        "model_label_helper": "buildDeviceModelLabel" in device_identity_source,
+        "os_version_helper": "buildDeviceOsVersion" in device_identity_source,
+        "app_imports_expo_device": 'import * as Device from "expo-device"'
+        in app_ts_source,
+        "app_default_device_model": "defaultDeviceModel" in app_ts_source
+        and "buildDeviceModelLabel" in app_ts_source,
+        "runtime_uses_model_helper": "buildDeviceModelLabel"
+        in runtime_capture_session_source,
+        "runtime_uses_os_helper": "buildDeviceOsVersion" in runtime_capture_session_source,
+    }
+    _check(
+        checks,
+        "mobile_device_identity_sources",
+        all(device_identity_source_requirements.values()),
+        f"requirements={device_identity_source_requirements!r}",
+    )
+    device_identity_test_requirements = {
+        "unit_test_file": device_identity_tests_path.is_file(),
+        "model_name_test": "prefers Expo Device model name" in device_identity_tests_source,
+        "manufacturer_brand_fallback_test": "falls back to manufacturer and brand"
+        in device_identity_tests_source,
+        "platform_fallback_test": "platform fallback" in device_identity_tests_source,
+        "os_version_test": "prefers Expo Device OS name and version"
+        in device_identity_tests_source,
+        "unit_runner_compiles_helper": "src/utils/deviceIdentity.ts" in unit_runner_source,
+    }
+    _check(
+        checks,
+        "mobile_device_identity_unit_tests_present",
+        all(device_identity_test_requirements.values()),
+        f"requirements={device_identity_test_requirements!r}",
     )
     release_identity_source_requirements = {
         "helper_file": release_identity_source_path.is_file(),

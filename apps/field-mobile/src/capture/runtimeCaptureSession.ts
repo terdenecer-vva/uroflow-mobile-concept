@@ -23,6 +23,7 @@ import {
   type RuntimeCaptureQuality,
   type RuntimeFlowPoint,
 } from "./runtimeMetrics";
+import { buildDeviceModelLabel, buildDeviceOsVersion } from "../utils/deviceIdentity";
 
 export type {
   RuntimeCaptureDerivedMetrics,
@@ -224,8 +225,18 @@ export class RuntimeCaptureSession {
       sampleCount: this.samples.length,
       averageMotionNorm: round4(avgMotionNorm),
       permissions: this.permissions,
-      deviceModel: Device.modelName ?? "unknown-device",
-      osVersion: String(Platform.Version),
+      deviceModel: buildDeviceModelLabel({
+        platform: Platform.OS,
+        modelName: Device.modelName,
+        manufacturer: Device.manufacturer,
+        brand: Device.brand,
+      }),
+      osVersion: buildDeviceOsVersion({
+        platform: Platform.OS,
+        osName: Device.osName,
+        osVersion: Device.osVersion,
+        platformVersion: Platform.Version,
+      }),
       samples: [...this.samples],
       flowSeries: [...this.flowSeries],
       derived,

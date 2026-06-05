@@ -22,6 +22,7 @@ Implemented now:
 - Store rollout handoff JSON template, validator, and Mobile Build artifact for TestFlight/Play Internal traceability.
 - Mobile release bundle verifier for manifest/readiness/notes/store-handoff artifact consistency.
 - In-app Release Identity panel for app/model/schema/runtime/privacy/data-residency evidence on device.
+- Expo Device-based device model/OS identity defaults for paired payload and capture package traceability.
 
 Not yet implemented:
 - Real sensor capture pipeline (camera/audio/IMU/depth).
