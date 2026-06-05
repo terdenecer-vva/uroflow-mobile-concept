@@ -949,6 +949,44 @@ def build_readiness_report(
         all(connectivity_restore_test_requirements.values()),
         f"requirements={connectivity_restore_test_requirements!r}",
     )
+    mobile_e2e_sync_smoke_requirements = {
+        "batch_replay_helper": "runPendingSyncBatch" in pending_sync_queue_source,
+        "submitter_injection": "submitEndpoint" in pending_sync_queue_source,
+        "hook_uses_batch_replay_helper": "runPendingSyncBatch" in pending_sync_hook_source,
+        "paired_and_capture_counts": (
+            "syncedPaired" in pending_sync_queue_source
+            and "syncedCapture" in pending_sync_queue_source
+        ),
+    }
+    _check(
+        checks,
+        "mobile_e2e_sync_smoke_sources",
+        all(mobile_e2e_sync_smoke_requirements.values()),
+        f"requirements={mobile_e2e_sync_smoke_requirements!r}",
+    )
+    mobile_e2e_sync_smoke_test_requirements = {
+        "restore_smoke_test": (
+            "mobile E2E smoke replays queued paired and capture submissions "
+            "after network restore"
+        )
+        in pending_sync_queue_tests_source,
+        "paired_capture_queue": (
+            '"paired_measurements:SESSION-001:SYNC-E2E-001"'
+            in pending_sync_queue_tests_source
+            and '"capture_packages:SESSION-001:SYNC-E2E-001"'
+            in pending_sync_queue_tests_source
+        ),
+        "synced_outcomes": (
+            '"synced_paired"' in pending_sync_queue_tests_source
+            and '"synced_capture"' in pending_sync_queue_tests_source
+        ),
+    }
+    _check(
+        checks,
+        "mobile_e2e_sync_smoke_unit_tests_present",
+        all(mobile_e2e_sync_smoke_test_requirements.values()),
+        f"requirements={mobile_e2e_sync_smoke_test_requirements!r}",
+    )
     _check(
         checks,
         "pending_submission_storage_unit_tests_present",

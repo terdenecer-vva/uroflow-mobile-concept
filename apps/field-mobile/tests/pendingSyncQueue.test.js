@@ -23,6 +23,24 @@ function buildPayload(syncId = "SYNC-001") {
   };
 }
 
+function buildCapturePackagePayload(syncId = "SYNC-001") {
+  const pairedPayload = buildPayload(syncId);
+  return {
+    session: pairedPayload.session,
+    package_type: "capture_contract_json",
+    capture_payload: {
+      schema_version: "ios_capture_v1",
+      session: {
+        session_id: pairedPayload.session.session_id,
+        sync_id: pairedPayload.session.sync_id,
+      },
+      samples: [],
+    },
+    paired_measurement_id: null,
+    notes: "mobile_runtime_capture_contract_audio_imu_v0.1",
+  };
+}
+
 function buildPendingSubmission(overrides = {}) {
   return {
     id: "PENDING-001",
@@ -143,6 +161,123 @@ test("shouldAutoSyncOnConnectivityRestore requires unreachable to reachable tran
       isNetworkReachable: true,
     }),
     false,
+  );
+});
+
+test("mobile E2E smoke replays queued paired and capture submissions after network restore", async () => {
+  const queue = [
+    buildPendingSubmission({
+      id: "PENDING-PAIR",
+      endpoint: "paired_measurements",
+      payload: buildPayload("SYNC-E2E-001"),
+    }),
+    buildPendingSubmission({
+      id: "PENDING-CAPTURE",
+      endpoint: "capture_packages",
+      payload: buildCapturePackagePayload("SYNC-E2E-001"),
+      request_headers: {
+        api_key: "",
+        actor_role: "",
+        site_id: "",
+        operator_id: "",
+        request_id: "",
+      },
+    }),
+  ];
+  const currentHeaders = {
+    api_key: "current-key",
+    actor_role: "operator",
+    site_id: "SITE-CURRENT",
+    operator_id: "OP-CURRENT",
+    request_id: "REQ-CURRENT",
+  };
+
+  const offlineCalls = [];
+  const offlineResult = await pending.runPendingSyncBatch({
+    queue,
+    requestHeaderContext: currentHeaders,
+    attemptedAtIso: "2026-06-04T01:02:03.000Z",
+    submitEndpoint: async ({ endpoint, endpointPayload, headerContext }) => {
+      offlineCalls.push({
+        endpoint,
+        requestId: headerContext.request_id,
+        sessionId: endpointPayload.session.session_id,
+        syncId: endpointPayload.session.sync_id,
+      });
+      return {
+        ok: false,
+        statusCode: null,
+        body: "TypeError: failed to fetch subject_id=SUBJ-001 api_key=secret-token",
+        retryable: true,
+      };
+    },
+  });
+
+  assert.deepEqual(
+    offlineCalls.map((call) => `${call.endpoint}:${call.sessionId}:${call.syncId}`),
+    [
+      "paired_measurements:SESSION-001:SYNC-E2E-001",
+      "capture_packages:SESSION-001:SYNC-E2E-001",
+    ],
+  );
+  assert.deepEqual(
+    offlineCalls.map((call) => call.requestId),
+    ["REQ-QUEUED", "PENDING-CAPTURE"],
+  );
+  assert.equal(offlineResult.remaining.length, 2);
+  assert.deepEqual(
+    offlineResult.remaining.map((item) => item.id),
+    ["PENDING-PAIR", "PENDING-CAPTURE"],
+  );
+  assert.equal(offlineResult.remaining.every((item) => item.attempt_count === 1), true);
+  assert.equal(offlineResult.remaining.every((item) => item.last_error === "network_or_timeout"), true);
+  assert.deepEqual(offlineResult.summary, {
+    batchCount: 2,
+    totalCount: 2,
+    syncedPaired: 0,
+    syncedCapture: 0,
+    remainingQueued: 2,
+    deferred: 0,
+    droppedNonRetryable: 0,
+  });
+
+  const restoredCalls = [];
+  const restoredResult = await pending.runPendingSyncBatch({
+    queue: offlineResult.remaining,
+    requestHeaderContext: currentHeaders,
+    attemptedAtIso: "2026-06-04T01:03:03.000Z",
+    submitEndpoint: async ({ endpoint, endpointPayload }) => {
+      restoredCalls.push(`${endpoint}:${endpointPayload.session.session_id}`);
+      return {
+        ok: true,
+        statusCode: endpoint === "capture_packages" ? 201 : 200,
+        body: endpoint === "capture_packages" ? '{"id": 102}' : '{"id": 101}',
+        retryable: false,
+      };
+    },
+  });
+
+  assert.deepEqual(restoredCalls, [
+    "paired_measurements:SESSION-001",
+    "capture_packages:SESSION-001",
+  ]);
+  assert.deepEqual(
+    restoredResult.attempts.map((attempt) => attempt.outcome),
+    ["synced_paired", "synced_capture"],
+  );
+  assert.deepEqual(restoredResult.remaining, []);
+  assert.deepEqual(restoredResult.summary, {
+    batchCount: 2,
+    totalCount: 2,
+    syncedPaired: 1,
+    syncedCapture: 1,
+    remainingQueued: 0,
+    deferred: 0,
+    droppedNonRetryable: 0,
+  });
+  assert.equal(
+    restoredResult.statusMessage,
+    "Sync batch completed (2/2). Synced paired: 1, synced capture: 1, remaining queued: 0, deferred: 0, dropped non-retryable: 0.",
   );
 });
 

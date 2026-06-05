@@ -17,18 +17,12 @@ import type {
   PendingSubmission,
   RequestHeaderContext,
 } from "../types";
+import { createPendingId, summarizePendingError } from "../utils/appHelpers";
 import {
-  createPendingId,
-  resolvePendingHeaderContext,
-  summarizePendingError,
-} from "../utils/appHelpers";
-import {
-  buildPendingSyncAttempt,
-  buildPendingSyncStatusMessage,
   isNetworkReachableForSync,
+  runPendingSyncBatch,
   shouldAutoSyncPendingQueue,
   shouldAutoSyncOnConnectivityRestore,
-  splitPendingSyncBatch,
 } from "../utils/pendingSyncQueue";
 
 type UsePendingSyncQueueOptions = {
@@ -116,58 +110,24 @@ export function usePendingSyncQueue({
           return;
         }
 
-        const { batch, deferred } = splitPendingSyncBatch(queue);
-        const retryableBatchItems: PendingSubmission[] = [];
-        let syncedPaired = 0;
-        let syncedCapture = 0;
-        let droppedNonRetryable = 0;
-
-        for (const item of batch) {
-          const headerContext = resolvePendingHeaderContext(item, requestHeaderContext);
-          const result = await attemptSubmitEndpoint({
-            apiBaseUrl,
-            requestTimeoutMs,
-            endpoint: item.endpoint,
-            endpointPayload: item.payload,
-            headerContext,
-          });
-          const attempt = buildPendingSyncAttempt({
-            item,
-            headerContext,
-            result,
-            attemptedAtIso: new Date().toISOString(),
-          });
-          if (attempt.outcome === "synced_capture") {
-            syncedCapture += 1;
-            continue;
-          }
-          if (attempt.outcome === "synced_paired") {
-            syncedPaired += 1;
-            continue;
-          }
-          if (attempt.outcome === "retryable") {
-            retryableBatchItems.push(attempt.attemptedItem);
-            continue;
-          }
-          droppedNonRetryable += 1;
-        }
-
-        const remaining = [...retryableBatchItems, ...deferred];
-        await persistPendingQueue(remaining);
-
-        const statusMessage = buildPendingSyncStatusMessage({
-          batchCount: batch.length,
-          totalCount: queue.length,
-          syncedPaired,
-          syncedCapture,
-          remainingQueued: remaining.length,
-          deferred: deferred.length,
-          droppedNonRetryable,
+        const syncResult = await runPendingSyncBatch({
+          queue,
+          requestHeaderContext,
+          submitEndpoint: ({ endpoint, endpointPayload, headerContext }) =>
+            attemptSubmitEndpoint({
+              apiBaseUrl,
+              requestTimeoutMs,
+              endpoint,
+              endpointPayload,
+              headerContext,
+            }),
         });
-        setSyncStatusMessage(statusMessage);
-        onLastResponse(statusMessage);
+        await persistPendingQueue(syncResult.remaining);
+
+        setSyncStatusMessage(syncResult.statusMessage);
+        onLastResponse(syncResult.statusMessage);
         if (showAlert) {
-          Alert.alert("Sync completed", statusMessage);
+          Alert.alert("Sync completed", syncResult.statusMessage);
         }
       } finally {
         syncInFlightRef.current = false;

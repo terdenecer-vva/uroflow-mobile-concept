@@ -58,7 +58,7 @@ Workflow generates artifact `mobile-release-manifest` containing:
 
 Workflow also generates artifact `mobile-release-readiness` containing:
 - git SHA/ref/run-id/workflow traceability,
-- local mobile readiness checks (`app.json`, `eas.json`, runtime release metadata/config/defaults, endpoint set/data residency/debug gates, pending sync connectivity restore, runtime motion quality gates, derivatives-only feature/media manifest gates, package scripts, lockfile, pinned tooling, API response + submit exception + runtime exception PHI redaction, unit-test coverage wiring),
+- local mobile readiness checks (`app.json`, `eas.json`, runtime release metadata/config/defaults, endpoint set/data residency/debug gates, pending sync connectivity restore, deterministic mobile E2E sync smoke, runtime motion quality gates, derivatives-only feature/media manifest gates, package scripts, lockfile, pinned tooling, API response + submit exception + runtime exception PHI redaction, unit-test coverage wiring),
 - external credential state without secret values,
 - authenticated EAS readiness status and specific EAS blockers,
 - live Clinical Hub API readiness status (`present`, `missing`, or `invalid`),
@@ -117,6 +117,7 @@ Android:
 4. Submit produces `paired-measurements` and `capture-packages` records.
 5. Offline mode queues both endpoint jobs.
 6. Returning online triggers successful auto-sync through connectivity restore, interval, or AppState fallback.
+7. Repository-level deterministic smoke confirms queued paired+capture replay drains after network restore.
 
 ## 6) Evidence to archive per build
 
