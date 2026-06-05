@@ -39,6 +39,12 @@ import {
   loadAppSettings,
   saveAppSettings,
 } from "./src/storage/appStorage";
+import {
+  buildNonRetryableUploadMessage,
+  buildQueuedCapturePackageMessage,
+  buildQueuedPairedAndCaptureMessage,
+  buildRejectedCapturePackageMessage,
+} from "./src/utils/submitOutcome";
 import type {
   AppSettings,
   AuthContextResponse,
@@ -588,17 +594,11 @@ export default function App() {
               captureResult.body,
               captureResult.statusCode,
             );
-            const queuedMessage =
-              `Paired uploaded; capture package queued for retry: ` +
-              `${captureResult.statusCode ? `HTTP ${captureResult.statusCode}` : "NETWORK"} ` +
-              `${captureResult.body}`;
+            const queuedMessage = buildQueuedCapturePackageMessage(captureResult);
             setLastResponse(queuedMessage);
             Alert.alert("Submitted with queued capture", queuedMessage);
           } else {
-            const warningMessage =
-              `Paired measurement uploaded, but capture package rejected: ` +
-              `${captureResult.statusCode ? `HTTP ${captureResult.statusCode}` : "ERROR"} ` +
-              `${captureResult.body}`;
+            const warningMessage = buildRejectedCapturePackageMessage(captureResult);
             setLastResponse(warningMessage);
             Alert.alert("Submitted with warning", warningMessage);
           }
@@ -619,9 +619,7 @@ export default function App() {
       }
 
       if (!result.retryable) {
-        const nonRetryableMessage =
-          `Upload rejected and not queued. ` +
-          `${result.statusCode ? `HTTP ${result.statusCode}` : "ERROR"} ${result.body}`;
+        const nonRetryableMessage = buildNonRetryableUploadMessage(result);
         setLastResponse(nonRetryableMessage);
         Alert.alert(
           "Upload rejected",
@@ -654,11 +652,7 @@ export default function App() {
         "queued_with_paired_retry",
         null,
       );
-      setLastResponse(
-        `Queued paired+capture for retry. Last paired error: ${
-          result.statusCode ? `HTTP ${result.statusCode}` : "NETWORK"
-        } ${result.body}`
-      );
+      setLastResponse(buildQueuedPairedAndCaptureMessage(result));
       Alert.alert(
         "Saved offline",
         "No successful upload now. Paired and capture records added to pending queue.",

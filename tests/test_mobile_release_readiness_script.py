@@ -75,6 +75,7 @@ def test_mobile_release_readiness_reports_external_blockers(tmp_path: Path) -> N
         "roi_signal_unit_tests_present",
         "runtime_metrics_unit_tests_present",
         "summary_requests_unit_tests_present",
+        "submit_outcome_unit_tests_present",
     }.issubset(local_check_ids)
     assert {item["id"] for item in payload["next_actions"]} == {
         "configure_clinical_hub_live_api",
