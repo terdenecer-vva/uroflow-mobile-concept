@@ -129,6 +129,41 @@ function sanitizeRuntimeFlowSeries(
   return reduced;
 }
 
+function sanitizeNullableLevel(value: number | null): number | null {
+  if (value == null || !Number.isFinite(value)) {
+    return null;
+  }
+  return round4(Math.max(0, value));
+}
+
+function sanitizeSample(sample: CaptureContractSample): CaptureContractSample | null {
+  if (!Number.isFinite(sample.t_s) || sample.t_s < 0) {
+    return null;
+  }
+  return {
+    t_s: round4(sample.t_s),
+    depth_level_mm: sanitizeNullableLevel(sample.depth_level_mm),
+    rgb_level_mm: sanitizeNullableLevel(sample.rgb_level_mm),
+    depth_confidence: Number.isFinite(sample.depth_confidence)
+      ? round4(clamp(sample.depth_confidence, 0, 1))
+      : 0,
+    audio_rms_dbfs: Number.isFinite(sample.audio_rms_dbfs)
+      ? round4(clamp(sample.audio_rms_dbfs, -120, 0))
+      : -120,
+    motion_norm: Number.isFinite(sample.motion_norm)
+      ? round4(clamp(sample.motion_norm, 0, 1))
+      : 1,
+    roi_valid: sample.roi_valid === true,
+  };
+}
+
+function sanitizeRuntimeSamples(samples: CaptureContractSample[]): CaptureContractSample[] {
+  return samples
+    .map((sample) => sanitizeSample(sample))
+    .filter((sample): sample is CaptureContractSample => sample != null)
+    .sort((a, b) => a.t_s - b.t_s);
+}
+
 function sanitizeAnalysis(
   analysis: CaptureContractAnalysis | undefined,
 ): CaptureContractAnalysis | undefined {
@@ -248,7 +283,7 @@ export function buildCaptureContractPayloadFromSamples(
   const model = input.deviceModel?.trim() || "unknown-device";
   const appVersion = input.appVersion?.trim() || "0.1.0";
   const source = input.sourceLabel?.trim();
-  let safeSamples: CaptureContractSample[] = input.samples;
+  let safeSamples: CaptureContractSample[] = sanitizeRuntimeSamples(input.samples);
   if (safeSamples.length === 0) {
     safeSamples = [
       {

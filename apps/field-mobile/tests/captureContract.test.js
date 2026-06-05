@@ -88,7 +88,69 @@ test("buildCaptureContractPayloadFromSamples duplicates one-sample runtime captu
   assert.equal(payload.samples.length, 2);
   assert.equal(payload.samples[0].t_s, 0);
   assert.equal(payload.samples[1].t_s, 0.5);
-  assert.equal(payload.samples[1].depth_level_mm, 1.23456);
+  assert.equal(payload.samples[1].depth_level_mm, 1.2346);
+});
+
+test("buildCaptureContractPayloadFromSamples sanitizes malformed runtime samples", () => {
+  const payload = capture.buildCaptureContractPayloadFromSamples({
+    sessionId: "SESSION-SANITIZE",
+    syncId: "SYNC-SANITIZE",
+    startedAtIso: "2026-06-04T01:02:03Z",
+    captureMode: "water_impact",
+    deviceModel: "iPhone",
+    iosVersion: "19.0",
+    appVersion: "0.1.0",
+    samples: [
+      {
+        t_s: 2.123456,
+        depth_level_mm: -1,
+        rgb_level_mm: Number.POSITIVE_INFINITY,
+        depth_confidence: 2,
+        audio_rms_dbfs: 6,
+        motion_norm: 2,
+        roi_valid: "yes",
+      },
+      {
+        t_s: -1,
+        depth_level_mm: 99,
+        rgb_level_mm: 99,
+        depth_confidence: 0.9,
+        audio_rms_dbfs: -30,
+        motion_norm: 0.1,
+        roi_valid: true,
+      },
+      {
+        t_s: 0.5,
+        depth_level_mm: Number.NaN,
+        rgb_level_mm: 0.123456,
+        depth_confidence: Number.NaN,
+        audio_rms_dbfs: Number.NaN,
+        motion_norm: Number.NaN,
+        roi_valid: true,
+      },
+    ],
+  });
+
+  assert.deepEqual(payload.samples, [
+    {
+      t_s: 0.5,
+      depth_level_mm: null,
+      rgb_level_mm: 0.1235,
+      depth_confidence: 0,
+      audio_rms_dbfs: -120,
+      motion_norm: 1,
+      roi_valid: true,
+    },
+    {
+      t_s: 2.1235,
+      depth_level_mm: 0,
+      rgb_level_mm: null,
+      depth_confidence: 1,
+      audio_rms_dbfs: 0,
+      motion_norm: 1,
+      roi_valid: false,
+    },
+  ]);
 });
 
 test("buildCaptureContractPayloadFromSamples sanitizes runtime analysis", () => {
