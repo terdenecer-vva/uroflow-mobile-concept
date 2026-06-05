@@ -281,6 +281,7 @@ def build_readiness_report(
     pending_submission_storage_tests_path = (
         mobile_root / "tests" / "pendingSubmissionStorage.test.js"
     )
+    summary_requests_tests_path = mobile_root / "tests" / "summaryRequests.test.js"
     _check(
         checks,
         "unit_test_script",
@@ -358,6 +359,12 @@ def build_readiness_report(
         "pending_submission_storage_unit_tests_present",
         pending_submission_storage_tests_path.is_file(),
         f"path={pending_submission_storage_tests_path}",
+    )
+    _check(
+        checks,
+        "summary_requests_unit_tests_present",
+        summary_requests_tests_path.is_file(),
+        f"path={summary_requests_tests_path}",
     )
     _check(
         checks,
