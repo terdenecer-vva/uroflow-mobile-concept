@@ -45,14 +45,15 @@ npm run build:preview
 Workflow generates artifact `mobile-release-manifest` containing:
 - app version and package IDs,
 - iOS build number and Android versionCode,
-- icon/adaptive-icon paths, SHA-256 fingerprints, byte sizes, and PNG dimensions,
+- icon/adaptive-icon paths, `expo-splash-screen` image path, SHA-256 fingerprints, byte sizes, PNG dimensions, and splash background/resize/width config,
+- runtime release metadata from `apps/field-mobile/src/config/releaseMetadata.ts` for app version, model ID, and capture schema version,
 - git SHA/ref/run-id,
 - model_id and capture schema version.
 - selected build profile/channel.
 
 Workflow also generates artifact `mobile-release-readiness` containing:
 - git SHA/ref/run-id/workflow traceability,
-- local mobile readiness checks (`app.json`, `eas.json`, package scripts, lockfile, pinned tooling, unit-test coverage wiring),
+- local mobile readiness checks (`app.json`, `eas.json`, runtime release metadata, package scripts, lockfile, pinned tooling, unit-test coverage wiring),
 - external credential state without secret values,
 - authenticated EAS readiness status and specific EAS blockers,
 - live Clinical Hub API readiness status,

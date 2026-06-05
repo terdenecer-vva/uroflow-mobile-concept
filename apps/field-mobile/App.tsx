@@ -30,6 +30,7 @@ import {
   RuntimeCaptureSession,
   type RuntimeFlowPoint,
 } from "./src/capture/runtimeCaptureSession";
+import { APP_MODEL_ID, APP_RELEASE_VERSION } from "./src/config/releaseMetadata";
 import { estimateRoiSignalFromBase64 } from "./src/capture/roiSignalEstimator";
 import { ApiConnectionSection } from "./src/components/ApiConnectionSection";
 import { MeasurementFormSection } from "./src/components/MeasurementFormSection";
@@ -91,7 +92,7 @@ export default function App() {
   const [measuredAt, setMeasuredAt] = useState(defaultMeasuredAt);
   const [platform, setPlatform] = useState<string>(defaultPlatform);
   const [deviceModel, setDeviceModel] = useState<string>(Platform.OS);
-  const [appVersion, setAppVersion] = useState("0.1.0");
+  const [appVersion, setAppVersion] = useState(APP_RELEASE_VERSION);
   const [captureMode, setCaptureMode] = useState("water_impact");
 
   const [appQmax, setAppQmax] = useState("");
@@ -101,7 +102,7 @@ export default function App() {
   const [appTqmax, setAppTqmax] = useState("");
   const [appQualityStatus, setAppQualityStatus] = useState<QualityStatus>("valid");
   const [appQualityScore, setAppQualityScore] = useState("");
-  const [appModelId, setAppModelId] = useState("fusion-v0.1");
+  const [appModelId, setAppModelId] = useState(APP_MODEL_ID);
 
   const [refQmax, setRefQmax] = useState("");
   const [refQavg, setRefQavg] = useState("");

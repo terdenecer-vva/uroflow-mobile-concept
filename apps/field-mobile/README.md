@@ -119,7 +119,7 @@ CI:
   - `build_platform` (`all` / `ios` / `android`)
   - `wait_for_build` (`true` / `false`)
 - `mobile-build` uploads:
-  - `mobile-release-manifest` (version + git SHA + model/schema traceability)
+  - `mobile-release-manifest` (version + runtime release metadata + git SHA + model/schema traceability)
   - `mobile-release-readiness` (git traceability + local readiness checks + explicit external credential blockers)
   - `mobile-eas-build-result-<run_id>` (raw EAS JSON response for build IDs/URLs)
 - Workflow summary includes release readiness status and direct EAS build links for operator/release use.
@@ -129,9 +129,9 @@ CI:
 `mobile-release-readiness` intentionally separates local readiness from external account and
 secret blockers. The artifact has separate machine-readable gates:
 
-- `local_checks_status`: local app metadata, EAS profile shape, store privacy declarations,
-  app icon assets, dependency lock alignment, and unit-test evidence that can be verified without
-  external credentials.
+- `local_checks_status`: local app metadata, runtime release metadata, EAS profile shape,
+  store privacy declarations, launch/icon assets, dependency lock alignment, and unit-test
+  evidence that can be verified without external credentials.
 - `authenticated_eas_status`: whether `EXPO_TOKEN` and deterministic EAS project identity are ready for an authenticated EAS build trigger.
 - `clinical_hub_live_api_status`: whether live Clinical Hub API smoke/report-push credentials are configured.
 - `external_readiness_status`: aggregate external status across Expo/EAS + Clinical Hub.

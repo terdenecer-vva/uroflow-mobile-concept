@@ -91,6 +91,12 @@ def test_mobile_release_readiness_reports_external_blockers(tmp_path: Path) -> N
         "package_lock_matches_root",
         "secure_store_dependency_locked",
         "secure_store_plugin",
+        "splash_background_color",
+        "splash_image_width",
+        "splash_png_asset",
+        "splash_resize_mode",
+        "splash_screen_dependency_locked",
+        "splash_screen_plugin",
         "unit_test_script",
         "validate_ci_runs_unit_tests",
         "unit_test_runner_script",
@@ -101,6 +107,10 @@ def test_mobile_release_readiness_reports_external_blockers(tmp_path: Path) -> N
         "pending_sync_queue_unit_tests_present",
         "roi_signal_unit_tests_present",
         "runtime_metrics_unit_tests_present",
+        "release_metadata_capture_schema_version",
+        "release_metadata_model_id",
+        "release_metadata_module",
+        "release_metadata_version_matches_expo",
         "summary_requests_unit_tests_present",
         "submit_outcome_unit_tests_present",
     }.issubset(local_check_ids)
@@ -138,6 +148,31 @@ def test_mobile_release_readiness_fails_missing_app_icon(tmp_path: Path) -> None
     assert "missing-icon.png" in check["evidence"]
 
 
+def test_mobile_release_readiness_fails_missing_splash_asset(tmp_path: Path) -> None:
+    mutated_app_json = tmp_path / "app.json"
+    app_payload = json.loads(APP_JSON.read_text(encoding="utf-8"))
+    splash_plugin = next(
+        plugin
+        for plugin in app_payload["expo"]["plugins"]
+        if isinstance(plugin, list) and plugin[0] == "expo-splash-screen"
+    )
+    splash_plugin[1]["image"] = "./assets/missing-splash.png"
+    mutated_app_json.write_text(json.dumps(app_payload), encoding="utf-8")
+
+    payload = _run_readiness_with_paths(
+        tmp_path / "readiness.json",
+        env={"PATH": os.environ.get("PATH", "")},
+        app_json=mutated_app_json,
+        check=False,
+    )
+
+    check = next(item for item in payload["local_checks"] if item["id"] == "splash_png_asset")
+    assert payload["status"] == "not_ready"
+    assert payload["local_checks_status"] == "fail"
+    assert check["status"] == "fail"
+    assert "missing-splash.png" in check["evidence"]
+
+
 def test_mobile_release_readiness_fails_local_version_mismatch(tmp_path: Path) -> None:
     mutated_app_json = tmp_path / "app.json"
     app_payload = json.loads(APP_JSON.read_text(encoding="utf-8"))
@@ -160,6 +195,43 @@ def test_mobile_release_readiness_fails_local_version_mismatch(tmp_path: Path) -
     assert payload["local_checks_status"] == "fail"
     assert check["status"] == "fail"
     assert "expo.version='9.9.9'" in check["evidence"]
+
+
+def test_mobile_release_readiness_fails_release_metadata_version_mismatch(
+    tmp_path: Path,
+) -> None:
+    mutated_app_json = tmp_path / "app.json"
+    metadata_path = tmp_path / "src" / "config" / "releaseMetadata.ts"
+    metadata_path.parent.mkdir(parents=True)
+    app_payload = json.loads(APP_JSON.read_text(encoding="utf-8"))
+    mutated_app_json.write_text(json.dumps(app_payload), encoding="utf-8")
+    metadata_path.write_text(
+        "\n".join(
+            [
+                'export const APP_RELEASE_VERSION = "9.9.9";',
+                'export const APP_MODEL_ID = "fusion-v0.1";',
+                'export const APP_CAPTURE_SCHEMA_VERSION = "ios_capture_v1";',
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    payload = _run_readiness_with_paths(
+        tmp_path / "readiness.json",
+        env={"PATH": os.environ.get("PATH", "")},
+        app_json=mutated_app_json,
+        check=False,
+    )
+
+    check = next(
+        item
+        for item in payload["local_checks"]
+        if item["id"] == "release_metadata_version_matches_expo"
+    )
+    assert payload["status"] == "not_ready"
+    assert payload["local_checks_status"] == "fail"
+    assert check["status"] == "fail"
+    assert "release_metadata.app_version='9.9.9'" in check["evidence"]
 
 
 def test_mobile_release_readiness_passes_authenticated_preflight_env(tmp_path: Path) -> None:

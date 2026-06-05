@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -29,6 +30,41 @@ def _png_dimensions(path: Path | None) -> tuple[int, int] | None:
     if len(header) < 24 or header[:8] != b"\x89PNG\r\n\x1a\n" or header[12:16] != b"IHDR":
         return None
     return int.from_bytes(header[16:20], "big"), int.from_bytes(header[20:24], "big")
+
+
+def _is_six_digit_hex_color(value: Any) -> bool:
+    return (
+        isinstance(value, str)
+        and len(value) == 7
+        and value.startswith("#")
+        and all(character in "0123456789abcdefABCDEF" for character in value[1:])
+    )
+
+
+def _read_ts_string_constant(source: str, name: str) -> str | None:
+    pattern = re.compile(rf"export\s+const\s+{re.escape(name)}\s*=\s*[\"']([^\"']+)[\"']")
+    match = pattern.search(source)
+    return match.group(1) if match else None
+
+
+def _load_release_metadata(app_json: Path) -> dict[str, str | None]:
+    path = app_json.parent / "src" / "config" / "releaseMetadata.ts"
+    if not path.is_file():
+        return {
+            "path": str(path),
+            "app_version": None,
+            "model_id": None,
+            "capture_schema_version": None,
+        }
+    source = path.read_text(encoding="utf-8")
+    return {
+        "path": str(path),
+        "app_version": _read_ts_string_constant(source, "APP_RELEASE_VERSION"),
+        "model_id": _read_ts_string_constant(source, "APP_MODEL_ID"),
+        "capture_schema_version": _read_ts_string_constant(
+            source, "APP_CAPTURE_SCHEMA_VERSION"
+        ),
+    }
 
 
 def _has_plugin(plugins: list[Any], plugin_name: str) -> bool:
@@ -190,11 +226,13 @@ def build_readiness_report(
     eas_payload = _load_json(eas_json)
     package_payload = _load_json(package_json)
     lock_payload = _load_json(package_lock)
+    release_metadata = _load_release_metadata(app_json)
 
     expo = app_payload.get("expo", {})
     plugins = expo.get("plugins", [])
     ios = expo.get("ios", {})
     android = expo.get("android", {})
+    splash = _get_plugin_options(plugins, "expo-splash-screen")
     android_adaptive_icon = android.get("adaptiveIcon", {})
     scripts = package_payload.get("scripts", {})
     root_lock = lock_payload.get("packages", {}).get("", {})
@@ -216,6 +254,41 @@ def build_readiness_report(
     _check(checks, "expo_name", bool(expo.get("name")), f"name={expo.get('name')!r}")
     _check(checks, "expo_slug", bool(expo.get("slug")), f"slug={expo.get('slug')!r}")
     _check(checks, "expo_version", bool(expo.get("version")), f"version={expo.get('version')!r}")
+    _check(
+        checks,
+        "release_metadata_module",
+        bool(release_metadata.get("app_version"))
+        and bool(release_metadata.get("model_id"))
+        and bool(release_metadata.get("capture_schema_version")),
+        (
+            f"path={release_metadata.get('path')}, "
+            f"app_version={release_metadata.get('app_version')!r}, "
+            f"model_id={release_metadata.get('model_id')!r}, "
+            f"capture_schema_version={release_metadata.get('capture_schema_version')!r}"
+        ),
+    )
+    _check(
+        checks,
+        "release_metadata_version_matches_expo",
+        release_metadata.get("app_version") == expo.get("version"),
+        (
+            f"release_metadata.app_version={release_metadata.get('app_version')!r}, "
+            f"expo.version={expo.get('version')!r}"
+        ),
+    )
+    _check(
+        checks,
+        "release_metadata_model_id",
+        isinstance(release_metadata.get("model_id"), str)
+        and bool(str(release_metadata.get("model_id")).strip()),
+        f"model_id={release_metadata.get('model_id')!r}",
+    )
+    _check(
+        checks,
+        "release_metadata_capture_schema_version",
+        release_metadata.get("capture_schema_version") == "ios_capture_v1",
+        f"capture_schema_version={release_metadata.get('capture_schema_version')!r}",
+    )
     app_icon_path = _asset_path(app_json, expo.get("icon"))
     app_icon_dimensions = _png_dimensions(app_icon_path)
     _check(
@@ -225,6 +298,40 @@ def build_readiness_report(
         and app_icon_dimensions[0] == app_icon_dimensions[1]
         and app_icon_dimensions[0] >= 1024,
         f"icon={expo.get('icon')!r}, dimensions={app_icon_dimensions!r}",
+    )
+    splash_image_path = _asset_path(app_json, splash.get("image"))
+    splash_dimensions = _png_dimensions(splash_image_path)
+    _check(
+        checks,
+        "splash_png_asset",
+        splash_dimensions is not None
+        and splash_dimensions[0] == splash_dimensions[1]
+        and splash_dimensions[0] >= 1024,
+        f"image={splash.get('image')!r}, dimensions={splash_dimensions!r}",
+    )
+    _check(
+        checks,
+        "splash_screen_plugin",
+        _has_plugin(plugins, "expo-splash-screen"),
+        "expo-splash-screen plugin configured",
+    )
+    _check(
+        checks,
+        "splash_resize_mode",
+        splash.get("resizeMode") in {"contain", "cover", "native"},
+        f"resizeMode={splash.get('resizeMode')!r}",
+    )
+    _check(
+        checks,
+        "splash_image_width",
+        isinstance(splash.get("imageWidth"), int) and 0 < splash.get("imageWidth", 0) <= 512,
+        f"imageWidth={splash.get('imageWidth')!r}",
+    )
+    _check(
+        checks,
+        "splash_background_color",
+        _is_six_digit_hex_color(splash.get("backgroundColor")),
+        f"backgroundColor={splash.get('backgroundColor')!r}",
     )
     _check(
         checks,
@@ -328,9 +435,7 @@ def build_readiness_report(
     _check(
         checks,
         "android_adaptive_icon_background_color",
-        isinstance(android_adaptive_icon.get("backgroundColor"), str)
-        and android_adaptive_icon.get("backgroundColor", "").startswith("#")
-        and len(android_adaptive_icon.get("backgroundColor", "")) == 7,
+        _is_six_digit_hex_color(android_adaptive_icon.get("backgroundColor")),
         f"backgroundColor={android_adaptive_icon.get('backgroundColor')!r}",
     )
     _check(
@@ -349,6 +454,18 @@ def build_readiness_report(
             "expo-secure-store dependency="
             f"{package_dependencies.get('expo-secure-store')!r}, "
             f"lock={lock_dependencies.get('expo-secure-store')!r}"
+        ),
+    )
+    _check(
+        checks,
+        "splash_screen_dependency_locked",
+        "expo-splash-screen" in package_dependencies
+        and package_dependencies.get("expo-splash-screen")
+        == lock_dependencies.get("expo-splash-screen"),
+        (
+            "expo-splash-screen dependency="
+            f"{package_dependencies.get('expo-splash-screen')!r}, "
+            f"lock={lock_dependencies.get('expo-splash-screen')!r}"
         ),
     )
     _check(

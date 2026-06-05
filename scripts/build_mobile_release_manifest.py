@@ -5,6 +5,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -39,6 +40,39 @@ def _asset_metadata(app_json: Path, raw_path: Any) -> dict[str, Any] | None:
     }
 
 
+def _get_plugin_options(plugins: list[Any], plugin_name: str) -> dict[str, Any]:
+    for plugin in plugins:
+        if isinstance(plugin, list) and len(plugin) > 1 and plugin[0] == plugin_name:
+            return plugin[1] if isinstance(plugin[1], dict) else {}
+    return {}
+
+
+def _read_ts_string_constant(source: str, name: str) -> str | None:
+    pattern = re.compile(rf"export\s+const\s+{re.escape(name)}\s*=\s*[\"']([^\"']+)[\"']")
+    match = pattern.search(source)
+    return match.group(1) if match else None
+
+
+def _release_metadata(app_json: Path) -> dict[str, str | None]:
+    path = app_json.parent / "src" / "config" / "releaseMetadata.ts"
+    if not path.is_file():
+        return {
+            "path": str(path),
+            "app_version": None,
+            "model_id": None,
+            "capture_schema_version": None,
+        }
+    source = path.read_text(encoding="utf-8")
+    return {
+        "path": str(path),
+        "app_version": _read_ts_string_constant(source, "APP_RELEASE_VERSION"),
+        "model_id": _read_ts_string_constant(source, "APP_MODEL_ID"),
+        "capture_schema_version": _read_ts_string_constant(
+            source, "APP_CAPTURE_SCHEMA_VERSION"
+        ),
+    }
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Build mobile release manifest for pilot traceability."
@@ -56,8 +90,11 @@ def main() -> int:
     args = parse_args()
     app_payload = json.loads(args.app_json.read_text(encoding="utf-8"))
     expo = app_payload.get("expo", {})
+    plugins = expo.get("plugins", [])
     ios = expo.get("ios", {})
     android = expo.get("android", {})
+    splash = _get_plugin_options(plugins, "expo-splash-screen")
+    release_metadata = _release_metadata(args.app_json)
     android_adaptive_icon = android.get("adaptiveIcon", {})
 
     manifest = {
@@ -78,6 +115,12 @@ def main() -> int:
         },
         "assets": {
             "icon": _asset_metadata(args.app_json, expo.get("icon")),
+            "splash": {
+                "image": _asset_metadata(args.app_json, splash.get("image")),
+                "resize_mode": splash.get("resizeMode"),
+                "background_color": splash.get("backgroundColor"),
+                "image_width": splash.get("imageWidth"),
+            },
             "android_adaptive_icon": {
                 "foreground": _asset_metadata(
                     args.app_json, android_adaptive_icon.get("foregroundImage")
@@ -91,6 +134,7 @@ def main() -> int:
             "git_run_id": os.environ.get("GITHUB_RUN_ID", "local"),
             "workflow": os.environ.get("GITHUB_WORKFLOW", "local"),
         },
+        "runtime_release_metadata": release_metadata,
         "algorithm": {
             "model_id": args.model_id,
             "capture_schema_version": args.schema_version,

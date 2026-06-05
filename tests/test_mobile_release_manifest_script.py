@@ -31,9 +31,12 @@ def test_build_mobile_release_manifest_script(tmp_path: Path) -> None:
     app_json = tmp_path / "app.json"
     output = tmp_path / "manifest.json"
     assets = tmp_path / "assets"
+    metadata_path = tmp_path / "src" / "config" / "releaseMetadata.ts"
     assets.mkdir()
+    metadata_path.parent.mkdir(parents=True)
     _write_png(assets / "icon.png", 1024, 1024)
     _write_png(assets / "adaptive-icon.png", 1024, 1024)
+    _write_png(assets / "splash.png", 1024, 1024)
 
     app_json.write_text(
         json.dumps(
@@ -44,6 +47,17 @@ def test_build_mobile_release_manifest_script(tmp_path: Path) -> None:
                     "version": "0.1.0",
                     "icon": "./assets/icon.png",
                     "platforms": ["ios", "android"],
+                    "plugins": [
+                        [
+                            "expo-splash-screen",
+                            {
+                                "image": "./assets/splash.png",
+                                "resizeMode": "contain",
+                                "backgroundColor": "#F5F2EA",
+                                "imageWidth": 220,
+                            },
+                        ]
+                    ],
                     "ios": {
                         "bundleIdentifier": "com.uroflow.field",
                         "buildNumber": "1",
@@ -58,6 +72,16 @@ def test_build_mobile_release_manifest_script(tmp_path: Path) -> None:
                     },
                 }
             }
+        ),
+        encoding="utf-8",
+    )
+    metadata_path.write_text(
+        "\n".join(
+            [
+                'export const APP_RELEASE_VERSION = "0.1.0";',
+                'export const APP_MODEL_ID = "fusion-v0.1";',
+                'export const APP_CAPTURE_SCHEMA_VERSION = "ios_capture_v1";',
+            ]
         ),
         encoding="utf-8",
     )
@@ -93,6 +117,11 @@ def test_build_mobile_release_manifest_script(tmp_path: Path) -> None:
     assert payload["assets"]["icon"]["bytes"] > 0
     assert len(payload["assets"]["icon"]["sha256"]) == 64
     assert payload["assets"]["icon"]["png_dimensions"] == [1024, 1024]
+    assert payload["assets"]["splash"]["image"]["path"] == "./assets/splash.png"
+    assert payload["assets"]["splash"]["image"]["png_dimensions"] == [1024, 1024]
+    assert payload["assets"]["splash"]["resize_mode"] == "contain"
+    assert payload["assets"]["splash"]["background_color"] == "#F5F2EA"
+    assert payload["assets"]["splash"]["image_width"] == 220
     assert payload["assets"]["android_adaptive_icon"]["foreground"]["path"] == (
         "./assets/adaptive-icon.png"
     )
@@ -101,5 +130,8 @@ def test_build_mobile_release_manifest_script(tmp_path: Path) -> None:
         1024,
     ]
     assert payload["assets"]["android_adaptive_icon"]["background_color"] == "#0B1F2A"
+    assert payload["runtime_release_metadata"]["app_version"] == "0.1.0"
+    assert payload["runtime_release_metadata"]["model_id"] == "fusion-v0.1"
+    assert payload["runtime_release_metadata"]["capture_schema_version"] == "ios_capture_v1"
     assert payload["algorithm"]["model_id"] == "fusion-v0.1"
     assert payload["algorithm"]["capture_schema_version"] == "ios_capture_v1"

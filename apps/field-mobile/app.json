@@ -21,7 +21,16 @@
           "enableBackgroundRecording": false
         }
       ],
-      "expo-asset"
+      "expo-asset",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#F5F2EA",
+          "imageWidth": 220
+        }
+      ]
     ],
     "ios": {
       "supportsTablet": true,
