@@ -1,6 +1,7 @@
 import React from "react";
 import { Pressable, Text, View } from "react-native";
 
+import type { ClinicalHubPreflightStatus } from "../api/clinicalHubPreflight";
 import type { PendingSubmission } from "../types";
 import { normalizeActorRoleInput } from "../utils/appHelpers";
 import { styles } from "../styles/appStyles";
@@ -12,6 +13,8 @@ type ApiConnectionSectionProps = {
   apiKey: string;
   actorRole: string;
   requestTimeoutMs: string;
+  clinicalHubPreflightMessage: string;
+  clinicalHubPreflightStatus: ClinicalHubPreflightStatus;
   pendingQueue: PendingSubmission[];
   syncingPending: boolean;
   syncStatusMessage: string;
@@ -29,6 +32,8 @@ export function ApiConnectionSection({
   apiKey,
   actorRole,
   requestTimeoutMs,
+  clinicalHubPreflightMessage,
+  clinicalHubPreflightStatus,
   pendingQueue,
   syncingPending,
   syncStatusMessage,
@@ -49,11 +54,25 @@ export function ApiConnectionSection({
         onChangeText={onApiBaseUrlChange}
         placeholder="https://<clinical-hub-host>"
       />
-      {!apiBaseUrl.trim() ? (
-        <Text style={styles.helperText}>
-          Configure the Clinical Hub URL before Test API, Submit, or Sync Queue.
+      <View
+        style={[
+          styles.preflightBox,
+          clinicalHubPreflightStatus === "pass" && styles.preflightPassBox,
+          clinicalHubPreflightStatus === "warning" && styles.preflightWarningBox,
+          clinicalHubPreflightStatus === "blocked" && styles.preflightBlockedBox,
+        ]}
+      >
+        <Text
+          style={[
+            styles.preflightText,
+            clinicalHubPreflightStatus === "pass" && styles.preflightPassText,
+            clinicalHubPreflightStatus === "warning" && styles.preflightWarningText,
+            clinicalHubPreflightStatus === "blocked" && styles.preflightBlockedText,
+          ]}
+        >
+          Clinical Hub preflight: {clinicalHubPreflightMessage}
         </Text>
-      ) : null}
+      </View>
       <LabeledInput
         label="API Key (x-api-key)"
         value={apiKey}

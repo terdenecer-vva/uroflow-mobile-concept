@@ -435,6 +435,9 @@ npm run start:device
 В мобильном клиенте есть встроенный раздел `Comparison Summary`, который подтягивает
 `/api/v1/comparison-summary` и показывает текущую сходимость с эталонным урофлоуметром.
 Также реализована offline-очередь отправки и ручная синхронизация pending-записей.
+Перед `Test API`, `Submit` и `Sync Queue` приложение выполняет Clinical Hub preflight:
+пустой/невалидный URL и очевидный cross-region Hub блокируются, local/LAN URL разрешён
+только как предупреждение для smoke-тестов.
 
 ## Интеграция Project Package v2.8
 

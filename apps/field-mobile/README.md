@@ -22,6 +22,8 @@ Cross-platform mobile client (Expo React Native) for collecting paired measureme
 - Sync runs in bounded batches of 10 queued jobs to avoid long foreground stalls on large offline queues
 - Auto-sync retries queued jobs every ~25s only after API Base URL is configured
 - Queue controls: `Test API`, `Sync Queue`, `Clear Queue`
+- Clinical Hub preflight is shown in the API block; missing/invalid URLs and obvious
+  cross-region Hub targets are blocked before `Test API`, `Submit`, or `Sync Queue`.
 - Persisted local settings (`API URL`, `site/operator`, timeout, summary filter)
 - `API Key` stored in device secure storage (`expo-secure-store`) with AsyncStorage fallback
 - `Device Model` defaults from Expo Device metadata with platform fallback and remains editable for field correction.
@@ -97,6 +99,10 @@ Notes:
 
 Set `API Base URL` in the app screen.
 If backend API-key protection is enabled, set `API Key` too (sent as `x-api-key` header).
+The API block shows a preflight result. Missing/unsupported URLs block field actions.
+Local/LAN URLs are allowed with a warning for smoke tests. HTTPS URLs with an obvious
+non-US region token are blocked because the pilot runtime policy requires the configured
+single-region Clinical Hub.
 
 Examples:
 
@@ -142,6 +148,7 @@ secret blockers. The artifact has separate machine-readable gates:
 - `local_checks_status`: local app metadata, runtime release metadata, EAS profile shape,
   runtime config/defaults such as Clinical Hub v1 endpoint set, disabled debug gates,
   privacy-by-default switches, single-region data residency policy, Expo Device identity defaults,
+  Clinical Hub preflight guard,
   in-app release identity evidence,
   runtime motion quality gates, derivatives-only feature/media
   manifest gates, pending sync connectivity-restore trigger, device-smoke evidence template/validator,
