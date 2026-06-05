@@ -8,6 +8,7 @@ rm -rf "$BUILD_DIR"
 tsc --ignoreConfig \
   src/utils/appHelpers.ts \
   src/utils/pendingSyncQueue.ts \
+  src/storage/appSettingsStorage.ts \
   src/storage/pendingSubmissionStorage.ts \
   src/api/clinicalHub.ts \
   src/capture/buildCaptureContract.ts \
