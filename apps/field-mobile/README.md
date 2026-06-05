@@ -152,6 +152,7 @@ CI:
 secret blockers. The artifact has separate machine-readable gates:
 
 - `local_checks_status`: local app metadata, runtime release metadata, EAS profile shape,
+  EAS production submit shape for TestFlight / Play Internal Testing handoff,
   runtime config/defaults such as Clinical Hub v1 endpoint set, disabled debug gates,
   privacy-by-default switches, single-region data residency policy, Expo Device identity defaults,
   Clinical Hub preflight guard,
@@ -176,8 +177,8 @@ release handoff checklist:
 | `configure_expo_token` | `gh secret set EXPO_TOKEN --body "<expo_access_token>"` | Re-run `Mobile Build`; `external_items.expo_token` becomes `present`. |
 | `configure_eas_project_identity` | `gh variable set EAS_PROJECT_ID --body "<eas_project_uuid>"` or commit `expo.extra.eas.projectId` in `app.json` | Re-run `Mobile Build`; `external_items.eas_project_identity` becomes `present`. |
 | `configure_clinical_hub_live_api` | `gh secret set CLINICAL_HUB_URL --body "https://<clinical-hub>"` and `gh secret set CLINICAL_HUB_API_KEY --body "<api_key>"` | Re-run `Mobile Build`; `external_items.clinical_hub_live_api` becomes `present` rather than `missing`/`invalid`. |
-| `provision_apple_developer_account` | Apple Developer access, signing certificates/profiles, and TestFlight permissions | Trigger signed iOS EAS build and confirm TestFlight upload readiness. |
-| `provision_google_play_account` | Google Play Console access, Android signing, and internal testing track permissions | Trigger signed Android EAS build and confirm Play Internal Testing upload readiness. |
+| `provision_apple_developer_account` | Apple Developer access, App Store Connect app record, signing certificates/profiles, and TestFlight permissions | Trigger signed iOS EAS build and confirm TestFlight upload readiness. |
+| `provision_google_play_account` | Google Play Console access, Android signing, internal testing track permissions, and EAS file secret `GOOGLE_SERVICE_ACCOUNT` | Trigger signed Android EAS build and confirm Play Internal Testing upload readiness. |
 
 Do not commit secret values. Keep live Clinical Hub keys in GitHub Actions secrets and device-local
 app settings only.
@@ -205,6 +206,18 @@ or via npm script:
 ```bash
 npm run build:preview
 ```
+
+Production store submit commands are also wired for authenticated release handoff:
+
+```bash
+npm run submit:ios:production
+npm run submit:android:production
+npm run submit:production
+```
+
+iOS submit still requires the external App Store Connect app record and Apple credentials.
+Android submit uses `submit.production.android.serviceAccountKeyPath=@secret:GOOGLE_SERVICE_ACCOUNT`
+and targets the Play Internal Testing track.
 
 Detailed release SOP:
 - `docs/mobile-release-runbook-v0.1.md`

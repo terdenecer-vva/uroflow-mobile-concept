@@ -10,7 +10,9 @@ Scope: pilot installable builds for Uroflow Field Mobile
 3. GitHub secret `EXPO_TOKEN` configured.
 4. `EAS_PROJECT_ID` configured as a GitHub repo variable or `expo.extra.eas.projectId` set in `app.json`.
 5. Expo project credentials configured for iOS and Android signing.
-6. Clinical Hub secrets configured when live API smoke/report push is part of the release:
+6. App Store Connect app record exists for the iOS bundle ID before TestFlight submit.
+7. Google Play Console app exists for the Android package and EAS file secret `GOOGLE_SERVICE_ACCOUNT` is configured for Play API submit.
+8. Clinical Hub secrets configured when live API smoke/report push is part of the release:
    - `CLINICAL_HUB_URL` (`https://...`, non-localhost for live release readiness)
    - `CLINICAL_HUB_API_KEY`
 
@@ -41,6 +43,20 @@ cd apps/field-mobile
 npm run build:preview
 ```
 
+Production store-submit fallback after a signed production build is available:
+
+```bash
+cd apps/field-mobile
+npm run submit:ios:production
+npm run submit:android:production
+# or submit both platforms from the production profile:
+npm run submit:production
+```
+
+Do not commit Apple credentials or Google service-account JSON. Android submit is configured to read
+the Google Play service account as EAS file secret `GOOGLE_SERVICE_ACCOUNT`; iOS submit still depends
+on Apple Developer/App Store Connect credentials and the external app record.
+
 ## 3) Release manifest and traceability
 
 Workflow generates artifact `mobile-release-manifest` containing:
@@ -50,6 +66,7 @@ Workflow generates artifact `mobile-release-manifest` containing:
 - icon/adaptive-icon paths, `expo-splash-screen` image path, SHA-256 fingerprints, byte sizes, PNG dimensions, and splash background/resize/width config,
 - runtime release metadata from `apps/field-mobile/src/config/releaseMetadata.ts` for app version, model ID, and capture schema version,
 - runtime app config from `apps/field-mobile/src/config/appConfig.ts` for pilot mode, Clinical Hub v1 endpoint set, default capture mode, privacy-by-default switches, single-region data residency policy, and disabled debug gates,
+- EAS production submit config shape for iOS handoff and Android Play Internal Testing via `@secret:GOOGLE_SERVICE_ACCOUNT`,
 - Clinical Hub preflight guard evidence proving the app blocks missing/unsupported URLs and obvious cross-region Hub targets before Test API, Submit, or Sync Queue,
 - Clinical Hub request trace header evidence proving app/model/schema, runtime mode, endpoint set, and data-residency policy are sent as non-secret `x-uroflow-*` headers on API checks, submissions, summaries, and sync replay; backend audit stores these headers and rejects explicit region/runtime/endpoint mismatches,
 - runtime quality evidence for ROI validity, low-confidence depth ratio, and high-motion IMU artifact ratio in `capture_payload.analysis.runtime_quality`,
@@ -62,7 +79,7 @@ Workflow generates artifact `mobile-release-manifest` containing:
 
 Workflow also generates artifact `mobile-release-readiness` containing:
 - git SHA/ref/run-id/workflow traceability,
-- local mobile readiness checks (`app.json`, `eas.json`, runtime release metadata/config/defaults, endpoint set/data residency/debug gates, Expo Device identity defaults, Clinical Hub preflight guard, Clinical Hub runtime trace headers, in-app release identity evidence, pending sync connectivity restore, deterministic mobile E2E sync smoke, physical-device smoke log template/validator, store rollout handoff template/validator, release bundle verifier, runtime motion quality gates, derivatives-only feature/media manifest gates, package scripts, lockfile, pinned tooling, API response + submit exception + runtime exception PHI redaction, unit-test coverage wiring),
+- local mobile readiness checks (`app.json`, `eas.json`, EAS build/submit profile shape, runtime release metadata/config/defaults, endpoint set/data residency/debug gates, Expo Device identity defaults, Clinical Hub preflight guard, Clinical Hub runtime trace headers, in-app release identity evidence, pending sync connectivity restore, deterministic mobile E2E sync smoke, physical-device smoke log template/validator, store rollout handoff template/validator, release bundle verifier, runtime motion quality gates, derivatives-only feature/media manifest gates, package scripts, lockfile, pinned tooling, API response + submit exception + runtime exception PHI redaction, unit-test coverage wiring),
 - external credential state without secret values,
 - authenticated EAS readiness status and specific EAS blockers,
 - live Clinical Hub API readiness status (`present`, `missing`, or `invalid`),
@@ -147,25 +164,26 @@ gh secret set EXPO_TOKEN --body "<expo_access_token>"
 gh variable set EAS_PROJECT_ID --body "<eas_project_uuid>"
 gh secret set CLINICAL_HUB_URL --body "https://<clinical-hub>"
 gh secret set CLINICAL_HUB_API_KEY --body "<api_key>"
+eas secret:create --name GOOGLE_SERVICE_ACCOUNT --value "$(cat /secure/path/google-service-account.json)" --type file
 ```
 
 Manual store-account handoff remains outside GitHub secrets:
-- `provision_apple_developer_account`: Apple Developer access, signing certificates/profiles, and TestFlight permissions.
-- `provision_google_play_account`: Google Play Console access, Android signing, and internal testing track permissions.
+- `provision_apple_developer_account`: Apple Developer access, App Store Connect app record, signing certificates/profiles, and TestFlight permissions.
+- `provision_google_play_account`: Google Play Console access, Android signing, Play API service account, and internal testing track permissions.
 
 ## 4) Distribution channels
 
 iOS:
 1. Download `mobile-store-rollout-handoff` from the Mobile Build run.
-2. Configure Apple Developer/App Store Connect access, signing credentials, and the internal TestFlight group.
-3. Use EAS output for TestFlight upload (internal testers).
+2. Configure Apple Developer/App Store Connect access, app record, signing credentials, and the internal TestFlight group.
+3. Run `npm run submit:ios:production` from `apps/field-mobile` or use EAS output for TestFlight upload (internal testers).
 4. Update the iOS channel in `mobile-store-rollout-handoff.json` from `blocked_external` to the actual rollout state and fill in EAS/TestFlight evidence.
 5. Verify build metadata, privacy strings, and permissions prompt behavior.
 
 Android:
 1. Download `mobile-store-rollout-handoff` from the Mobile Build run.
-2. Configure Google Play Console access, Android signing, and the internal testing track.
-3. Use EAS output for Play Internal Testing.
+2. Configure Google Play Console access, Android signing, EAS file secret `GOOGLE_SERVICE_ACCOUNT`, and the internal testing track.
+3. Run `npm run submit:android:production` from `apps/field-mobile` or use EAS output for Play Internal Testing.
 4. Update the Android channel in `mobile-store-rollout-handoff.json` from `blocked_external` to the actual rollout state and fill in EAS/Play evidence.
 5. Verify package name, versionCode increment, and install/update path.
 

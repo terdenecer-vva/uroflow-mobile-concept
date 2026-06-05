@@ -20,13 +20,16 @@
     "export:android": "CI=1 expo export --platform android --clear --output-dir /tmp/uroflow-field-mobile-export-android",
     "validate:ci": "npm run typecheck && npm run test:unit && npm run doctor && npm run audit:prod && npm run export:ios && npm run export:android",
     "build:preview": "eas build --platform all --profile preview",
-    "build:production": "eas build --platform all --profile production"
+    "build:production": "eas build --platform all --profile production",
+    "submit:ios:production": "eas submit --platform ios --profile production --non-interactive",
+    "submit:android:production": "eas submit --platform android --profile production --non-interactive",
+    "submit:production": "eas submit --platform all --profile production --non-interactive"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-community/netinfo": "12.0.1",
-    "expo": "56.0.8",
-    "expo-asset": "~56.0.15",
+    "expo": "~56.0.9",
+    "expo-asset": "~56.0.16",
     "expo-audio": "~56.0.11",
     "expo-camera": "~56.0.7",
     "expo-device": "~56.0.4",

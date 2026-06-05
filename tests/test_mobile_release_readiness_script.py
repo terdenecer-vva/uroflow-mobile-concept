@@ -87,6 +87,9 @@ def test_mobile_release_readiness_reports_external_blockers(tmp_path: Path) -> N
         "eas_cli_version_declared",
         "eas_production_auto_increment",
         "eas_profile_channels",
+        "eas_submit_android_internal_track",
+        "eas_submit_profile_production",
+        "eas_submit_scripts_present",
         "ios_privacy_usage_descriptions",
         "app_config_unit_tests_present",
         "paired_payload_unit_tests_present",
@@ -293,6 +296,35 @@ def test_mobile_release_readiness_fails_localhost_default_api_url(tmp_path: Path
     assert payload["local_checks_status"] == "fail"
     assert check["status"] == "fail"
     assert "http://127.0.0.1:8000" in check["evidence"]
+
+
+def test_mobile_release_readiness_fails_unsafe_android_submit_config(tmp_path: Path) -> None:
+    mutated_eas_json = tmp_path / "eas.json"
+    eas_payload = json.loads(EAS_JSON.read_text(encoding="utf-8"))
+    eas_payload["submit"]["production"]["android"] = {
+        "serviceAccountKeyPath": "./google-service-account.json",
+        "track": "production",
+        "releaseStatus": "completed",
+    }
+    mutated_eas_json.write_text(json.dumps(eas_payload), encoding="utf-8")
+
+    payload = _run_readiness_with_paths(
+        tmp_path / "readiness.json",
+        env={"PATH": os.environ.get("PATH", "")},
+        eas_json=mutated_eas_json,
+        check=False,
+    )
+
+    check = next(
+        item
+        for item in payload["local_checks"]
+        if item["id"] == "eas_submit_android_internal_track"
+    )
+    assert payload["status"] == "not_ready"
+    assert payload["local_checks_status"] == "fail"
+    assert check["status"] == "fail"
+    assert "./google-service-account.json" in check["evidence"]
+    assert "track='production'" in check["evidence"]
 
 
 def test_mobile_release_readiness_fails_raw_media_runtime_config(tmp_path: Path) -> None:

@@ -332,6 +332,16 @@ def build_readiness_report(
     scripts = package_payload.get("scripts", {})
     root_lock = lock_payload.get("packages", {}).get("", {})
     eas_build = eas_payload.get("build", {})
+    eas_submit = eas_payload.get("submit", {})
+    if not isinstance(eas_submit, dict):
+        eas_submit = {}
+    eas_submit_production = eas_submit.get("production", {})
+    if not isinstance(eas_submit_production, dict):
+        eas_submit_production = {}
+    eas_submit_ios_is_object = isinstance(eas_submit_production.get("ios"), dict)
+    eas_submit_android = eas_submit_production.get("android", {})
+    if not isinstance(eas_submit_android, dict):
+        eas_submit_android = {}
     mobile_root = package_json.parent
 
     checks: list[dict[str, Any]] = []
@@ -727,6 +737,36 @@ def build_readiness_report(
         eas_build.get("preview", {}).get("android", {}).get("buildType") == "apk",
         f"preview.android={eas_build.get('preview', {}).get('android')!r}",
         severity="warning",
+    )
+    _check(
+        checks,
+        "eas_submit_profile_production",
+        (
+            "production" in eas_submit
+            and "ios" in eas_submit_production
+            and "android" in eas_submit_production
+            and eas_submit_ios_is_object
+            and isinstance(eas_submit_production.get("android"), dict)
+        ),
+        (
+            f"eas submit production keys={sorted(eas_submit_production)}, "
+            f"ios_object={eas_submit_ios_is_object!r}, "
+            f"android_object={isinstance(eas_submit_production.get('android'), dict)!r}"
+        ),
+    )
+    android_service_account_key_path = eas_submit_android.get("serviceAccountKeyPath")
+    _check(
+        checks,
+        "eas_submit_android_internal_track",
+        isinstance(android_service_account_key_path, str)
+        and android_service_account_key_path.startswith("@secret:")
+        and eas_submit_android.get("track") == "internal"
+        and eas_submit_android.get("releaseStatus") == "completed",
+        (
+            f"android.serviceAccountKeyPath={android_service_account_key_path!r}, "
+            f"track={eas_submit_android.get('track')!r}, "
+            f"releaseStatus={eas_submit_android.get('releaseStatus')!r}"
+        ),
     )
     _check(
         checks,
@@ -1443,6 +1483,16 @@ def build_readiness_report(
         "build_scripts",
         "build:preview" in scripts and "build:production" in scripts,
         "package build scripts are present",
+    )
+    _check(
+        checks,
+        "eas_submit_scripts_present",
+        {
+            "submit:ios:production",
+            "submit:android:production",
+            "submit:production",
+        }.issubset(set(scripts)),
+        "package EAS submit scripts are present",
     )
     _check(
         checks,
