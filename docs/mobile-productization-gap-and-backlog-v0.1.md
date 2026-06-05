@@ -18,6 +18,8 @@ Implemented now:
 - Runtime quality scoring gates timing gaps with `runtime_quality.timing_gap_warning`,
   forcing at least `repeat` when capture sampling stalls.
 - Derivatives-only feature/media manifest in mobile `ios_capture_v1` payloads, with backend validation that raw media storage/upload flags remain disabled.
+- Runtime audio recorder temp files are deleted best-effort after stop/reset; payloads retain
+  derived metering/flow features only.
 - Release manifest traceability for app version, git SHA, model/schema, runtime config, capture contract feature-manifest evidence, and readiness gate summary.
 - Mobile API response, submit exception outcome, and runtime exception redaction gates for raw body, PHI-like subject/site/operator IDs, and secret-like error details.
 - Mobile release readiness gate for single-region data residency policy (`us`, no cross-region sync, region-matched Clinical Hub required).
@@ -56,7 +58,8 @@ Not yet implemented:
 - Mobile payloads include a derivatives-only feature/media manifest; native-grade feature bundles and device-level media-manifest replay evidence still need physical-device archival.
 
 ### G3. Security/privacy gap
-- Secure storage introduced for API key, but no media encryption path yet.
+- Secure storage introduced for API key; raw media is not retained by default and runtime audio
+  temp files are deleted after stop/reset, but physical-device storage audit evidence is still required.
 - Mobile response/submit-exception/runtime-exception redaction tests are present; device log PHI review is now required in the physical-device smoke log format, but real logs still need archival.
 - Mobile data residency policy controls are present; live Clinical Hub region mapping still needs deployment/account evidence.
 

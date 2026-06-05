@@ -41,6 +41,8 @@ Cross-platform mobile client (Expo React Native) for collecting paired measureme
 - Runtime block includes in-app `Q(t)` preview for operator review before submission
 - Runtime capture contract analysis includes `runtime_timeline` timing integrity metadata
   (`duration_s`, sample count, median sample step, max gap, and gap warning).
+- Runtime audio recorder temp files are deleted best-effort after stop/reset; payloads keep only
+  derived metering/flow features.
 
 ## Run
 
@@ -104,6 +106,8 @@ Notes:
 - Physical-device smoke logs must copy `capture_payload.analysis.runtime_timeline` and
   pass with `gap_warning=false` for release handoff.
 - Raw media is not stored by default (privacy-by-default behavior).
+- Temporary runtime audio files created by the native recorder are deleted after each stop/reset;
+  field handoff evidence should still include device-log/storage review on physical devices.
 - Capture contract payloads include a derivatives-only `feature_manifest` with sample count,
   derived feature keys, and raw media storage/upload flags pinned to `false`.
 
@@ -173,8 +177,9 @@ secret blockers. The artifact has separate machine-readable gates:
   Clinical Hub preflight guard,
   Clinical Hub runtime trace headers,
   in-app release identity evidence,
-  runtime capture preflight guard, runtime motion quality gates, derivatives-only feature/media
-  manifest gates, pending sync connectivity-restore trigger, device-smoke evidence template/validator,
+  runtime capture preflight guard, runtime motion quality gates, raw audio temp-file cleanup,
+  derivatives-only feature/media manifest gates, pending sync connectivity-restore trigger,
+  device-smoke evidence template/validator,
   store rollout handoff template/validator, release bundle verifier,
   API response + submit exception + runtime exception PHI redaction, and non-localhost API URL defaults,
   store privacy declarations,

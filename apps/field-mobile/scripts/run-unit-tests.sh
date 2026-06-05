@@ -22,6 +22,7 @@ tsc --ignoreConfig \
   src/api/connectionCheck.ts \
   src/api/summaryRequests.ts \
   src/capture/buildCaptureContract.ts \
+  src/capture/rawMediaRetention.ts \
   src/capture/runtimeMetrics.ts \
   src/capture/roiSignalEstimator.ts \
   --outDir "$BUILD_DIR" \
