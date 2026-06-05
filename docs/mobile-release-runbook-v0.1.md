@@ -234,6 +234,9 @@ python3 scripts/validate_mobile_store_rollout_handoff.py \
 7. Validated smoke summary JSON from `scripts/validate_mobile_device_smoke_log.py`.
    - The smoke log must include per-device `runtime_timeline` evidence copied from
      `capture_payload.analysis.runtime_timeline`, with `gap_warning=false`.
+   - The smoke log must include `raw_media_temp_files_absent` evidence after device storage
+     review, confirming no recorder temp audio files, raw video files, or exported media
+     artifacts remain after stop/reset.
 8. Clinical Hub sample export (paired + capture package rows).
    - For `capture-packages`, archive `capture_payload.feature_manifest` and confirm `derivatives_only=true`, `raw_media.store_raw_video=false`, `raw_media.store_raw_audio=false`, `raw_media.upload_raw_video=false`, and `raw_media.upload_raw_audio=false`.
    - Archive `capture_payload.analysis.runtime_timeline` and investigate runs with
