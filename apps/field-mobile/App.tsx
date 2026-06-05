@@ -75,6 +75,7 @@ import {
   createSessionId,
   createSyncId,
   extractCreatedRecordId,
+  formatSafeExceptionMessage,
   formatSafeResponseProblem,
 } from "./src/utils/appHelpers";
 
@@ -431,8 +432,9 @@ export default function App() {
       }
     } catch (error) {
       setCaptureRunning(false);
-      setCaptureStatus(`Capture start failed: ${String(error)}`);
-      Alert.alert("Capture start failed", String(error));
+      const message = formatSafeExceptionMessage(error);
+      setCaptureStatus(`Capture start failed: ${message}`);
+      Alert.alert("Capture start failed", message);
     }
   }
 
@@ -496,8 +498,9 @@ export default function App() {
       }
     } catch (error) {
       setCaptureRunning(false);
-      setCaptureStatus(`Capture stop failed: ${String(error)}`);
-      Alert.alert("Capture stop failed", String(error));
+      const message = formatSafeExceptionMessage(error);
+      setCaptureStatus(`Capture stop failed: ${message}`);
+      Alert.alert("Capture stop failed", message);
     }
   }
 

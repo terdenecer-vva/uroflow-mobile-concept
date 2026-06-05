@@ -136,7 +136,7 @@ secret blockers. The artifact has separate machine-readable gates:
 - `local_checks_status`: local app metadata, runtime release metadata, EAS profile shape,
   runtime config/defaults such as Clinical Hub v1 endpoint set, disabled debug gates,
   privacy-by-default switches, runtime motion quality gates, derivatives-only feature/media
-  manifest gates, and non-localhost API URL defaults,
+  manifest gates, API response + runtime exception PHI redaction, and non-localhost API URL defaults,
   store privacy declarations,
   launch/icon assets, dependency lock alignment, and unit-test evidence that can be verified
   without external credentials.

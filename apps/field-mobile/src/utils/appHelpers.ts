@@ -94,7 +94,11 @@ export function summarizePendingError(error: string | null): string | null {
   if (
     normalized.includes("unauthorized") ||
     normalized.includes("forbidden") ||
-    normalized.includes("api key")
+    normalized.includes("api key") ||
+    normalized.includes("api_key") ||
+    normalized.includes("apikey") ||
+    normalized.includes("bearer") ||
+    normalized.includes("token")
   ) {
     return "auth_or_permission";
   }
@@ -116,6 +120,13 @@ export function formatSafeResponseProblem(
 ): string {
   const statusLabel = statusCode ? `HTTP ${statusCode}` : fallbackStatusLabel;
   return `${statusLabel} ${summarizePendingError(responseBody) ?? "server_or_client_response"}`;
+}
+
+export function formatSafeExceptionMessage(
+  error: unknown,
+  fallbackStatusLabel: "ERROR" | "NETWORK" = "ERROR",
+): string {
+  return formatSafeResponseProblem(null, String(error), fallbackStatusLabel);
 }
 
 export function normalizeActorRoleInput(rawValue: string | null | undefined): string {

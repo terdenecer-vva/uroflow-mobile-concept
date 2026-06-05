@@ -929,6 +929,38 @@ def build_readiness_report(
         all(redaction_test_requirements.values()),
         f"requirements={redaction_test_requirements!r}",
     )
+    phi_exception_redaction_requirements = {
+        "safe_exception_formatter": "formatSafeExceptionMessage" in app_helpers_source,
+        "capture_start_status_safe": "Capture start failed: ${message}" in app_ts_source,
+        "capture_start_alert_safe": 'Alert.alert("Capture start failed", message)'
+        in app_ts_source,
+        "capture_stop_status_safe": "Capture stop failed: ${message}" in app_ts_source,
+        "capture_stop_alert_safe": 'Alert.alert("Capture stop failed", message)'
+        in app_ts_source,
+        "no_raw_capture_start_status": "Capture start failed: ${String(error)}"
+        not in app_ts_source,
+        "no_raw_capture_start_alert": 'Alert.alert("Capture start failed", String(error))'
+        not in app_ts_source,
+        "no_raw_capture_stop_status": "Capture stop failed: ${String(error)}"
+        not in app_ts_source,
+        "no_raw_capture_stop_alert": 'Alert.alert("Capture stop failed", String(error))'
+        not in app_ts_source,
+    }
+    _check(
+        checks,
+        "mobile_phi_exception_redaction_sources",
+        all(phi_exception_redaction_requirements.values()),
+        f"requirements={phi_exception_redaction_requirements!r}",
+    )
+    _check(
+        checks,
+        "mobile_phi_exception_redaction_unit_tests_present",
+        "formatSafeExceptionMessage redacts mobile PHI and secret-like details"
+        in helper_tests_source
+        and "formatSafeExceptionMessage preserves network category without raw exception text"
+        in helper_tests_source,
+        f"path={helper_tests_path}",
+    )
     _check(
         checks,
         "build_scripts",
