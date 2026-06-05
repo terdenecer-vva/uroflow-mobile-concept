@@ -29,6 +29,20 @@ export type RuntimeFlowPoint = {
   flow_ml_s: number;
 };
 
+export type RuntimeCaptureReadinessCode =
+  | "ready"
+  | "camera_permission_missing"
+  | "camera_preview_not_ready"
+  | "roi_not_locked"
+  | "roi_frame_not_validated"
+  | "roi_frame_invalid";
+
+export type RuntimeCaptureReadiness = {
+  ready: boolean;
+  code: RuntimeCaptureReadinessCode;
+  message: string;
+};
+
 export const HIGH_MOTION_SAMPLE_THRESHOLD = 0.35;
 const HIGH_MOTION_REPEAT_RATIO = 0.2;
 const HIGH_MOTION_REJECT_RATIO = 0.45;
@@ -59,6 +73,55 @@ export function integrateRuntimeFlowSeries(series: RuntimeFlowPoint[]): number {
     sum += ((prev.flow_ml_s + curr.flow_ml_s) * 0.5) * dt;
   }
   return sum;
+}
+
+export function buildRuntimeCaptureReadiness(input: {
+  cameraPermissionGranted: boolean;
+  cameraPreviewReady: boolean;
+  roiLocked: boolean;
+  roiFrameCount: number;
+  roiFrameValid: boolean;
+}): RuntimeCaptureReadiness {
+  if (!input.cameraPermissionGranted) {
+    return {
+      ready: false,
+      code: "camera_permission_missing",
+      message: "Grant camera permission before starting runtime capture.",
+    };
+  }
+  if (!input.cameraPreviewReady) {
+    return {
+      ready: false,
+      code: "camera_preview_not_ready",
+      message: "Wait for the camera preview to become ready before starting runtime capture.",
+    };
+  }
+  if (!input.roiLocked) {
+    return {
+      ready: false,
+      code: "roi_not_locked",
+      message: "Lock ROI before starting runtime capture.",
+    };
+  }
+  if (input.roiFrameCount < 1) {
+    return {
+      ready: false,
+      code: "roi_frame_not_validated",
+      message: "Wait for at least one ROI frame validation after locking ROI.",
+    };
+  }
+  if (!input.roiFrameValid) {
+    return {
+      ready: false,
+      code: "roi_frame_invalid",
+      message: "Re-aim the phone until ROI frame validity is yes, then start capture.",
+    };
+  }
+  return {
+    ready: true,
+    code: "ready",
+    message: "Runtime capture preflight ready.",
+  };
 }
 
 export function deriveRuntimeCaptureMetrics(input: {
