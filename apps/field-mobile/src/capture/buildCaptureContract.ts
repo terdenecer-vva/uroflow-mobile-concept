@@ -2,6 +2,7 @@ import {
   APP_CAPTURE_SCHEMA_VERSION,
   APP_RELEASE_VERSION,
 } from "../config/releaseMetadata";
+import { APP_PRIVACY_POLICY } from "../config/appConfig";
 
 export type CaptureContractSample = {
   t_s: number;
@@ -247,6 +248,14 @@ function createSamples(input: BuildCaptureContractInput): CaptureContractSample[
   return samples;
 }
 
+function buildPrivacyNode(): CaptureContractPayload["session"]["privacy"] {
+  return {
+    store_raw_video: APP_PRIVACY_POLICY.storeRawVideo,
+    store_raw_audio: APP_PRIVACY_POLICY.storeRawAudio,
+    roi_only: APP_PRIVACY_POLICY.roiOnly,
+  };
+}
+
 export function buildCaptureContractPayload(
   input: BuildCaptureContractInput,
 ): CaptureContractPayload {
@@ -272,11 +281,7 @@ export function buildCaptureContractPayload(
         min_depth_confidence: 0.6,
         camera_distance_mm: 650,
       },
-      privacy: {
-        store_raw_video: false,
-        store_raw_audio: false,
-        roi_only: true,
-      },
+      privacy: buildPrivacyNode(),
     },
     samples: createSamples(input),
   };
@@ -340,11 +345,7 @@ export function buildCaptureContractPayloadFromSamples(
         min_depth_confidence: input.minDepthConfidence ?? 0.6,
         camera_distance_mm: input.cameraDistanceMm ?? 650,
       },
-      privacy: {
-        store_raw_video: false,
-        store_raw_audio: false,
-        roi_only: true,
-      },
+      privacy: buildPrivacyNode(),
     },
     samples: safeSamples,
   };

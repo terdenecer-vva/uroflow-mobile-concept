@@ -53,6 +53,14 @@ def _read_ts_string_constant(source: str, name: str) -> str | None:
     return match.group(1) if match else None
 
 
+def _read_ts_boolean_constant(source: str, name: str) -> bool | None:
+    pattern = re.compile(rf"export\s+const\s+{re.escape(name)}\s*=\s*(true|false)")
+    match = pattern.search(source)
+    if not match:
+        return None
+    return match.group(1) == "true"
+
+
 def _release_metadata(app_json: Path) -> dict[str, str | None]:
     path = app_json.parent / "src" / "config" / "releaseMetadata.ts"
     if not path.is_file():
@@ -70,6 +78,28 @@ def _release_metadata(app_json: Path) -> dict[str, str | None]:
         "capture_schema_version": _read_ts_string_constant(
             source, "APP_CAPTURE_SCHEMA_VERSION"
         ),
+    }
+
+
+def _app_runtime_config(app_json: Path) -> dict[str, str | bool | None]:
+    path = app_json.parent / "src" / "config" / "appConfig.ts"
+    if not path.is_file():
+        return {
+            "path": str(path),
+            "runtime_mode": None,
+            "default_capture_mode": None,
+            "store_raw_video": None,
+            "store_raw_audio": None,
+            "roi_only": None,
+        }
+    source = path.read_text(encoding="utf-8")
+    return {
+        "path": str(path),
+        "runtime_mode": _read_ts_string_constant(source, "APP_RUNTIME_MODE"),
+        "default_capture_mode": _read_ts_string_constant(source, "APP_DEFAULT_CAPTURE_MODE"),
+        "store_raw_video": _read_ts_boolean_constant(source, "APP_STORE_RAW_VIDEO"),
+        "store_raw_audio": _read_ts_boolean_constant(source, "APP_STORE_RAW_AUDIO"),
+        "roi_only": _read_ts_boolean_constant(source, "APP_ROI_ONLY"),
     }
 
 
@@ -106,6 +136,7 @@ def main() -> int:
     android = expo.get("android", {})
     splash = _get_plugin_options(plugins, "expo-splash-screen")
     release_metadata = _release_metadata(args.app_json)
+    app_runtime_config = _app_runtime_config(args.app_json)
     app_settings_defaults = _app_settings_defaults(args.app_json)
     android_adaptive_icon = android.get("adaptiveIcon", {})
 
@@ -147,6 +178,7 @@ def main() -> int:
             "workflow": os.environ.get("GITHUB_WORKFLOW", "local"),
         },
         "runtime_release_metadata": release_metadata,
+        "runtime_config": app_runtime_config,
         "runtime_defaults": app_settings_defaults,
         "algorithm": {
             "model_id": args.model_id,

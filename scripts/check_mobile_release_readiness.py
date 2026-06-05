@@ -47,6 +47,14 @@ def _read_ts_string_constant(source: str, name: str) -> str | None:
     return match.group(1) if match else None
 
 
+def _read_ts_boolean_constant(source: str, name: str) -> bool | None:
+    pattern = re.compile(rf"export\s+const\s+{re.escape(name)}\s*=\s*(true|false)")
+    match = pattern.search(source)
+    if not match:
+        return None
+    return match.group(1) == "true"
+
+
 def _load_release_metadata(app_json: Path) -> dict[str, str | None]:
     path = app_json.parent / "src" / "config" / "releaseMetadata.ts"
     if not path.is_file():
@@ -64,6 +72,28 @@ def _load_release_metadata(app_json: Path) -> dict[str, str | None]:
         "capture_schema_version": _read_ts_string_constant(
             source, "APP_CAPTURE_SCHEMA_VERSION"
         ),
+    }
+
+
+def _load_app_runtime_config(app_json: Path) -> dict[str, str | bool | None]:
+    path = app_json.parent / "src" / "config" / "appConfig.ts"
+    if not path.is_file():
+        return {
+            "path": str(path),
+            "runtime_mode": None,
+            "default_capture_mode": None,
+            "store_raw_video": None,
+            "store_raw_audio": None,
+            "roi_only": None,
+        }
+    source = path.read_text(encoding="utf-8")
+    return {
+        "path": str(path),
+        "runtime_mode": _read_ts_string_constant(source, "APP_RUNTIME_MODE"),
+        "default_capture_mode": _read_ts_string_constant(source, "APP_DEFAULT_CAPTURE_MODE"),
+        "store_raw_video": _read_ts_boolean_constant(source, "APP_STORE_RAW_VIDEO"),
+        "store_raw_audio": _read_ts_boolean_constant(source, "APP_STORE_RAW_AUDIO"),
+        "roi_only": _read_ts_boolean_constant(source, "APP_ROI_ONLY"),
     }
 
 
@@ -256,6 +286,7 @@ def build_readiness_report(
     package_payload = _load_json(package_json)
     lock_payload = _load_json(package_lock)
     release_metadata = _load_release_metadata(app_json)
+    app_runtime_config = _load_app_runtime_config(app_json)
     app_settings_defaults = _load_app_settings_defaults(app_json)
 
     expo = app_payload.get("expo", {})
@@ -318,6 +349,41 @@ def build_readiness_report(
         "release_metadata_capture_schema_version",
         release_metadata.get("capture_schema_version") == "ios_capture_v1",
         f"capture_schema_version={release_metadata.get('capture_schema_version')!r}",
+    )
+    _check(
+        checks,
+        "runtime_config_module",
+        bool(app_runtime_config.get("runtime_mode"))
+        and bool(app_runtime_config.get("default_capture_mode"))
+        and app_runtime_config.get("store_raw_video") is not None
+        and app_runtime_config.get("store_raw_audio") is not None
+        and app_runtime_config.get("roi_only") is not None,
+        (
+            f"path={app_runtime_config.get('path')}, "
+            f"runtime_mode={app_runtime_config.get('runtime_mode')!r}, "
+            f"default_capture_mode={app_runtime_config.get('default_capture_mode')!r}, "
+            f"store_raw_video={app_runtime_config.get('store_raw_video')!r}, "
+            f"store_raw_audio={app_runtime_config.get('store_raw_audio')!r}, "
+            f"roi_only={app_runtime_config.get('roi_only')!r}"
+        ),
+    )
+    _check(
+        checks,
+        "runtime_config_default_capture_mode",
+        app_runtime_config.get("default_capture_mode") == "water_impact",
+        f"default_capture_mode={app_runtime_config.get('default_capture_mode')!r}",
+    )
+    _check(
+        checks,
+        "runtime_config_privacy_by_default",
+        app_runtime_config.get("store_raw_video") is False
+        and app_runtime_config.get("store_raw_audio") is False
+        and app_runtime_config.get("roi_only") is True,
+        (
+            f"store_raw_video={app_runtime_config.get('store_raw_video')!r}, "
+            f"store_raw_audio={app_runtime_config.get('store_raw_audio')!r}, "
+            f"roi_only={app_runtime_config.get('roi_only')!r}"
+        ),
     )
     _check(
         checks,
@@ -564,6 +630,7 @@ def build_readiness_report(
     test_unit_script = scripts.get("test:unit", "")
     unit_runner_path = mobile_root / "scripts" / "run-unit-tests.sh"
     app_ts_path = mobile_root / "App.tsx"
+    app_config_tests_path = mobile_root / "tests" / "appConfig.test.js"
     app_helpers_path = mobile_root / "src" / "utils" / "appHelpers.ts"
     connection_check_source_path = mobile_root / "src" / "api" / "connectionCheck.ts"
     pending_sync_queue_source_path = mobile_root / "src" / "utils" / "pendingSyncQueue.ts"
@@ -622,6 +689,12 @@ def build_readiness_report(
         "mobile_helper_unit_tests_present",
         helper_tests_path.is_file(),
         f"path={helper_tests_path}",
+    )
+    _check(
+        checks,
+        "app_config_unit_tests_present",
+        app_config_tests_path.is_file(),
+        f"path={app_config_tests_path}",
     )
     _check(
         checks,
