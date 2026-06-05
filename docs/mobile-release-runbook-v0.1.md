@@ -76,6 +76,8 @@ Workflow generates artifact `mobile-release-manifest` containing:
 - Clinical Hub preflight guard evidence proving the app blocks missing/unsupported URLs and obvious cross-region Hub targets before Test API, Submit, or Sync Queue,
 - Clinical Hub request trace header evidence proving app/model/schema, runtime mode, endpoint set, and data-residency policy are sent as non-secret `x-uroflow-*` headers on API checks, submissions, summaries, and sync replay; backend audit stores these headers and rejects explicit region/runtime/endpoint mismatches,
 - runtime quality evidence for ROI validity, low-confidence depth ratio, and high-motion IMU artifact ratio in `capture_payload.analysis.runtime_quality`,
+- runtime timeline integrity evidence in `capture_payload.analysis.runtime_timeline`,
+  including sample count, duration, median sample step, max sample gap, and gap warning,
 - source-backed derivatives-only feature/media manifest evidence in `capture_contract.feature_manifest`, including manifest version, feature keys, `sample_count` source, `raw_media.*=false`, and `privacy.media_scope=roi_derivatives_only`,
 - readiness gate summary in `readiness`, including local/external/EAS/Clinical Hub statuses, local check counts, failed check IDs, external blocker statuses, and next-action IDs without secret values or detailed evidence strings,
 - runtime defaults such as `DEFAULT_API_BASE_URL` to prove release builds do not point field devices at localhost,
@@ -85,7 +87,7 @@ Workflow generates artifact `mobile-release-manifest` containing:
 
 Workflow also generates artifact `mobile-release-readiness` containing:
 - git SHA/ref/run-id/workflow traceability,
-- local mobile readiness checks (`app.json`, `eas.json`, EAS build/submit profile shape, runtime release metadata/config/defaults, endpoint set/data residency/debug gates, Expo Device identity defaults, Clinical Hub preflight guard, Clinical Hub runtime trace headers, in-app release identity evidence, pending sync connectivity restore, deterministic mobile E2E sync smoke, physical-device smoke log template/validator, store rollout handoff template/validator, release bundle verifier, runtime motion quality gates, derivatives-only feature/media manifest gates, package scripts, lockfile, pinned tooling, API response + submit exception + runtime exception PHI redaction, unit-test coverage wiring),
+- local mobile readiness checks (`app.json`, `eas.json`, EAS build/submit profile shape, runtime release metadata/config/defaults, endpoint set/data residency/debug gates, Expo Device identity defaults, Clinical Hub preflight guard, Clinical Hub runtime trace headers, in-app release identity evidence, pending sync connectivity restore, deterministic mobile E2E sync smoke, physical-device smoke log template/validator, store rollout handoff template/validator, release bundle verifier, runtime motion quality gates, runtime timeline integrity metadata, derivatives-only feature/media manifest gates, package scripts, lockfile, pinned tooling, API response + submit exception + runtime exception PHI redaction, unit-test coverage wiring),
 - external credential state without secret values,
 - authenticated EAS readiness status and specific EAS blockers,
 - live Clinical Hub API readiness status (`present`, `missing`, or `invalid`),
@@ -210,7 +212,8 @@ python3 scripts/validate_mobile_store_rollout_handoff.py \
 4. Clinical Hub request logs include non-secret `x-uroflow-*` release/runtime/data-residency trace headers, and backend contract tests reject a deliberate mismatched region header.
 5. `Device Model` is auto-filled from the physical device model or a platform fallback, and matches the smoke-log device entry after any field correction.
 6. `Start Capture` and `Stop Capture` work on real device.
-7. `Contract payload: ready` after stop.
+7. `Contract payload: ready` after stop, with `analysis.runtime_timeline.gap_warning=false`
+   unless the runbook explicitly records a foreground/device-load interruption.
 8. Submit produces `paired-measurements` and `capture-packages` records.
 9. Offline mode queues both endpoint jobs.
 10. Returning online triggers successful auto-sync through connectivity restore, interval, or AppState fallback.
@@ -227,4 +230,6 @@ python3 scripts/validate_mobile_store_rollout_handoff.py \
 7. Validated smoke summary JSON from `scripts/validate_mobile_device_smoke_log.py`.
 8. Clinical Hub sample export (paired + capture package rows).
    - For `capture-packages`, archive `capture_payload.feature_manifest` and confirm `derivatives_only=true`, `raw_media.store_raw_video=false`, `raw_media.store_raw_audio=false`, `raw_media.upload_raw_video=false`, and `raw_media.upload_raw_audio=false`.
+   - Archive `capture_payload.analysis.runtime_timeline` and investigate runs with
+     `gap_warning=true` or unexpectedly large `max_sample_gap_s`.
 9. Go/No-Go note for pilot usage.

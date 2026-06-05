@@ -192,6 +192,14 @@ def _capture_contract_evidence(
             "roi_valid",
             "runtime_flow_series.flow_ml_s",
             "runtime_quality.high_motion_ratio",
+            "runtime_timeline.clock_source",
+            "runtime_timeline.duration_s",
+            "runtime_timeline.gap_warning",
+            "runtime_timeline.max_sample_gap_ratio",
+            "runtime_timeline.max_sample_gap_s",
+            "runtime_timeline.median_sample_step_s",
+            "runtime_timeline.monotonic",
+            "runtime_timeline.sample_count",
             "t_s",
         )
         if key in source
@@ -202,6 +210,20 @@ def _capture_contract_evidence(
         and "runtime_quality.high_motion_ratio" not in feature_keys
     ):
         feature_keys.append("runtime_quality.high_motion_ratio")
+    if "runtime_timeline" in source:
+        for timeline_key in (
+            "clock_source",
+            "duration_s",
+            "gap_warning",
+            "max_sample_gap_ratio",
+            "max_sample_gap_s",
+            "median_sample_step_s",
+            "monotonic",
+            "sample_count",
+        ):
+            feature_key = f"runtime_timeline.{timeline_key}"
+            if timeline_key in source and feature_key not in feature_keys:
+                feature_keys.append(feature_key)
     return {
         "path": str(path),
         "feature_manifest": {

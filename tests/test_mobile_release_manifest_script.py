@@ -133,6 +133,8 @@ def test_build_mobile_release_manifest_script(tmp_path: Path) -> None:
                 '  "depth_confidence", "audio_rms_dbfs", "motion_norm", "roi_valid"];',
                 'featureKeys.add("runtime_flow_series.flow_ml_s");',
                 'featureKeys.add("runtime_quality.high_motion_ratio");',
+                'featureKeys.add("runtime_timeline.max_sample_gap_s");',
+                'featureKeys.add("runtime_timeline.gap_warning");',
                 "const featureManifest = {",
                 "  derivatives_only: true,",
                 "  sample_count: samples.length,",
@@ -303,6 +305,8 @@ def test_build_mobile_release_manifest_script(tmp_path: Path) -> None:
     }
     assert "audio_rms_dbfs" in feature_manifest["feature_keys"]
     assert "runtime_quality.high_motion_ratio" in feature_manifest["feature_keys"]
+    assert "runtime_timeline.max_sample_gap_s" in feature_manifest["feature_keys"]
+    assert "runtime_timeline.gap_warning" in feature_manifest["feature_keys"]
     assert payload["readiness"] == {
         "source_path": str(readiness_json),
         "status": "ready_except_external_credentials",

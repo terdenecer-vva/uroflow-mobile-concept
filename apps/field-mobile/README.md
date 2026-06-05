@@ -38,6 +38,8 @@ Cross-platform mobile client (Expo React Native) for collecting paired measureme
 - `Stop Capture` auto-fills app metrics (`Qmax/Qavg/Vvoid/FlowTime/TQmax`) and quality status/score from runtime-derived proxies
 - Runtime block shows `roi_valid_ratio` and `low_confidence_ratio` quality flags
 - Runtime block includes in-app `Q(t)` preview for operator review before submission
+- Runtime capture contract analysis includes `runtime_timeline` timing integrity metadata
+  (`duration_s`, sample count, median sample step, max gap, and gap warning).
 
 ## Run
 
@@ -95,6 +97,8 @@ Notes:
 - Runtime capture currently logs sampled audio metering + motion, and derives proxy level traces.
 - Camera preview + ROI lock state are included in runtime quality gating.
 - Runtime quality scoring includes `roi_valid_ratio`, `low_confidence_ratio`, and `high_motion_ratio`.
+- Runtime contract analysis includes `runtime_timeline` so Clinical Hub evidence can flag
+  timing gaps caused by foreground stalls or device load.
 - Raw media is not stored by default (privacy-by-default behavior).
 - Capture contract payloads include a derivatives-only `feature_manifest` with sample count,
   derived feature keys, and raw media storage/upload flags pinned to `false`.
