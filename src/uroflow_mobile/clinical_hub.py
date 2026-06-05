@@ -5,7 +5,7 @@ import hashlib
 import json
 import math
 import sqlite3
-from collections.abc import AsyncIterator, Awaitable, Callable
+from collections.abc import AsyncIterator, Awaitable, Callable, Mapping
 from contextlib import asynccontextmanager
 from datetime import date, datetime, timezone
 from pathlib import Path
@@ -27,6 +27,19 @@ PILOT_REPORT_TYPE = Literal[
     "gate_summary",
 ]
 _CROSS_SITE_ALLOWED_ROLES = {"data_manager", "admin"}
+_DEFAULT_EXPECTED_DATA_RESIDENCY_REGION = "us"
+_DEFAULT_EXPECTED_ENDPOINT_SET = "clinical_hub_v1"
+_DEFAULT_EXPECTED_RUNTIME_MODE = "pilot"
+_RUNTIME_TRACE_HEADER_KEYS = (
+    "x-uroflow-app-version",
+    "x-uroflow-model-id",
+    "x-uroflow-capture-schema-version",
+    "x-uroflow-runtime-mode",
+    "x-uroflow-endpoint-set",
+    "x-uroflow-data-residency-region",
+    "x-uroflow-data-residency-boundary",
+    "x-uroflow-region-match-required",
+)
 
 
 class FlowMetrics(BaseModel):
@@ -344,6 +357,70 @@ def _normalize_operator_id(operator_id: str | None) -> str | None:
     if not stripped:
         return None
     return stripped
+
+
+def _normalize_trace_value(value: str | None) -> str | None:
+    if value is None:
+        return None
+    stripped = value.strip().lower()
+    return stripped or None
+
+
+def _extract_runtime_trace_headers(headers: Mapping[str, str]) -> dict[str, str]:
+    trace_headers: dict[str, str] = {}
+    for key in _RUNTIME_TRACE_HEADER_KEYS:
+        value = headers.get(key)
+        if value is None:
+            continue
+        stripped = value.strip()
+        if stripped:
+            trace_headers[key] = stripped
+    return trace_headers
+
+
+def _build_runtime_trace_policy_error(
+    trace_headers: dict[str, str],
+    *,
+    expected_data_residency_region: str | None,
+    expected_endpoint_set: str | None,
+    expected_runtime_mode: str | None,
+) -> str | None:
+    expected_by_header = {
+        "x-uroflow-data-residency-region": expected_data_residency_region,
+        "x-uroflow-endpoint-set": expected_endpoint_set,
+        "x-uroflow-runtime-mode": expected_runtime_mode,
+    }
+    label_by_header = {
+        "x-uroflow-data-residency-region": "data residency region",
+        "x-uroflow-endpoint-set": "endpoint set",
+        "x-uroflow-runtime-mode": "runtime mode",
+    }
+    for header, expected in expected_by_header.items():
+        observed = _normalize_trace_value(trace_headers.get(header))
+        if observed is None or expected is None or observed == expected:
+            continue
+        return (
+            f"runtime trace {label_by_header[header]} mismatch: "
+            f"expected {expected}, got {observed}"
+        )
+    return None
+
+
+def _build_audit_detail_json(
+    *,
+    query: str,
+    reason: str | None = None,
+    runtime_trace_headers: dict[str, str] | None = None,
+    expected_runtime_trace: dict[str, str | None] | None = None,
+) -> str:
+    detail: dict[str, object] = {"query": query}
+    if reason is not None:
+        detail["reason"] = reason
+    if runtime_trace_headers:
+        detail["runtime_trace_headers"] = runtime_trace_headers
+    if expected_runtime_trace is not None:
+        detail["expected_runtime_trace"] = expected_runtime_trace
+    return json.dumps(detail, ensure_ascii=False)
 
 
 def _connect(db_path: Path) -> sqlite3.Connection:
@@ -2123,6 +2200,9 @@ def create_clinical_hub_app(
     db_path: Path,
     api_key: str | None = None,
     api_key_policy_map: dict[str, dict[str, str | None]] | None = None,
+    expected_data_residency_region: str = _DEFAULT_EXPECTED_DATA_RESIDENCY_REGION,
+    expected_endpoint_set: str = _DEFAULT_EXPECTED_ENDPOINT_SET,
+    expected_runtime_mode: str = _DEFAULT_EXPECTED_RUNTIME_MODE,
 ) -> FastAPI:
     @asynccontextmanager
     async def _lifespan(_: FastAPI) -> AsyncIterator[None]:
@@ -2138,6 +2218,11 @@ def create_clinical_hub_app(
     app.state.db_path = db_path
     app.state.api_key = api_key
     app.state.api_key_policy_map = _validate_api_key_policy_map(api_key_policy_map)
+    app.state.expected_runtime_trace = {
+        "data_residency_region": _normalize_trace_value(expected_data_residency_region),
+        "endpoint_set": _normalize_trace_value(expected_endpoint_set),
+        "runtime_mode": _normalize_trace_value(expected_runtime_mode),
+    }
 
     @app.middleware("http")
     async def _audit_and_auth_middleware(
@@ -2151,6 +2236,8 @@ def create_clinical_hub_app(
         body_bytes = await request.body()
         session_meta = _extract_session_metadata_from_body(body_bytes)
         request_api_key = request.headers.get("x-api-key")
+        runtime_trace_headers = _extract_runtime_trace_headers(request.headers)
+        expected_runtime_trace = app.state.expected_runtime_trace
         actor_operator_id = _normalize_operator_id(request.headers.get("x-operator-id"))
         if actor_operator_id is None:
             actor_operator_id = _normalize_operator_id(session_meta["operator_id"])
@@ -2202,12 +2289,49 @@ def create_clinical_hub_app(
                     subject_id=session_meta["subject_id"],
                     operator_id=session_meta["operator_id"],
                     remote_addr=request.client.host if request.client else None,
-                    detail_json=json.dumps(
-                        {
-                            "query": str(request.url.query),
-                            "reason": "missing_or_invalid_api_key",
-                        },
-                        ensure_ascii=False,
+                    detail_json=_build_audit_detail_json(
+                        query=str(request.url.query),
+                        reason="missing_or_invalid_api_key",
+                        runtime_trace_headers=runtime_trace_headers,
+                        expected_runtime_trace=expected_runtime_trace,
+                    ),
+                )
+                audit_connection.commit()
+            return response
+
+        runtime_trace_error = _build_runtime_trace_policy_error(
+            runtime_trace_headers,
+            expected_data_residency_region=expected_runtime_trace[
+                "data_residency_region"
+            ],
+            expected_endpoint_set=expected_runtime_trace["endpoint_set"],
+            expected_runtime_mode=expected_runtime_trace["runtime_mode"],
+        )
+        if runtime_trace_error is not None:
+            response = JSONResponse(status_code=400, content={"detail": runtime_trace_error})
+            with _connect(app.state.db_path) as audit_connection:
+                _insert_audit_event(
+                    audit_connection,
+                    method=request.method,
+                    path=path,
+                    status_code=400,
+                    auth_result=auth_result,
+                    api_key_fingerprint=_hash_api_key(request_api_key),
+                    actor_operator_id=actor_operator_id,
+                    actor_role=actor_role,
+                    actor_site_id=actor_site_id,
+                    request_id=request_id,
+                    session_id=session_meta["session_id"],
+                    sync_id=session_meta["sync_id"],
+                    site_id=session_meta["site_id"],
+                    subject_id=session_meta["subject_id"],
+                    operator_id=session_meta["operator_id"],
+                    remote_addr=request.client.host if request.client else None,
+                    detail_json=_build_audit_detail_json(
+                        query=str(request.url.query),
+                        reason="runtime_trace_policy_mismatch",
+                        runtime_trace_headers=runtime_trace_headers,
+                        expected_runtime_trace=expected_runtime_trace,
                     ),
                 )
                 audit_connection.commit()
@@ -2240,12 +2364,11 @@ def create_clinical_hub_app(
                     subject_id=session_meta["subject_id"],
                     operator_id=session_meta["operator_id"],
                     remote_addr=request.client.host if request.client else None,
-                    detail_json=json.dumps(
-                        {
-                            "query": str(request.url.query),
-                            "reason": "missing_actor_operator_id_for_operator_role",
-                        },
-                        ensure_ascii=False,
+                    detail_json=_build_audit_detail_json(
+                        query=str(request.url.query),
+                        reason="missing_actor_operator_id_for_operator_role",
+                        runtime_trace_headers=runtime_trace_headers,
+                        expected_runtime_trace=expected_runtime_trace,
                     ),
                 )
                 audit_connection.commit()
@@ -2275,7 +2398,13 @@ def create_clinical_hub_app(
                 subject_id=session_meta["subject_id"],
                 operator_id=session_meta["operator_id"],
                 remote_addr=request.client.host if request.client else None,
-                detail_json=json.dumps({"query": str(request.url.query)}, ensure_ascii=False),
+                detail_json=_build_audit_detail_json(
+                    query=str(request.url.query),
+                    runtime_trace_headers=runtime_trace_headers,
+                    expected_runtime_trace=expected_runtime_trace
+                    if runtime_trace_headers
+                    else None,
+                ),
             )
             audit_connection.commit()
         return response
