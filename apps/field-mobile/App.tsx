@@ -137,6 +137,7 @@ export default function App() {
   const [captureStatus, setCaptureStatus] = useState("Idle");
   const [captureRoiValidRatio, setCaptureRoiValidRatio] = useState(0);
   const [captureLowConfidenceRatio, setCaptureLowConfidenceRatio] = useState(0);
+  const [captureHighMotionRatio, setCaptureHighMotionRatio] = useState(0);
   const [runtimeFlowSeries, setRuntimeFlowSeries] = useState<RuntimeFlowPoint[]>([]);
   const [cameraPreviewReady, setCameraPreviewReady] = useState(false);
   const [roiLocked, setRoiLocked] = useState(false);
@@ -413,6 +414,7 @@ export default function App() {
       setCaptureAvgMotionNorm(0);
       setCaptureRoiValidRatio(0);
       setCaptureLowConfidenceRatio(0);
+      setCaptureHighMotionRatio(0);
       setRuntimeFlowSeries([]);
       setRuntimeCaptureContractPayload(null);
       setMeasuredAt(startResult.startedAtIso);
@@ -447,6 +449,7 @@ export default function App() {
       setCaptureAvgMotionNorm(stopResult.averageMotionNorm);
       setCaptureRoiValidRatio(stopResult.quality.roiValidRatio);
       setCaptureLowConfidenceRatio(stopResult.quality.lowConfidenceRatio);
+      setCaptureHighMotionRatio(stopResult.quality.highMotionRatio);
       setRuntimeFlowSeries(stopResult.flowSeries);
       setDeviceModel(stopResult.deviceModel);
       if (!manualAppMetricsOverride) {
@@ -477,12 +480,13 @@ export default function App() {
             quality_status: stopResult.quality.qualityStatus,
             roi_valid_ratio: stopResult.quality.roiValidRatio,
             low_confidence_ratio: stopResult.quality.lowConfidenceRatio,
+            high_motion_ratio: stopResult.quality.highMotionRatio,
           },
         },
       });
       setRuntimeCaptureContractPayload(contractPayload as unknown as Record<string, unknown>);
       setCaptureStatus(
-        `Capture stopped. samples=${stopResult.sampleCount}, quality=${stopResult.quality.qualityStatus}, score=${stopResult.quality.qualityScore.toFixed(1)}`,
+        `Capture stopped. samples=${stopResult.sampleCount}, quality=${stopResult.quality.qualityStatus}, score=${stopResult.quality.qualityScore.toFixed(1)}, high_motion_ratio=${stopResult.quality.highMotionRatio.toFixed(3)}`,
       );
       if (stopResult.derived.eventStartTs != null && stopResult.derived.eventEndTs != null) {
         const runtimeNote =
@@ -639,6 +643,7 @@ export default function App() {
         setCaptureAvgMotionNorm(0);
         setCaptureRoiValidRatio(0);
         setCaptureLowConfidenceRatio(0);
+        setCaptureHighMotionRatio(0);
         setRuntimeFlowSeries([]);
         setCaptureStatus("Idle");
         setSessionId(createSessionId());
@@ -690,6 +695,7 @@ export default function App() {
       setCaptureAvgMotionNorm(0);
       setCaptureRoiValidRatio(0);
       setCaptureLowConfidenceRatio(0);
+      setCaptureHighMotionRatio(0);
       setRuntimeFlowSeries([]);
       setCaptureStatus("Idle");
       setSessionId(createSessionId());
@@ -816,6 +822,7 @@ export default function App() {
           cameraPreviewReady={cameraPreviewReady}
           cameraPreviewRef={cameraPreviewRef}
           captureAvgMotionNorm={captureAvgMotionNorm}
+          captureHighMotionRatio={captureHighMotionRatio}
           captureLowConfidenceRatio={captureLowConfidenceRatio}
           captureRoiValidRatio={captureRoiValidRatio}
           captureRunning={captureRunning}

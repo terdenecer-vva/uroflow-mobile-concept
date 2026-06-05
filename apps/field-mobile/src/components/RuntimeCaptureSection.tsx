@@ -11,6 +11,7 @@ type RuntimeCaptureSectionProps = {
   cameraPreviewReady: boolean;
   cameraPreviewRef: React.RefObject<CameraView | null>;
   captureAvgMotionNorm: number;
+  captureHighMotionRatio: number;
   captureLowConfidenceRatio: number;
   captureRoiValidRatio: number;
   captureRunning: boolean;
@@ -38,6 +39,7 @@ export function RuntimeCaptureSection({
   cameraPreviewReady,
   cameraPreviewRef,
   captureAvgMotionNorm,
+  captureHighMotionRatio,
   captureLowConfidenceRatio,
   captureRoiValidRatio,
   captureRunning,
@@ -72,7 +74,8 @@ export function RuntimeCaptureSection({
       </Text>
       <Text style={styles.captureStatusText}>
         quality flags: roi_valid_ratio={captureRoiValidRatio.toFixed(3)}, low_confidence_ratio=
-        {captureLowConfidenceRatio.toFixed(3)}
+        {captureLowConfidenceRatio.toFixed(3)}, high_motion_ratio=
+        {captureHighMotionRatio.toFixed(3)}
       </Text>
       <Text style={styles.captureStatusText}>
         Contract payload:{" "}

@@ -28,6 +28,7 @@ export type CaptureContractAnalysis = {
     quality_status?: CaptureContractQualityStatus;
     roi_valid_ratio?: number;
     low_confidence_ratio?: number;
+    high_motion_ratio?: number;
   };
 };
 
@@ -198,6 +199,11 @@ function sanitizeAnalysis(
     if (Number.isFinite(runtimeQualityRaw.low_confidence_ratio)) {
       runtimeQuality.low_confidence_ratio = round4(
         clamp(runtimeQualityRaw.low_confidence_ratio as number, 0, 1),
+      );
+    }
+    if (Number.isFinite(runtimeQualityRaw.high_motion_ratio)) {
+      runtimeQuality.high_motion_ratio = round4(
+        clamp(runtimeQualityRaw.high_motion_ratio as number, 0, 1),
       );
     }
   }

@@ -90,13 +90,12 @@ test("deriveRuntimeCaptureMetrics falls back to flow-only bounds when ROI is una
 });
 
 test("scoreRuntimeCaptureQuality classifies valid, repeat, and reject captures", () => {
-  assert.equal(
-    runtime.scoreRuntimeCaptureQuality({
-      averageMotionNorm: 0.1,
-      samples: [sample(), sample(), sample(), sample()],
-    }).qualityStatus,
-    "valid",
-  );
+  const valid = runtime.scoreRuntimeCaptureQuality({
+    averageMotionNorm: 0.1,
+    samples: [sample(), sample(), sample(), sample()],
+  });
+  assert.equal(valid.qualityStatus, "valid");
+  assert.equal(valid.highMotionRatio, 0);
 
   const repeat = runtime.scoreRuntimeCaptureQuality({
     averageMotionNorm: 0.05,
@@ -123,6 +122,34 @@ test("scoreRuntimeCaptureQuality classifies valid, repeat, and reject captures",
   assert.equal(reject.roiValidRatio, 0.25);
 });
 
+test("scoreRuntimeCaptureQuality gates high-motion capture artifacts", () => {
+  const repeat = runtime.scoreRuntimeCaptureQuality({
+    averageMotionNorm: 0.17,
+    samples: [
+      sample({ motion_norm: 0.05 }),
+      sample({ motion_norm: 0.36 }),
+      sample({ motion_norm: 0.06 }),
+      sample({ motion_norm: 0.38 }),
+      sample({ motion_norm: 0.08 }),
+    ],
+  });
+  assert.equal(repeat.qualityStatus, "repeat");
+  assert.equal(repeat.highMotionRatio, 0.4);
+
+  const reject = runtime.scoreRuntimeCaptureQuality({
+    averageMotionNorm: 0.24,
+    samples: [
+      sample({ motion_norm: 0.36 }),
+      sample({ motion_norm: 0.37 }),
+      sample({ motion_norm: 0.38 }),
+      sample({ motion_norm: 0.05 }),
+      sample({ motion_norm: 0.04 }),
+    ],
+  });
+  assert.equal(reject.qualityStatus, "reject");
+  assert.equal(reject.highMotionRatio, 0.6);
+});
+
 test("scoreRuntimeCaptureQuality repeats high low-confidence captures", () => {
   const quality = runtime.scoreRuntimeCaptureQuality({
     averageMotionNorm: 0.05,
@@ -137,6 +164,7 @@ test("scoreRuntimeCaptureQuality repeats high low-confidence captures", () => {
 
   assert.equal(quality.qualityStatus, "repeat");
   assert.equal(quality.lowConfidenceRatio, 0.4);
+  assert.equal(quality.highMotionRatio, 0);
 });
 
 test("calculateAverageMotionNorm handles empty samples", () => {
