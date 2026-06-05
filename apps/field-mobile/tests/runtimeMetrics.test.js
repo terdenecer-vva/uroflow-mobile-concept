@@ -177,3 +177,77 @@ test("calculateAverageMotionNorm handles empty samples", () => {
     0.2,
   );
 });
+
+test("buildRuntimeCaptureReadiness blocks unsafe capture starts", () => {
+  assert.deepEqual(
+    runtime.buildRuntimeCaptureReadiness({
+      cameraPermissionGranted: false,
+      cameraPreviewReady: true,
+      roiLocked: true,
+      roiFrameCount: 1,
+      roiFrameValid: true,
+    }),
+    {
+      ready: false,
+      code: "camera_permission_missing",
+      message: "Grant camera permission before starting runtime capture.",
+    },
+  );
+  assert.equal(
+    runtime.buildRuntimeCaptureReadiness({
+      cameraPermissionGranted: true,
+      cameraPreviewReady: false,
+      roiLocked: true,
+      roiFrameCount: 1,
+      roiFrameValid: true,
+    }).code,
+    "camera_preview_not_ready",
+  );
+  assert.equal(
+    runtime.buildRuntimeCaptureReadiness({
+      cameraPermissionGranted: true,
+      cameraPreviewReady: true,
+      roiLocked: false,
+      roiFrameCount: 1,
+      roiFrameValid: true,
+    }).code,
+    "roi_not_locked",
+  );
+  assert.equal(
+    runtime.buildRuntimeCaptureReadiness({
+      cameraPermissionGranted: true,
+      cameraPreviewReady: true,
+      roiLocked: true,
+      roiFrameCount: 0,
+      roiFrameValid: true,
+    }).code,
+    "roi_frame_not_validated",
+  );
+  assert.equal(
+    runtime.buildRuntimeCaptureReadiness({
+      cameraPermissionGranted: true,
+      cameraPreviewReady: true,
+      roiLocked: true,
+      roiFrameCount: 2,
+      roiFrameValid: false,
+    }).code,
+    "roi_frame_invalid",
+  );
+});
+
+test("buildRuntimeCaptureReadiness allows validated ROI capture starts", () => {
+  assert.deepEqual(
+    runtime.buildRuntimeCaptureReadiness({
+      cameraPermissionGranted: true,
+      cameraPreviewReady: true,
+      roiLocked: true,
+      roiFrameCount: 2,
+      roiFrameValid: true,
+    }),
+    {
+      ready: true,
+      code: "ready",
+      message: "Runtime capture preflight ready.",
+    },
+  );
+});

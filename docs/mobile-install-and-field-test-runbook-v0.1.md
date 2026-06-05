@@ -103,16 +103,18 @@ Before field use, verify the in-app `Release Identity` panel:
 Per subject/attempt:
 
 1. Prepare reference uroflowmeter as per clinic SOP.
-2. In app, lock ROI, press `Start Capture`, then record voiding.
-3. Press `Stop Capture`.
-4. Check runtime block:
+2. In app, lock ROI and wait until `ROI frames` is at least `1` and `valid: yes`.
+3. Press `Start Capture`, then record voiding. If the app shows `Capture preflight blocked`,
+   fix the listed camera/preview/ROI issue before retrying.
+4. Press `Stop Capture`.
+5. Check runtime block:
    - `quality score/status`
    - `roi_valid_ratio` and `low_confidence_ratio`
    - `Runtime Q(t) Preview`
-5. Enter reference metrics (`Qmax/Qavg/Vvoid` and optional time metrics).
-6. Submit paired measurement.
-7. If network failed, ensure queue item exists and run `Sync Queue` later.
-8. For retry/audit troubleshooting, match the pending item `request_id` to Clinical Hub request logs.
+6. Enter reference metrics (`Qmax/Qavg/Vvoid` and optional time metrics).
+7. Submit paired measurement.
+8. If network failed, ensure queue item exists and run `Sync Queue` later.
+9. For retry/audit troubleshooting, match the pending item `request_id` to Clinical Hub request logs.
 
 For release handoff, copy `docs/mobile-device-smoke-log-template-v0.1.json`, fill one
 iPhone and one Android run, then validate it:

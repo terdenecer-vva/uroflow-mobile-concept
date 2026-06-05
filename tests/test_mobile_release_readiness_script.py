@@ -140,6 +140,8 @@ def test_mobile_release_readiness_reports_external_blockers(tmp_path: Path) -> N
         "pending_sync_queue_unit_tests_present",
         "roi_signal_unit_tests_present",
         "runtime_metrics_unit_tests_present",
+        "runtime_capture_preflight_sources",
+        "runtime_capture_preflight_unit_tests_present",
         "runtime_motion_quality_gate_sources",
         "runtime_motion_quality_gate_unit_tests_present",
         "release_metadata_capture_schema_version",

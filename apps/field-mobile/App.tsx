@@ -35,6 +35,7 @@ import {
   RuntimeCaptureSession,
   type RuntimeFlowPoint,
 } from "./src/capture/runtimeCaptureSession";
+import { buildRuntimeCaptureReadiness } from "./src/capture/runtimeMetrics";
 import { APP_MODEL_ID, APP_RELEASE_VERSION } from "./src/config/releaseMetadata";
 import { estimateRoiSignalFromBase64 } from "./src/capture/roiSignalEstimator";
 import { APP_DEFAULT_CAPTURE_MODE } from "./src/config/appConfig";
@@ -343,7 +344,7 @@ export default function App() {
   }, [cameraPermission?.granted]);
 
   useEffect(() => {
-    if (!captureRunning || !cameraPermission?.granted || !cameraPreviewReady) {
+    if ((!captureRunning && !roiLocked) || !cameraPermission?.granted || !cameraPreviewReady) {
       if (roiFrameIntervalRef.current != null) {
         clearInterval(roiFrameIntervalRef.current);
         roiFrameIntervalRef.current = null;
@@ -400,29 +401,43 @@ export default function App() {
       }
       roiFrameInFlightRef.current = false;
     };
-  }, [cameraPermission?.granted, cameraPreviewReady, captureRunning]);
+  }, [cameraPermission?.granted, cameraPreviewReady, captureRunning, roiLocked]);
+
+  function toggleRoiLock(): void {
+    resetRoiFrameTracking();
+    setRoiLocked((current) => !current);
+  }
 
   async function startRuntimeCapture(): Promise<void> {
     const runtime = captureRuntimeRef.current ?? new RuntimeCaptureSession();
     captureRuntimeRef.current = runtime;
 
     try {
+      let cameraPermissionGranted = cameraPermission?.granted ?? false;
       if (!cameraPermission?.granted) {
         const permissionResult = await requestCameraPermission();
-        if (!permissionResult.granted) {
+        cameraPermissionGranted = permissionResult.granted;
+        if (!cameraPermissionGranted) {
           Alert.alert(
             "Camera permission missing",
             "Camera permission is required for ROI validity checks.",
           );
         }
       }
-      if (!roiLocked) {
-        Alert.alert(
-          "ROI not locked",
-          "Lock ROI before capture for better quality. Capture will continue but may be marked repeat/reject.",
-        );
+
+      const captureReadiness = buildRuntimeCaptureReadiness({
+        cameraPermissionGranted,
+        cameraPreviewReady,
+        roiLocked,
+        roiFrameCount,
+        roiFrameValid,
+      });
+      if (!captureReadiness.ready) {
+        setCaptureStatus(`Capture preflight blocked: ${captureReadiness.message}`);
+        Alert.alert("Capture preflight blocked", captureReadiness.message);
+        return;
       }
-      resetRoiFrameTracking();
+
       setCaptureStatus("Requesting permissions...");
       const startResult = await runtime.start();
       setCaptureRunning(true);
@@ -874,7 +889,7 @@ export default function App() {
           onToggleManualAppMetricsOverride={() =>
             setManualAppMetricsOverride((current) => !current)
           }
-          onToggleRoiLock={() => setRoiLocked((current) => !current)}
+          onToggleRoiLock={toggleRoiLock}
         />
 
         <MeasurementFormSection

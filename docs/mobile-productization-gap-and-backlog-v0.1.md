@@ -11,6 +11,8 @@ Implemented now:
 - Pilot automation and release gates (`v4.2`) in repository.
 - App-level runtime config for pilot mode, Clinical Hub v1 endpoint set, default capture mode, privacy-by-default switches, single-region data residency policy, and disabled debug gates.
 - Runtime capture quality gates for ROI validity, low-confidence depth, and high-motion IMU artifacts.
+- Runtime capture preflight blocks start until camera permission, camera preview readiness,
+  ROI lock, and a valid ROI frame are confirmed on device.
 - Derivatives-only feature/media manifest in mobile `ios_capture_v1` payloads, with backend validation that raw media storage/upload flags remain disabled.
 - Release manifest traceability for app version, git SHA, model/schema, runtime config, capture contract feature-manifest evidence, and readiness gate summary.
 - Mobile API response, submit exception outcome, and runtime exception redaction gates for raw body, PHI-like subject/site/operator IDs, and secret-like error details.
@@ -33,7 +35,8 @@ Not yet implemented:
 
 ### G1. Sensor capture gap
 - Native sensor capture exists as a pilot runtime path, but still needs physical-device calibration against target iPhone/Android models.
-- ROI-only processing pipeline is proxy-based and still needs native-grade ROI extraction on device.
+- ROI-only processing pipeline is proxy-based with pre-capture ROI frame validation, and still
+  needs native-grade ROI extraction on device.
 - IMU motion gating is implemented in runtime quality scoring, but threshold calibration needs real device smoke evidence.
 
 ### G2. Data contract gap
@@ -72,7 +75,7 @@ DoD:
 1. Implement capture start/stop session service.
 2. Record audio envelope + ROI motion/texture + IMU jitter over unified timeline.
 3. Build live `ios_capture_v1` payload from runtime samples.
-4. Add quality pre-checks before submit (`roi_valid_ratio`, motion threshold, depth confidence ratio). Status: implemented in runtime payload scoring; needs physical-device threshold calibration.
+4. Add quality pre-checks before submit (`roi_valid_ratio`, motion threshold, depth confidence ratio). Status: implemented in runtime payload scoring plus pre-capture camera/ROI readiness guard; needs physical-device threshold calibration.
 5. Add feature/media manifest for derived mobile capture features. Status: implemented as derivatives-only manifest with raw media disabled in payload and backend validator.
 
 DoD:

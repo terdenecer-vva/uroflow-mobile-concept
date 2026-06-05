@@ -1160,6 +1160,28 @@ def build_readiness_report(
     )
     _check(
         checks,
+        "runtime_capture_preflight_sources",
+        "buildRuntimeCaptureReadiness" in runtime_metrics_source
+        and "buildRuntimeCaptureReadiness" in app_ts_source
+        and "Capture preflight blocked" in app_ts_source
+        and "roiFrameCount" in app_ts_source
+        and "roiFrameValid" in app_ts_source
+        and "roiLocked" in app_ts_source,
+        (
+            f"runtime_metrics={runtime_metrics_source_path}, "
+            f"app={app_ts_path}"
+        ),
+    )
+    _check(
+        checks,
+        "runtime_capture_preflight_unit_tests_present",
+        "buildRuntimeCaptureReadiness blocks unsafe capture starts" in runtime_metrics_tests_source
+        and "buildRuntimeCaptureReadiness allows validated ROI capture starts"
+        in runtime_metrics_tests_source,
+        f"path={runtime_metrics_tests_path}",
+    )
+    _check(
+        checks,
         "mobile_feature_media_manifest_sources",
         "feature_manifest" in capture_contract_source
         and "mobile_feature_manifest_v0.1" in capture_contract_source

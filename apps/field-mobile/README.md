@@ -31,6 +31,8 @@ Cross-platform mobile client (Expo React Native) for collecting paired measureme
 - `Device Model` defaults from Expo Device metadata with platform fallback and remains editable for field correction.
 - On successful paired upload, app posts `capture_contract_json` to `POST /api/v1/capture-packages`
 - Runtime capture mode collects live audio + IMU samples (camera permission used for ROI validity flag)
+- `Start Capture` is blocked until camera permission, camera preview readiness, ROI lock,
+  and at least one valid ROI frame are confirmed.
 - In-app `Release Identity` panel shows canonical app version, model/schema, runtime config, privacy/data-residency flags, platform, and payload traceability alignment.
 - If runtime capture was not started, app falls back to scaffold contract payload
 - `Stop Capture` auto-fills app metrics (`Qmax/Qavg/Vvoid/FlowTime/TQmax`) and quality status/score from runtime-derived proxies
@@ -163,7 +165,7 @@ secret blockers. The artifact has separate machine-readable gates:
   Clinical Hub preflight guard,
   Clinical Hub runtime trace headers,
   in-app release identity evidence,
-  runtime motion quality gates, derivatives-only feature/media
+  runtime capture preflight guard, runtime motion quality gates, derivatives-only feature/media
   manifest gates, pending sync connectivity-restore trigger, device-smoke evidence template/validator,
   store rollout handoff template/validator, release bundle verifier,
   API response + submit exception + runtime exception PHI redaction, and non-localhost API URL defaults,
