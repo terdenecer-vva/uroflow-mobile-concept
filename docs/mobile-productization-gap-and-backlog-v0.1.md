@@ -19,6 +19,7 @@ Implemented now:
 - Deterministic mobile sync smoke covering queued paired+capture replay after network restore.
 - Mobile Build release notes artifact and manifest traceability for operator-facing build handoff.
 - Physical-device smoke evidence JSON template and validator for iOS+Android release handoff.
+- Store rollout handoff JSON template, validator, and Mobile Build artifact for TestFlight/Play Internal traceability.
 
 Not yet implemented:
 - Real sensor capture pipeline (camera/audio/IMU/depth).
@@ -44,7 +45,7 @@ Not yet implemented:
 
 ### G4. Build/release gap
 - EAS profiles are added but CI does not yet publish artifacts to testers automatically.
-- TestFlight and Play Internal release SOPs are not codified in repo.
+- TestFlight and Play Internal release SOPs are codified as a store rollout handoff template/validator and Mobile Build artifact.
 - Release manifest is generated with version -> git SHA -> model/schema -> gate summary traceability; signed store distribution remains externally blocked until Apple/Google/Expo credentials are configured.
 
 ### G5. Verification gap
@@ -89,9 +90,9 @@ DoD:
 1. Configure Expo project credentials and EAS secrets.
 2. Wire CI dispatch for preview builds with release notes. Status: release notes input/artifact and manifest digest traceability implemented; authenticated EAS trigger still waits for Expo/EAS credentials.
 3. Set distribution channels:
-- iOS TestFlight (internal group)
-- Android Internal Testing (Play)
-4. Add install/runbook for clinic operators.
+- iOS TestFlight (internal group). Status: SOP/handoff format implemented; actual channel setup remains external to repository automation.
+- Android Internal Testing (Play). Status: SOP/handoff format implemented; actual channel setup remains external to repository automation.
+4. Add install/runbook for clinic operators. Status: implemented for field-test handoff, with store rollout handoff artifact linking operator notes/evidence.
 
 DoD:
 - Testers receive installable builds via TestFlight/Internal Testing.
@@ -111,7 +112,7 @@ DoD:
 - PR-1 (this branch): secure storage + capture scaffold upload + EAS profiles/workflow.
 - PR-2 (implemented in current branch): queue refactor for multi-endpoint offline jobs + sync engine.
 - PR-3 (partially implemented): runtime adapters for audio+IMU + camera preview/ROI lock gating + runtime contract generation + local proxy metrics/quality derivation.
-- PR-4 (partially implemented): TestFlight/Play rollout runbook + release manifest generation in CI.
+- PR-4 (partially implemented): release manifest, release notes, physical-device smoke evidence, and TestFlight/Play rollout handoff generation in CI; signed store distribution remains externally blocked.
 
 ## 5) Exit criteria for pilot start
 

@@ -64,6 +64,17 @@ Install:
 - iOS: install via TestFlight/internal distribution link.
 - Android: install `.apk`/`.aab` from EAS artifact link.
 
+For release handoff, download the Mobile Build `mobile-store-rollout-handoff`
+artifact and fill in TestFlight/Play Internal build links, tester group/track,
+and distribution checks after external Apple/Google account setup is complete.
+Validate the filled handoff before field use:
+
+```bash
+python3 scripts/validate_mobile_store_rollout_handoff.py \
+  /tmp/mobile-store-rollout-handoff.json \
+  --output /tmp/mobile-store-rollout-summary.json
+```
+
 ## 4. First Launch Configuration
 
 In app API section set:
@@ -198,6 +209,7 @@ GitHub Actions automation:
 ## 9. Exit Criteria For v0.1 Pilot
 
 - App installed and operating on iOS and Android.
+- Validated store rollout handoff archived for TestFlight/Play Internal or EAS preview distribution.
 - Validated iOS+Android smoke log summary archived.
 - At least 100 paired attempts collected.
 - At least 90% of paired rows have capture package linkage (`has_capture_package=1` in joined export).

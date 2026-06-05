@@ -127,6 +127,7 @@ CI:
   - `mobile-release-manifest` (version + runtime release metadata/config + release notes digest + capture contract feature-manifest evidence + readiness gate summary + git SHA + model/schema traceability)
   - `mobile-release-readiness` (git traceability + local readiness checks + explicit external credential blockers)
   - `mobile-release-notes` (operator-facing release notes and required evidence reminders)
+  - `mobile-store-rollout-handoff` (per-run TestFlight/Play Internal handoff template + validation summary with current external blockers)
   - `mobile-eas-build-result-<run_id>` (raw EAS JSON response for build IDs/URLs)
 - Workflow summary includes release readiness status and direct EAS build links for operator/release use.
 
@@ -140,6 +141,7 @@ secret blockers. The artifact has separate machine-readable gates:
   privacy-by-default switches, single-region data residency policy,
   runtime motion quality gates, derivatives-only feature/media
   manifest gates, pending sync connectivity-restore trigger, device-smoke evidence template/validator,
+  store rollout handoff template/validator,
   API response + submit exception + runtime exception PHI redaction, and non-localhost API URL defaults,
   store privacy declarations,
   launch/icon assets, dependency lock alignment, and unit-test evidence that can be verified
@@ -189,3 +191,4 @@ npm run build:preview
 Detailed release SOP:
 - `docs/mobile-release-runbook-v0.1.md`
 - `docs/mobile-install-and-field-test-runbook-v0.1.md`
+- `docs/mobile-store-rollout-handoff-template-v0.1.json`

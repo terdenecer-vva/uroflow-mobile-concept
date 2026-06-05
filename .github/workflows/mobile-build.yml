@@ -35,14 +35,26 @@ on:
       - main
     paths:
       - "apps/field-mobile/**"
+      - "docs/mobile-device-smoke-log-template-v0.1.json"
+      - "docs/mobile-store-rollout-handoff-template-v0.1.json"
       - "scripts/build_mobile_release_manifest.py"
       - "scripts/check_mobile_release_readiness.py"
+      - "scripts/validate_mobile_device_smoke_log.py"
+      - "scripts/validate_mobile_store_rollout_handoff.py"
+      - "tests/test_mobile_device_smoke_log.py"
+      - "tests/test_mobile_store_rollout_handoff.py"
       - ".github/workflows/mobile-build.yml"
   pull_request:
     paths:
       - "apps/field-mobile/**"
+      - "docs/mobile-device-smoke-log-template-v0.1.json"
+      - "docs/mobile-store-rollout-handoff-template-v0.1.json"
       - "scripts/build_mobile_release_manifest.py"
       - "scripts/check_mobile_release_readiness.py"
+      - "scripts/validate_mobile_device_smoke_log.py"
+      - "scripts/validate_mobile_store_rollout_handoff.py"
+      - "tests/test_mobile_device_smoke_log.py"
+      - "tests/test_mobile_store_rollout_handoff.py"
       - ".github/workflows/mobile-build.yml"
 
 concurrency:
@@ -202,6 +214,7 @@ jobs:
               "",
               "- Download `mobile-release-manifest`.",
               "- Download `mobile-release-readiness`.",
+              "- Download `mobile-store-rollout-handoff` and fill in TestFlight/Play evidence after external account setup.",
               "- Archive iOS/Android EAS build links when authenticated EAS build runs.",
               "- Archive physical-device smoke log with device model and OS version.",
           ]
@@ -232,6 +245,65 @@ jobs:
             --model-id fusion-v0.1 \
             --schema-version ios_capture_v1
 
+      - name: Build store rollout handoff artifact
+        env:
+          WORKFLOW_BUILD_PROFILE: ${{ github.event.inputs.build_profile || 'preview' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import os
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          def sha256_file(path: Path) -> str:
+              return hashlib.sha256(path.read_bytes()).hexdigest()
+
+          template = json.loads(
+              Path("../../docs/mobile-store-rollout-handoff-template-v0.1.json").read_text(
+                  encoding="utf-8"
+              )
+          )
+          app_payload = json.loads(Path("app.json").read_text(encoding="utf-8"))
+          expo = app_payload.get("expo", {})
+          profile = os.environ.get("WORKFLOW_BUILD_PROFILE", "preview")
+          channel = profile
+          if profile == "development":
+              channel = "development"
+          elif profile == "production":
+              channel = "production"
+
+          template["prepared_at_utc"] = datetime.now(timezone.utc).isoformat().replace(
+              "+00:00", "Z"
+          )
+          template["release"].update(
+              {
+                  "git_sha": os.environ.get("GITHUB_SHA", "local"),
+                  "app_version": expo.get("version", ""),
+                  "build_profile": profile,
+                  "build_channel": channel,
+                  "mobile_release_manifest_sha256": sha256_file(
+                      Path("/tmp/mobile-release-manifest.json")
+                  ),
+                  "mobile_release_readiness_sha256": sha256_file(
+                      Path("/tmp/mobile-release-readiness.json")
+                  ),
+                  "mobile_release_notes_sha256": sha256_file(
+                      Path("/tmp/mobile-release-notes.md")
+                  ),
+              }
+          )
+          Path("/tmp/mobile-store-rollout-handoff.json").write_text(
+              json.dumps(template, ensure_ascii=False, indent=2) + "\n",
+              encoding="utf-8",
+          )
+          PY
+          python3 ../../scripts/validate_mobile_store_rollout_handoff.py \
+            /tmp/mobile-store-rollout-handoff.json \
+            --output /tmp/mobile-store-rollout-handoff-summary.json
+
       - name: Upload release notes
         uses: actions/upload-artifact@v7
         with:
@@ -249,6 +321,14 @@ jobs:
         with:
           name: mobile-release-readiness
           path: /tmp/mobile-release-readiness.json
+
+      - name: Upload store rollout handoff
+        uses: actions/upload-artifact@v7
+        with:
+          name: mobile-store-rollout-handoff
+          path: |
+            /tmp/mobile-store-rollout-handoff.json
+            /tmp/mobile-store-rollout-handoff-summary.json
 
       - name: Fail on local release readiness errors
         shell: bash

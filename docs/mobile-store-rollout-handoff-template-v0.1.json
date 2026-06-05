@@ -1,0 +1,171 @@
+{
+  "schema_version": "mobile_store_rollout_handoff_v0.1",
+  "prepared_at_utc": "2026-06-05T20:00:00Z",
+  "rollout_status": "blocked_external",
+  "release": {
+    "git_sha": "03010a484968c04d0ebd4f604cc3069211ed24d0",
+    "app_version": "0.1.0",
+    "build_profile": "preview",
+    "build_channel": "preview",
+    "mobile_release_manifest_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "mobile_release_readiness_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "mobile_release_notes_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "handoff_checks": [
+    {
+      "id": "mobile_release_manifest_archived",
+      "status": "pass",
+      "evidence": "Mobile release manifest artifact is archived for this run."
+    },
+    {
+      "id": "mobile_release_readiness_archived",
+      "status": "pass",
+      "evidence": "Mobile release readiness artifact is archived for this run."
+    },
+    {
+      "id": "mobile_release_notes_archived",
+      "status": "pass",
+      "evidence": "Mobile release notes artifact is archived for this run."
+    },
+    {
+      "id": "device_smoke_evidence_linked",
+      "status": "blocked_external",
+      "evidence": "Fill with validated mobile_device_smoke_log_v0.1 summary link after iOS and Android device runs."
+    },
+    {
+      "id": "no_secrets_in_handoff",
+      "status": "pass",
+      "evidence": "Handoff contains artifact links and IDs only; no API keys, tokens, or patient identifiers."
+    }
+  ],
+  "channels": [
+    {
+      "platform": "ios",
+      "distribution_channel": "testflight_internal",
+      "status": "blocked_external",
+      "owner": "release_engineer",
+      "account_status": "manual_required",
+      "blockers": [
+        "Apple Developer access, signing credentials, and App Store Connect/TestFlight permissions are not available in repository automation."
+      ],
+      "tester_scope": {
+        "name": "Pilot internal testers",
+        "audience": "clinic operators and release reviewers",
+        "install_instruction_url": "docs/mobile-install-and-field-test-runbook-v0.1.md"
+      },
+      "build_artifact": {
+        "eas_build_id": "",
+        "eas_build_url": "",
+        "store_build_number": "1",
+        "artifact_sha256": ""
+      },
+      "store_submission": {
+        "store_console_url": "",
+        "submitted_at_utc": "",
+        "submitted_by": "",
+        "tester_group_or_track": "Pilot internal testers"
+      },
+      "checks": [
+        {
+          "id": "apple_developer_access",
+          "status": "blocked_external",
+          "evidence": "Account admin must grant Apple Developer and App Store Connect access."
+        },
+        {
+          "id": "ios_signing_credentials",
+          "status": "blocked_external",
+          "evidence": "Provisioning profiles/certificates must be configured in Expo/EAS or Apple account."
+        },
+        {
+          "id": "testflight_internal_group",
+          "status": "blocked_external",
+          "evidence": "Internal TestFlight group must exist and include pilot testers."
+        },
+        {
+          "id": "eas_ios_build_uploaded",
+          "status": "blocked_external",
+          "evidence": "Fill with EAS iOS build URL and TestFlight processing evidence."
+        },
+        {
+          "id": "build_metadata_matches_manifest",
+          "status": "blocked_external",
+          "evidence": "Confirm version/build number/git SHA against mobile-release-manifest."
+        },
+        {
+          "id": "privacy_strings_reviewed",
+          "status": "blocked_external",
+          "evidence": "Review camera, microphone, and motion privacy strings in TestFlight metadata."
+        },
+        {
+          "id": "tester_install_instructions_sent",
+          "status": "blocked_external",
+          "evidence": "Send clinic operator install/runbook link after TestFlight build is available."
+        }
+      ]
+    },
+    {
+      "platform": "android",
+      "distribution_channel": "play_internal_testing",
+      "status": "blocked_external",
+      "owner": "release_engineer",
+      "account_status": "manual_required",
+      "blockers": [
+        "Google Play Console access, Android signing, and internal testing track permissions are not available in repository automation."
+      ],
+      "tester_scope": {
+        "name": "Pilot internal testers",
+        "audience": "clinic operators and release reviewers",
+        "install_instruction_url": "docs/mobile-install-and-field-test-runbook-v0.1.md"
+      },
+      "build_artifact": {
+        "eas_build_id": "",
+        "eas_build_url": "",
+        "store_build_number": "1",
+        "artifact_sha256": ""
+      },
+      "store_submission": {
+        "store_console_url": "",
+        "submitted_at_utc": "",
+        "submitted_by": "",
+        "tester_group_or_track": "internal-testing"
+      },
+      "checks": [
+        {
+          "id": "google_play_access",
+          "status": "blocked_external",
+          "evidence": "Account admin must grant Google Play Console access."
+        },
+        {
+          "id": "android_signing_credentials",
+          "status": "blocked_external",
+          "evidence": "Play app signing/upload key path must be configured before internal track upload."
+        },
+        {
+          "id": "play_internal_track",
+          "status": "blocked_external",
+          "evidence": "Internal testing track must exist and include pilot testers."
+        },
+        {
+          "id": "eas_android_build_uploaded",
+          "status": "blocked_external",
+          "evidence": "Fill with EAS Android build URL and Play internal track evidence."
+        },
+        {
+          "id": "build_metadata_matches_manifest",
+          "status": "blocked_external",
+          "evidence": "Confirm versionCode/version/git SHA against mobile-release-manifest."
+        },
+        {
+          "id": "permissions_reviewed",
+          "status": "blocked_external",
+          "evidence": "Review camera, microphone, and motion-related Android permissions before release."
+        },
+        {
+          "id": "tester_install_instructions_sent",
+          "status": "blocked_external",
+          "evidence": "Send clinic operator install/runbook link after Play Internal Testing build is available."
+        }
+      ]
+    }
+  ]
+}
