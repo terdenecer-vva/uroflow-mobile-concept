@@ -31,6 +31,14 @@ on:
       - main
     paths:
       - "apps/field-mobile/**"
+      - "scripts/build_mobile_release_manifest.py"
+      - "scripts/check_mobile_release_readiness.py"
+      - ".github/workflows/mobile-build.yml"
+  pull_request:
+    paths:
+      - "apps/field-mobile/**"
+      - "scripts/build_mobile_release_manifest.py"
+      - "scripts/check_mobile_release_readiness.py"
       - ".github/workflows/mobile-build.yml"
 
 concurrency:

@@ -114,7 +114,7 @@ When backend is configured with API key policy map (`--api-key-map-json`), set i
 CI:
 - `.github/workflows/mobile-ci.yml` runs `npm run validate:ci` for `apps/field-mobile/**` changes.
 - `validate:ci` covers TypeScript, Clinical Hub API client/connection check/summary requests + mobile helper/API + submit outcome + paired/capture-package payload + capture-contract + ROI signal + runtime metric + pending queue + storage unit tests, Expo Doctor, production dependency audit, and iOS/Android Expo exports.
-- `.github/workflows/mobile-build.yml` provides manual EAS build trigger (`workflow_dispatch`) with inputs:
+- `.github/workflows/mobile-build.yml` runs release preflight for mobile app/release-script changes and provides manual EAS build trigger (`workflow_dispatch`) with inputs:
   - `build_profile` (`preview` / `development` / `production`)
   - `build_platform` (`all` / `ios` / `android`)
   - `wait_for_build` (`true` / `false`)
