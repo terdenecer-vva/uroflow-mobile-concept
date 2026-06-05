@@ -708,7 +708,7 @@ def build_readiness_report(
     capture_package_payload_tests_path = mobile_root / "tests" / "capturePackagePayload.test.js"
     capture_contract_source_path = mobile_root / "src" / "capture" / "buildCaptureContract.ts"
     capture_tests_path = mobile_root / "tests" / "captureContract.test.js"
-    repo_root = mobile_root.parent.parent
+    repo_root = package_json.resolve().parent.parent.parent
     backend_capture_contract_path = repo_root / "src" / "uroflow_mobile" / "capture_contract.py"
     backend_capture_tests_path = repo_root / "tests" / "test_capture_contract.py"
     paired_payload_tests_path = mobile_root / "tests" / "pairedPayload.test.js"
