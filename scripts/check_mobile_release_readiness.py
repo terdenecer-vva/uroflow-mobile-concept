@@ -1484,15 +1484,43 @@ def build_readiness_report(
         "build:preview" in scripts and "build:production" in scripts,
         "package build scripts are present",
     )
+    submit_script_requirements = {
+        "ios_script": "submit:ios:production" in scripts,
+        "ios_platform": "--platform ios" in scripts.get("submit:ios:production", ""),
+        "android_script": "submit:android:production" in scripts,
+        "android_platform": "--platform android" in scripts.get("submit:android:production", ""),
+        "all_script": "submit:production" in scripts,
+        "all_platform": "--platform all" in scripts.get("submit:production", ""),
+        "production_profile": all(
+            "--profile production" in scripts.get(script_name, "")
+            for script_name in (
+                "submit:ios:production",
+                "submit:android:production",
+                "submit:production",
+            )
+        ),
+        "latest_build_source": all(
+            "--latest" in scripts.get(script_name, "")
+            for script_name in (
+                "submit:ios:production",
+                "submit:android:production",
+                "submit:production",
+            )
+        ),
+        "non_interactive": all(
+            "--non-interactive" in scripts.get(script_name, "")
+            for script_name in (
+                "submit:ios:production",
+                "submit:android:production",
+                "submit:production",
+            )
+        ),
+    }
     _check(
         checks,
         "eas_submit_scripts_present",
-        {
-            "submit:ios:production",
-            "submit:android:production",
-            "submit:production",
-        }.issubset(set(scripts)),
-        "package EAS submit scripts are present",
+        all(submit_script_requirements.values()),
+        f"requirements={submit_script_requirements!r}",
     )
     _check(
         checks,

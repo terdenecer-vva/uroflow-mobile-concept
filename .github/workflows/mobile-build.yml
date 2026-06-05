@@ -30,6 +30,29 @@ on:
         description: "Operator-facing release notes for this mobile build"
         required: false
         type: string
+      submit_to_store:
+        description: "Submit the latest production EAS build to configured stores"
+        required: false
+        type: boolean
+        default: false
+      submit_platform:
+        description: "Store submit platform"
+        required: false
+        type: choice
+        options:
+          - all
+          - ios
+          - android
+        default: all
+      wait_for_submit:
+        description: "Wait until EAS submit completes"
+        required: false
+        type: boolean
+        default: false
+      what_to_test:
+        description: "Optional TestFlight 'What to Test' text for iOS submit"
+        required: false
+        type: string
   push:
     branches:
       - main
@@ -134,6 +157,8 @@ jobs:
 
       - name: Publish release readiness summary
         shell: bash
+        env:
+          WORKFLOW_SUBMIT_TO_STORE: ${{ github.event.inputs.submit_to_store || 'false' }}
         run: |
           set -euo pipefail
           python3 - <<'PY'
@@ -164,6 +189,14 @@ jobs:
           ]
           authenticated_eas_status = payload.get("authenticated_eas_status")
           eas_trigger_status = "enabled" if authenticated_eas_status == "pass" else "blocked"
+          submit_requested = os.environ.get("WORKFLOW_SUBMIT_TO_STORE", "false").lower() == "true"
+          eas_submit_trigger_status = (
+              "enabled"
+              if submit_requested and authenticated_eas_status == "pass"
+              else "blocked"
+              if submit_requested
+              else "not_requested"
+          )
           lines = [
               "## Mobile Release Readiness",
               f"- Status: `{payload.get('status')}`",
@@ -172,6 +205,7 @@ jobs:
               f"- Authenticated EAS readiness: `{authenticated_eas_status}`",
               f"- Authenticated EAS blockers: `{', '.join(payload.get('authenticated_eas_blockers', [])) if payload.get('authenticated_eas_blockers') else 'none'}`",
               f"- Authenticated EAS build trigger: `{eas_trigger_status}`",
+              f"- Authenticated EAS submit trigger: `{eas_submit_trigger_status}`",
               f"- Clinical Hub live API: `{payload.get('clinical_hub_live_api_status')}`",
               f"- Missing external items: `{', '.join(missing) if missing else 'none'}`",
               f"- Invalid external items: `{', '.join(invalid) if invalid else 'none'}`",
@@ -187,6 +221,8 @@ jobs:
           WORKFLOW_BUILD_PROFILE: ${{ github.event.inputs.build_profile || 'preview' }}
           WORKFLOW_BUILD_PLATFORM: ${{ github.event.inputs.build_platform || 'all' }}
           WORKFLOW_RELEASE_NOTES: ${{ github.event.inputs.release_notes || '' }}
+          WORKFLOW_SUBMIT_TO_STORE: ${{ github.event.inputs.submit_to_store || 'false' }}
+          WORKFLOW_SUBMIT_PLATFORM: ${{ github.event.inputs.submit_platform || 'all' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -209,6 +245,8 @@ jobs:
               f"- GitHub run: `{os.environ.get('GITHUB_RUN_ID', 'local')}`",
               f"- Build profile: `{os.environ.get('WORKFLOW_BUILD_PROFILE', 'preview')}`",
               f"- Build platform: `{os.environ.get('WORKFLOW_BUILD_PLATFORM', 'all')}`",
+              f"- Store submit requested: `{os.environ.get('WORKFLOW_SUBMIT_TO_STORE', 'false')}`",
+              f"- Store submit platform: `{os.environ.get('WORKFLOW_SUBMIT_PLATFORM', 'all')}`",
               "",
               "## Operator Notes",
               "",
@@ -473,12 +511,94 @@ jobs:
           )
           PY
 
-      - name: Publish skip summary
-        if: ${{ steps.expo.outputs.available != 'true' }}
-        shell: bash
+  eas-submit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    needs: preflight
+    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.submit_to_store == 'true' && needs.preflight.outputs.authenticated_eas_status == 'pass' }}
+
+    defaults:
+      run:
+        working-directory: apps/field-mobile
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22.13.x"
+          cache: "npm"
+          cache-dependency-path: apps/field-mobile/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Install EAS CLI
+        run: npm install -g eas-cli@20.0.0
+
+      - name: Trigger EAS submit
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          WORKFLOW_SUBMIT_PLATFORM: ${{ github.event.inputs.submit_platform || 'all' }}
+          WORKFLOW_WAIT_FOR_SUBMIT: ${{ github.event.inputs.wait_for_submit || 'false' }}
+          WORKFLOW_WHAT_TO_TEST: ${{ github.event.inputs.what_to_test || '' }}
         run: |
+          set -euo pipefail
+          platform="${WORKFLOW_SUBMIT_PLATFORM:-all}"
+          wait_for_submit="${WORKFLOW_WAIT_FOR_SUBMIT:-false}"
+          what_to_test="${WORKFLOW_WHAT_TO_TEST:-}"
+
+          cmd=(eas submit --platform "$platform" --profile production --latest --non-interactive)
+          if [[ "$wait_for_submit" == "true" ]]; then
+            cmd+=(--wait)
+          else
+            cmd+=(--no-wait)
+          fi
+          if [[ -n "$what_to_test" && "$platform" == "ios" ]]; then
+            cmd+=(--what-to-test "$what_to_test")
+          fi
+
           {
-            echo "## Mobile EAS Build"
-            echo "- Status: \`skipped\`"
-            echo "- Reason: \`EXPO_TOKEN is not configured in repository secrets\`"
+            printf 'Command:'
+            printf ' %q' "${cmd[@]}"
+            printf '\n\n'
+          } > /tmp/eas-submit-result.log
+
+          set +e
+          "${cmd[@]}" >> /tmp/eas-submit-result.log 2>&1
+          submit_exit_code=$?
+          set -e
+          cat /tmp/eas-submit-result.log
+          echo "$submit_exit_code" > /tmp/eas-submit-exit-code
+          exit "$submit_exit_code"
+
+      - name: Upload EAS submit result artifact
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: mobile-eas-submit-result-${{ github.run_id }}
+          path: |
+            /tmp/eas-submit-result.log
+            /tmp/eas-submit-exit-code
+          if-no-files-found: warn
+
+      - name: Publish EAS submit summary
+        if: ${{ always() }}
+        shell: bash
+        env:
+          WORKFLOW_SUBMIT_PLATFORM: ${{ github.event.inputs.submit_platform || 'all' }}
+          WORKFLOW_WAIT_FOR_SUBMIT: ${{ github.event.inputs.wait_for_submit || 'false' }}
+        run: |
+          set -euo pipefail
+          submit_exit_code="$(cat /tmp/eas-submit-exit-code 2>/dev/null || echo not-run)"
+          {
+            echo "## Mobile EAS Submit"
+            echo "- Profile: \`production\`"
+            echo "- Platform: \`${WORKFLOW_SUBMIT_PLATFORM:-all}\`"
+            echo "- Build source: \`latest\`"
+            echo "- Wait mode: \`${WORKFLOW_WAIT_FOR_SUBMIT:-false}\`"
+            echo "- Exit code: \`${submit_exit_code}\`"
+            echo "- Result artifact: \`mobile-eas-submit-result-${GITHUB_RUN_ID}\`"
           } >> "$GITHUB_STEP_SUMMARY"

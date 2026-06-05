@@ -21,9 +21,9 @@
     "validate:ci": "npm run typecheck && npm run test:unit && npm run doctor && npm run audit:prod && npm run export:ios && npm run export:android",
     "build:preview": "eas build --platform all --profile preview",
     "build:production": "eas build --platform all --profile production",
-    "submit:ios:production": "eas submit --platform ios --profile production --non-interactive",
-    "submit:android:production": "eas submit --platform android --profile production --non-interactive",
-    "submit:production": "eas submit --platform all --profile production --non-interactive"
+    "submit:ios:production": "eas submit --platform ios --profile production --latest --non-interactive",
+    "submit:android:production": "eas submit --platform android --profile production --latest --non-interactive",
+    "submit:production": "eas submit --platform all --profile production --latest --non-interactive"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",

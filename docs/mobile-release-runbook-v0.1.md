@@ -24,6 +24,10 @@ From GitHub Actions:
    - `build_profile` (`preview` for pilot by default),
    - `build_platform` (`all`/`ios`/`android`),
    - `wait_for_build` (`false` for fast trigger, `true` for full wait mode),
+   - `submit_to_store` (`false` by default; set `true` only after a signed production build is ready),
+   - `submit_platform` (`all`/`ios`/`android`),
+   - `wait_for_submit` (`false` for fast trigger, `true` for full submit wait mode),
+   - `what_to_test` for optional TestFlight notes when submitting iOS,
    - `release_notes` for operator-facing clinic handoff notes.
 3. Verify `preflight` passes.
 4. Open workflow summary (`Mobile Release Readiness`) and confirm:
@@ -32,9 +36,10 @@ From GitHub Actions:
    - `Clinical Hub live API` is `present` before live API smoke/report push is expected,
    - missing or invalid external items are understood and either configured or accepted as blockers for this run.
    - `Next actions` maps the remaining external blockers to concrete setup tasks.
-5. Verify `eas-build` starts. If `Authenticated EAS readiness` is `blocked`, `eas-build` is skipped by design and the readiness artifact is the handoff output.
+5. Verify `eas-build` starts when a build is requested. If `Authenticated EAS readiness` is `blocked`, authenticated EAS jobs are skipped by design and the readiness artifact is the handoff output.
 6. Open workflow summary (`Mobile EAS Build`) and copy build links.
 7. Download artifact `mobile-eas-build-result-<run_id>` for traceability JSON.
+8. If `submit_to_store=true`, open workflow summary (`Mobile EAS Submit`) and download artifact `mobile-eas-submit-result-<run_id>` for the EAS submit log and exit code.
 
 Local fallback:
 
@@ -55,7 +60,8 @@ npm run submit:production
 
 Do not commit Apple credentials or Google service-account JSON. Android submit is configured to read
 the Google Play service account as EAS file secret `GOOGLE_SERVICE_ACCOUNT`; iOS submit still depends
-on Apple Developer/App Store Connect credentials and the external app record.
+on Apple Developer/App Store Connect credentials and the external app record. Submit commands use
+`--latest` and therefore submit the latest completed production EAS build for the selected platform.
 
 ## 3) Release manifest and traceability
 
@@ -89,6 +95,7 @@ Workflow also generates artifact `mobile-release-readiness` containing:
 Workflow also generates artifact `mobile-release-notes` containing:
 - git SHA/ref/run-id,
 - selected build profile/platform,
+- selected store-submit request/platform,
 - operator-facing release notes from workflow input or an explicit placeholder when not supplied,
 - required evidence reminders for manifest, readiness, EAS build links, and physical-device smoke logs.
 
@@ -176,14 +183,14 @@ Manual store-account handoff remains outside GitHub secrets:
 iOS:
 1. Download `mobile-store-rollout-handoff` from the Mobile Build run.
 2. Configure Apple Developer/App Store Connect access, app record, signing credentials, and the internal TestFlight group.
-3. Run `npm run submit:ios:production` from `apps/field-mobile` or use EAS output for TestFlight upload (internal testers).
+3. Run `npm run submit:ios:production` from `apps/field-mobile`, or dispatch `Mobile Build` with `submit_to_store=true` and `submit_platform=ios`, to submit the latest production EAS build to TestFlight internal testers.
 4. Update the iOS channel in `mobile-store-rollout-handoff.json` from `blocked_external` to the actual rollout state and fill in EAS/TestFlight evidence.
 5. Verify build metadata, privacy strings, and permissions prompt behavior.
 
 Android:
 1. Download `mobile-store-rollout-handoff` from the Mobile Build run.
 2. Configure Google Play Console access, Android signing, EAS file secret `GOOGLE_SERVICE_ACCOUNT`, and the internal testing track.
-3. Run `npm run submit:android:production` from `apps/field-mobile` or use EAS output for Play Internal Testing.
+3. Run `npm run submit:android:production` from `apps/field-mobile`, or dispatch `Mobile Build` with `submit_to_store=true` and `submit_platform=android`, to submit the latest production EAS build to Play Internal Testing.
 4. Update the Android channel in `mobile-store-rollout-handoff.json` from `blocked_external` to the actual rollout state and fill in EAS/Play evidence.
 5. Verify package name, versionCode increment, and install/update path.
 
