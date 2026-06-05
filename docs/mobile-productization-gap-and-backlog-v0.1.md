@@ -15,6 +15,7 @@ Implemented now:
 - Release manifest traceability for app version, git SHA, model/schema, runtime config, capture contract feature-manifest evidence, and readiness gate summary.
 - Mobile API response, submit exception outcome, and runtime exception redaction gates for raw body, PHI-like subject/site/operator IDs, and secret-like error details.
 - Mobile release readiness gate for single-region data residency policy (`us`, no cross-region sync, region-matched Clinical Hub required).
+- Pending queue auto-sync on connectivity restore via NetInfo, with interval/AppState fallback.
 
 Not yet implemented:
 - Real sensor capture pipeline (camera/audio/IMU/depth).
@@ -30,7 +31,7 @@ Not yet implemented:
 
 ### G2. Data contract gap
 - Capture contract can use live runtime samples, with scaffold fallback still available.
-- `capture-packages` are queued for offline retry, but device-level E2E replay evidence still needs to be archived.
+- `capture-packages` are queued for offline retry, with app-level connectivity-restore sync; device-level E2E replay evidence still needs to be archived.
 - Mobile payloads include a derivatives-only feature/media manifest; native-grade feature bundles and device-level media-manifest replay evidence still need physical-device archival.
 
 ### G3. Security/privacy gap
@@ -75,7 +76,7 @@ DoD:
 ## B2: Sync and resilience
 1. Extend offline queue to support both `paired-measurements` and `capture-packages` as independent jobs.
 2. Add idempotent retry policies per endpoint and per status code.
-3. Add background sync trigger on connectivity restore.
+3. Add background sync trigger on connectivity restore. Status: implemented for foreground app connectivity restore via NetInfo, plus interval and AppState fallback; OS background task scheduling remains out of scope until native/background execution policy is chosen.
 
 DoD:
 - Airplane-mode scenario retains both payload types.

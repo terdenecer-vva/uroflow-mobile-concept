@@ -96,6 +96,56 @@ test("shouldAutoSyncPendingQueue requires hydrated settings, pending work, and c
   );
 });
 
+test("isNetworkReachableForSync treats connected unknown internet as usable", () => {
+  assert.equal(pending.isNetworkReachableForSync(true, true), true);
+  assert.equal(pending.isNetworkReachableForSync(true, null), true);
+  assert.equal(pending.isNetworkReachableForSync(true, false), false);
+  assert.equal(pending.isNetworkReachableForSync(false, true), false);
+  assert.equal(pending.isNetworkReachableForSync(null, true), false);
+});
+
+test("shouldAutoSyncOnConnectivityRestore requires unreachable to reachable transition", () => {
+  const baseGate = {
+    settingsHydrated: true,
+    pendingCount: 1,
+    apiConfigured: true,
+  };
+
+  assert.equal(
+    pending.shouldAutoSyncOnConnectivityRestore({
+      ...baseGate,
+      wasNetworkReachable: false,
+      isNetworkReachable: true,
+    }),
+    true,
+  );
+  assert.equal(
+    pending.shouldAutoSyncOnConnectivityRestore({
+      ...baseGate,
+      wasNetworkReachable: null,
+      isNetworkReachable: true,
+    }),
+    false,
+  );
+  assert.equal(
+    pending.shouldAutoSyncOnConnectivityRestore({
+      ...baseGate,
+      wasNetworkReachable: false,
+      isNetworkReachable: false,
+    }),
+    false,
+  );
+  assert.equal(
+    pending.shouldAutoSyncOnConnectivityRestore({
+      ...baseGate,
+      pendingCount: 0,
+      wasNetworkReachable: false,
+      isNetworkReachable: true,
+    }),
+    false,
+  );
+});
+
 test("buildPendingSyncAttempt records successful capture package submissions", () => {
   const headerContext = {
     api_key: "current-key",

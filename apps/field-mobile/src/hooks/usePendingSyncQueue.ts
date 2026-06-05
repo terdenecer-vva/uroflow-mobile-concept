@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, AppState } from "react-native";
+import NetInfo from "@react-native-community/netinfo";
 
 import {
   attemptSubmitEndpoint,
@@ -24,7 +25,9 @@ import {
 import {
   buildPendingSyncAttempt,
   buildPendingSyncStatusMessage,
+  isNetworkReachableForSync,
   shouldAutoSyncPendingQueue,
+  shouldAutoSyncOnConnectivityRestore,
   splitPendingSyncBatch,
 } from "../utils/pendingSyncQueue";
 
@@ -48,6 +51,7 @@ export function usePendingSyncQueue({
   const [syncStatusMessage, setSyncStatusMessage] = useState("");
   const syncInFlightRef = useRef(false);
   const autoSyncIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const networkReachableRef = useRef<boolean | null>(null);
   const apiConfigured = isConfiguredApiBaseUrl(apiBaseUrl);
 
   const persistPendingQueue = useCallback(async (queue: PendingSubmission[]): Promise<void> => {
@@ -235,6 +239,33 @@ export function usePendingSyncQueue({
         clearInterval(autoSyncIntervalRef.current);
         autoSyncIntervalRef.current = null;
       }
+    };
+  }, [apiConfigured, pendingQueue.length, settingsHydrated, syncPendingSubmissions]);
+
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      const isNetworkReachable = isNetworkReachableForSync(
+        state.isConnected,
+        state.isInternetReachable,
+      );
+      const wasNetworkReachable = networkReachableRef.current;
+      networkReachableRef.current = isNetworkReachable;
+
+      if (
+        shouldAutoSyncOnConnectivityRestore({
+          settingsHydrated,
+          pendingCount: pendingQueue.length,
+          apiConfigured,
+          wasNetworkReachable,
+          isNetworkReachable,
+        })
+      ) {
+        void syncPendingSubmissions(false);
+      }
+    });
+
+    return () => {
+      unsubscribe();
     };
   }, [apiConfigured, pendingQueue.length, settingsHydrated, syncPendingSubmissions]);
 
