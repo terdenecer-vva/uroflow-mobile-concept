@@ -123,7 +123,7 @@ CI:
   - `build_platform` (`all` / `ios` / `android`)
   - `wait_for_build` (`true` / `false`)
 - `mobile-build` uploads:
-  - `mobile-release-manifest` (version + runtime release metadata/config + git SHA + model/schema traceability)
+  - `mobile-release-manifest` (version + runtime release metadata/config + capture contract feature-manifest evidence + git SHA + model/schema traceability)
   - `mobile-release-readiness` (git traceability + local readiness checks + explicit external credential blockers)
   - `mobile-eas-build-result-<run_id>` (raw EAS JSON response for build IDs/URLs)
 - Workflow summary includes release readiness status and direct EAS build links for operator/release use.

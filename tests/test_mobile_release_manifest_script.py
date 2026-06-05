@@ -33,9 +33,11 @@ def test_build_mobile_release_manifest_script(tmp_path: Path) -> None:
     assets = tmp_path / "assets"
     metadata_path = tmp_path / "src" / "config" / "releaseMetadata.ts"
     app_config_path = tmp_path / "src" / "config" / "appConfig.ts"
+    capture_contract_path = tmp_path / "src" / "capture" / "buildCaptureContract.ts"
     app_settings_path = tmp_path / "src" / "storage" / "appSettingsStorage.ts"
     assets.mkdir()
     metadata_path.parent.mkdir(parents=True)
+    capture_contract_path.parent.mkdir(parents=True)
     app_settings_path.parent.mkdir(parents=True)
     _write_png(assets / "icon.png", 1024, 1024)
     _write_png(assets / "adaptive-icon.png", 1024, 1024)
@@ -116,6 +118,25 @@ def test_build_mobile_release_manifest_script(tmp_path: Path) -> None:
         'export const DEFAULT_API_BASE_URL = "";\n',
         encoding="utf-8",
     )
+    capture_contract_path.write_text(
+        "\n".join(
+            [
+                'const FEATURE_MANIFEST_VERSION = "mobile_feature_manifest_v0.1";',
+                'const BASE_FEATURE_KEYS = ["t_s", "depth_level_mm", "rgb_level_mm",',
+                '  "depth_confidence", "audio_rms_dbfs", "motion_norm", "roi_valid"];',
+                'featureKeys.add("runtime_flow_series.flow_ml_s");',
+                'featureKeys.add("runtime_quality.high_motion_ratio");',
+                "const featureManifest = {",
+                "  derivatives_only: true,",
+                "  sample_count: samples.length,",
+                "  upload_raw_video: false,",
+                "  upload_raw_audio: false,",
+                '  media_scope: "roi_derivatives_only",',
+                "};",
+            ]
+        ),
+        encoding="utf-8",
+    )
 
     script_path = Path("scripts/build_mobile_release_manifest.py")
     subprocess.run(
@@ -180,5 +201,22 @@ def test_build_mobile_release_manifest_script(tmp_path: Path) -> None:
     assert payload["runtime_config"]["allow_raw_response_details"] is False
     assert payload["runtime_config"]["enable_verbose_logging"] is False
     assert payload["runtime_defaults"]["default_api_base_url"] == ""
+    assert payload["capture_contract"]["path"] == str(capture_contract_path)
+    feature_manifest = payload["capture_contract"]["feature_manifest"]
+    assert feature_manifest["version"] == "mobile_feature_manifest_v0.1"
+    assert feature_manifest["derivatives_only"] is True
+    assert feature_manifest["sample_count_source"] == "samples.length"
+    assert feature_manifest["raw_media"] == {
+        "store_raw_video": False,
+        "store_raw_audio": False,
+        "upload_raw_video": False,
+        "upload_raw_audio": False,
+    }
+    assert feature_manifest["privacy"] == {
+        "roi_only": True,
+        "media_scope": "roi_derivatives_only",
+    }
+    assert "audio_rms_dbfs" in feature_manifest["feature_keys"]
+    assert "runtime_quality.high_motion_ratio" in feature_manifest["feature_keys"]
     assert payload["algorithm"]["model_id"] == "fusion-v0.1"
     assert payload["algorithm"]["capture_schema_version"] == "ios_capture_v1"
