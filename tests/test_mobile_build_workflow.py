@@ -24,6 +24,7 @@ def test_mobile_build_workflow_runs_for_release_script_changes() -> None:
 
     assert required_paths.issubset(set(triggers["push"]["paths"]))
     assert required_paths.issubset(set(triggers["pull_request"]["paths"]))
+    assert "release_notes" in triggers["workflow_dispatch"]["inputs"]
 
 
 def test_mobile_build_workflow_uploads_readiness_before_local_failure() -> None:
@@ -46,6 +47,23 @@ def test_mobile_build_workflow_embeds_readiness_summary_in_release_manifest() ->
     manifest_step = next(step for step in steps if step.get("name") == "Build release manifest")
 
     assert "--readiness-json /tmp/mobile-release-readiness.json" in manifest_step["run"]
+    assert "--release-notes /tmp/mobile-release-notes.md" in manifest_step["run"]
+
+
+def test_mobile_build_workflow_uploads_release_notes_artifact() -> None:
+    payload = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
+    steps = payload["jobs"]["preflight"]["steps"]
+    step_names = [step.get("name") for step in steps]
+
+    notes_index = step_names.index("Build release notes artifact")
+    manifest_index = step_names.index("Build release manifest")
+    upload_index = step_names.index("Upload release notes")
+    notes_upload_step = steps[upload_index]
+
+    assert notes_index < manifest_index < upload_index
+    assert "WORKFLOW_RELEASE_NOTES" in steps[notes_index]["env"]
+    assert notes_upload_step["with"]["name"] == "mobile-release-notes"
+    assert notes_upload_step["with"]["path"] == "/tmp/mobile-release-notes.md"
 
 
 def test_mobile_build_workflow_summary_reports_invalid_external_items() -> None:
