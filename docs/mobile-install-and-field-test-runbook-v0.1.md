@@ -89,6 +89,13 @@ Verify with `Test API` button before first patient run.
 Pending queue auto-sync stays paused until `API Base URL` is configured and starts with
 `http://` or `https://`.
 
+Before field use, verify the in-app `Release Identity` panel:
+- App version, model ID, and capture schema match the Mobile Build manifest.
+- Runtime mode is `pilot`, endpoint set is `clinical_hub_v1`, and default capture mode is `water_impact`.
+- Privacy flags show raw video/audio off and ROI-only on.
+- Data residency shows `us/single_region` with cross-region sync off.
+- `Payload traceability` is `aligned`; if it shows `edited`, reset the App Version, Model ID, and Capture Mode fields before collecting pilot data.
+
 ## 5. Paired Test Workflow
 
 Per subject/attempt:

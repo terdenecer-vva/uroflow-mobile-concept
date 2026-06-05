@@ -740,6 +740,10 @@ def build_readiness_report(
     app_ts_path = mobile_root / "App.tsx"
     app_config_tests_path = mobile_root / "tests" / "appConfig.test.js"
     app_helpers_path = mobile_root / "src" / "utils" / "appHelpers.ts"
+    release_identity_source_path = mobile_root / "src" / "utils" / "releaseIdentity.ts"
+    release_identity_component_path = (
+        mobile_root / "src" / "components" / "ReleaseIdentitySection.tsx"
+    )
     clinical_hub_source_path = mobile_root / "src" / "api" / "clinicalHub.ts"
     connection_check_source_path = mobile_root / "src" / "api" / "connectionCheck.ts"
     pending_sync_queue_source_path = mobile_root / "src" / "utils" / "pendingSyncQueue.ts"
@@ -790,8 +794,11 @@ def build_readiness_report(
     )
     summary_requests_tests_path = mobile_root / "tests" / "summaryRequests.test.js"
     submit_outcome_tests_path = mobile_root / "tests" / "submitOutcome.test.js"
+    unit_runner_source = _read_file_text(unit_runner_path)
     app_ts_source = _read_file_text(app_ts_path)
     app_helpers_source = _read_file_text(app_helpers_path)
+    release_identity_source = _read_file_text(release_identity_source_path)
+    release_identity_component_source = _read_file_text(release_identity_component_path)
     clinical_hub_source = _read_file_text(clinical_hub_source_path)
     connection_check_source = _read_file_text(connection_check_source_path)
     pending_sync_queue_source = _read_file_text(pending_sync_queue_source_path)
@@ -799,6 +806,8 @@ def build_readiness_report(
     pending_storage_source = _read_file_text(pending_storage_source_path)
     submit_outcome_source = _read_file_text(submit_outcome_source_path)
     helper_tests_source = _read_file_text(helper_tests_path)
+    release_identity_tests_path = mobile_root / "tests" / "releaseIdentity.test.js"
+    release_identity_tests_source = _read_file_text(release_identity_tests_path)
     clinical_hub_tests_source = _read_file_text(clinical_hub_api_tests_path)
     connection_check_tests_source = _read_file_text(connection_check_tests_path)
     pending_sync_queue_tests_source = _read_file_text(pending_sync_queue_tests_path)
@@ -853,6 +862,38 @@ def build_readiness_report(
         "mobile_helper_unit_tests_present",
         helper_tests_path.is_file(),
         f"path={helper_tests_path}",
+    )
+    release_identity_source_requirements = {
+        "helper_file": release_identity_source_path.is_file(),
+        "component_file": release_identity_component_path.is_file(),
+        "app_renders_component": "ReleaseIdentitySection" in app_ts_source,
+        "component_uses_helper": "buildReleaseIdentitySnapshot"
+        in release_identity_component_source,
+        "canonical_metadata": "APP_RELEASE_METADATA" in release_identity_source,
+        "runtime_config": "APP_RUNTIME_CONFIG" in release_identity_source,
+        "payload_alignment_status": "payloadStatus" in release_identity_source,
+    }
+    _check(
+        checks,
+        "mobile_release_identity_sources",
+        all(release_identity_source_requirements.values()),
+        f"requirements={release_identity_source_requirements!r}",
+    )
+    release_identity_test_requirements = {
+        "unit_test_file": release_identity_tests_path.is_file(),
+        "canonical_metadata_test": (
+            "release identity snapshot exposes canonical runtime release metadata"
+        )
+        in release_identity_tests_source,
+        "edited_payload_test": "warns when payload traceability is edited"
+        in release_identity_tests_source,
+        "unit_runner_compiles_helper": "src/utils/releaseIdentity.ts" in unit_runner_source,
+    }
+    _check(
+        checks,
+        "mobile_release_identity_unit_tests_present",
+        all(release_identity_test_requirements.values()),
+        f"requirements={release_identity_test_requirements!r}",
     )
     _check(
         checks,

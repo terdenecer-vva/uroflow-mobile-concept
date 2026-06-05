@@ -115,6 +115,8 @@ def test_mobile_release_readiness_reports_external_blockers(tmp_path: Path) -> N
         "mobile_phi_exception_redaction_unit_tests_present",
         "mobile_feature_media_manifest_sources",
         "mobile_feature_media_manifest_unit_tests_present",
+        "mobile_release_identity_sources",
+        "mobile_release_identity_unit_tests_present",
         "connection_check_unit_tests_present",
         "capture_contract_unit_tests_present",
         "mobile_e2e_sync_smoke_sources",
