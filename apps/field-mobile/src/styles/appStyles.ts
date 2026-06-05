@@ -24,6 +24,27 @@ export const styles = StyleSheet.create({
     fontSize: 12,
     color: "#334155",
   },
+  releaseIdentityBox: {
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: "#cbd5e1",
+    backgroundColor: "#ffffff",
+    borderRadius: 10,
+    padding: 10,
+  },
+  releaseIdentityText: {
+    color: "#0f172a",
+    fontSize: 12,
+    marginBottom: 4,
+  },
+  releaseIdentityGoodText: {
+    color: "#166534",
+    fontWeight: "700",
+  },
+  releaseIdentityWarningText: {
+    color: "#b45309",
+    fontWeight: "700",
+  },
   sectionTitle: {
     marginTop: 14,
     marginBottom: 8,
