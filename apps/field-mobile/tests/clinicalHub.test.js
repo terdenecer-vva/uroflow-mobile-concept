@@ -44,6 +44,19 @@ test("isConfiguredApiBaseUrl requires explicit http or https Clinical Hub URL", 
   );
 });
 
+test("buildRuntimeTraceHeaders exposes release and residency metadata without secrets", () => {
+  assert.deepEqual(clinicalHub.buildRuntimeTraceHeaders(), {
+    "x-uroflow-app-version": "0.1.0",
+    "x-uroflow-model-id": "fusion-v0.1",
+    "x-uroflow-capture-schema-version": "ios_capture_v1",
+    "x-uroflow-runtime-mode": "pilot",
+    "x-uroflow-endpoint-set": "clinical_hub_v1",
+    "x-uroflow-data-residency-region": "us",
+    "x-uroflow-data-residency-boundary": "single_region",
+    "x-uroflow-region-match-required": "true",
+  });
+});
+
 test("attemptSubmitEndpoint posts serialized payloads with request headers", async () => {
   const originalFetch = global.fetch;
   try {
@@ -56,6 +69,14 @@ test("attemptSubmitEndpoint posts serialized payloads with request headers", asy
       assert.equal(init.headers["x-site-id"], "SITE-001");
       assert.equal(init.headers["x-operator-id"], "OP-001");
       assert.equal(init.headers["x-request-id"], "REQ-001");
+      assert.equal(init.headers["x-uroflow-app-version"], "0.1.0");
+      assert.equal(init.headers["x-uroflow-model-id"], "fusion-v0.1");
+      assert.equal(init.headers["x-uroflow-capture-schema-version"], "ios_capture_v1");
+      assert.equal(init.headers["x-uroflow-runtime-mode"], "pilot");
+      assert.equal(init.headers["x-uroflow-endpoint-set"], "clinical_hub_v1");
+      assert.equal(init.headers["x-uroflow-data-residency-region"], "us");
+      assert.equal(init.headers["x-uroflow-data-residency-boundary"], "single_region");
+      assert.equal(init.headers["x-uroflow-region-match-required"], "true");
       assert.deepEqual(JSON.parse(init.body), buildPayload());
       return new Response('{"id": 17}', { status: 201 });
     };

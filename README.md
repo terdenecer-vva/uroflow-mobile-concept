@@ -438,6 +438,8 @@ npm run start:device
 Перед `Test API`, `Submit` и `Sync Queue` приложение выполняет Clinical Hub preflight:
 пустой/невалидный URL и очевидный cross-region Hub блокируются, local/LAN URL разрешён
 только как предупреждение для smoke-тестов.
+Все Clinical Hub запросы также несут runtime trace headers (`x-uroflow-*`) с app/model/schema,
+endpoint-set и data-residency политикой без секретных значений.
 
 ## Интеграция Project Package v2.8
 

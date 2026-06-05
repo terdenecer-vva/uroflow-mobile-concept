@@ -4,7 +4,19 @@ import type {
   RequestHeaderContext,
   SubmitAttemptResult,
 } from "../types";
-import { APP_ENDPOINT_PATHS } from "../config/appConfig";
+import {
+  APP_DATA_RESIDENCY_BOUNDARY,
+  APP_DATA_RESIDENCY_REGION,
+  APP_ENDPOINT_PATHS,
+  APP_ENDPOINT_SET,
+  APP_REQUIRE_REGION_MATCHED_CLINICAL_HUB,
+  APP_RUNTIME_MODE,
+} from "../config/appConfig";
+import {
+  APP_CAPTURE_SCHEMA_VERSION,
+  APP_MODEL_ID,
+  APP_RELEASE_VERSION,
+} from "../config/releaseMetadata";
 import {
   clampTimeoutMs,
   classifyRetryable,
@@ -28,11 +40,24 @@ export function endpointPath(endpoint: PendingEndpoint): string {
   return APP_ENDPOINT_PATHS[endpoint];
 }
 
+export function buildRuntimeTraceHeaders(): Record<string, string> {
+  return {
+    "x-uroflow-app-version": APP_RELEASE_VERSION,
+    "x-uroflow-model-id": APP_MODEL_ID,
+    "x-uroflow-capture-schema-version": APP_CAPTURE_SCHEMA_VERSION,
+    "x-uroflow-runtime-mode": APP_RUNTIME_MODE,
+    "x-uroflow-endpoint-set": APP_ENDPOINT_SET,
+    "x-uroflow-data-residency-region": APP_DATA_RESIDENCY_REGION,
+    "x-uroflow-data-residency-boundary": APP_DATA_RESIDENCY_BOUNDARY,
+    "x-uroflow-region-match-required": String(APP_REQUIRE_REGION_MATCHED_CLINICAL_HUB),
+  };
+}
+
 export function buildRequestHeaders(
   includeContentType: boolean,
   headerContext: RequestHeaderContext,
 ): Record<string, string> {
-  const headers: Record<string, string> = {};
+  const headers: Record<string, string> = buildRuntimeTraceHeaders();
   if (includeContentType) {
     headers["Content-Type"] = "application/json";
   }

@@ -184,6 +184,14 @@ test("buildRequestHeaders uses stable request id when provided", () => {
   assert.equal(headers["x-site-id"], "SITE-001");
   assert.equal(headers["x-operator-id"], "OP-01");
   assert.equal(headers["x-request-id"], "REQ-STABLE");
+  assert.equal(headers["x-uroflow-app-version"], "0.1.0");
+  assert.equal(headers["x-uroflow-model-id"], "fusion-v0.1");
+  assert.equal(headers["x-uroflow-capture-schema-version"], "ios_capture_v1");
+  assert.equal(headers["x-uroflow-runtime-mode"], "pilot");
+  assert.equal(headers["x-uroflow-endpoint-set"], "clinical_hub_v1");
+  assert.equal(headers["x-uroflow-data-residency-region"], "us");
+  assert.equal(headers["x-uroflow-data-residency-boundary"], "single_region");
+  assert.equal(headers["x-uroflow-region-match-required"], "true");
 });
 
 test("buildRequestHeaders creates a request id fallback without leaking empty headers", () => {
@@ -198,5 +206,6 @@ test("buildRequestHeaders creates a request id fallback without leaking empty he
   assert.equal(headers["x-site-id"], undefined);
   assert.equal(headers["x-operator-id"], undefined);
   assert.equal(headers["x-actor-role"], "operator");
+  assert.equal(headers["x-uroflow-data-residency-region"], "us");
   assert.match(headers["x-request-id"], /^PENDING-\d+-[a-z0-9]+$/);
 });
