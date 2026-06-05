@@ -26,6 +26,9 @@ test("release identity snapshot exposes canonical runtime release metadata", () 
   assert.equal(rows["Debug gates"], "debug controls off, raw details off, verbose logs off");
   assert.equal(rows["Device platform"], "ios");
   assert.equal(snapshot.payloadStatus, "aligned");
+  assert.equal(snapshot.releaseGuardStatus, "pass");
+  assert.deepEqual(snapshot.releaseGuardBlockers, []);
+  assert.match(snapshot.releaseGuardEvidence, /Runtime release guard passed/);
   assert.match(snapshot.artifactTraceabilityNote, /Mobile Build artifacts/);
 });
 

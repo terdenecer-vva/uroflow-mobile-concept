@@ -792,6 +792,10 @@ def build_readiness_report(
     unit_runner_path = mobile_root / "scripts" / "run-unit-tests.sh"
     app_ts_path = mobile_root / "App.tsx"
     app_config_tests_path = mobile_root / "tests" / "appConfig.test.js"
+    runtime_release_guard_source_path = (
+        mobile_root / "src" / "config" / "runtimeReleaseGuard.ts"
+    )
+    runtime_release_guard_tests_path = mobile_root / "tests" / "runtimeReleaseGuard.test.js"
     app_helpers_path = mobile_root / "src" / "utils" / "appHelpers.ts"
     device_identity_source_path = mobile_root / "src" / "utils" / "deviceIdentity.ts"
     release_identity_source_path = mobile_root / "src" / "utils" / "releaseIdentity.ts"
@@ -882,6 +886,8 @@ def build_readiness_report(
     submit_outcome_tests_path = mobile_root / "tests" / "submitOutcome.test.js"
     unit_runner_source = _read_file_text(unit_runner_path)
     app_ts_source = _read_file_text(app_ts_path)
+    runtime_release_guard_source = _read_file_text(runtime_release_guard_source_path)
+    runtime_release_guard_tests_source = _read_file_text(runtime_release_guard_tests_path)
     app_helpers_source = _read_file_text(app_helpers_path)
     device_identity_source = _read_file_text(device_identity_source_path)
     release_identity_source = _read_file_text(release_identity_source_path)
@@ -1042,6 +1048,46 @@ def build_readiness_report(
         "mobile_release_identity_unit_tests_present",
         all(release_identity_test_requirements.values()),
         f"requirements={release_identity_test_requirements!r}",
+    )
+    runtime_release_guard_requirements = {
+        "guard_file": runtime_release_guard_source_path.is_file(),
+        "supported_schema": "SUPPORTED_CAPTURE_SCHEMA_VERSIONS"
+        in runtime_release_guard_source
+        and "ios_capture_v1" in runtime_release_guard_source,
+        "schema_blocker": "capture_schema_unsupported" in runtime_release_guard_source,
+        "endpoint_blocker": "endpoint_set_mismatch" in runtime_release_guard_source,
+        "privacy_blocker": "privacy_policy_mismatch" in runtime_release_guard_source,
+        "data_residency_blocker": "data_residency_policy_mismatch"
+        in runtime_release_guard_source,
+        "debug_blocker": "debug_gates_enabled" in runtime_release_guard_source,
+        "action_helper": "isRuntimeReleaseGuardActionAllowed"
+        in runtime_release_guard_source,
+        "app_uses_guard": "buildRuntimeReleaseGuard" in app_ts_source
+        and "Release guard blocked" in app_ts_source,
+        "release_identity_shows_guard": "releaseGuardStatus" in release_identity_source
+        and "Startup release guard" in release_identity_component_source,
+    }
+    _check(
+        checks,
+        "runtime_release_guard_sources",
+        all(runtime_release_guard_requirements.values()),
+        f"requirements={runtime_release_guard_requirements!r}",
+    )
+    runtime_release_guard_test_requirements = {
+        "unit_test_file": runtime_release_guard_tests_path.is_file(),
+        "pass_test": "passes canonical release metadata" in runtime_release_guard_tests_source,
+        "schema_block_test": "blocks unsupported capture schema"
+        in runtime_release_guard_tests_source,
+        "unsafe_config_block_test": "blocks unsafe endpoint privacy and residency config"
+        in runtime_release_guard_tests_source,
+        "release_identity_guard_test": "releaseGuardStatus" in release_identity_tests_source,
+        "unit_runner_compiles_guard": "src/config/runtimeReleaseGuard.ts" in unit_runner_source,
+    }
+    _check(
+        checks,
+        "runtime_release_guard_unit_tests_present",
+        all(runtime_release_guard_test_requirements.values()),
+        f"requirements={runtime_release_guard_test_requirements!r}",
     )
     _check(
         checks,

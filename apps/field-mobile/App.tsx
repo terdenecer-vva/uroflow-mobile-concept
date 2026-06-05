@@ -39,6 +39,10 @@ import { buildRuntimeCaptureReadiness } from "./src/capture/runtimeMetrics";
 import { APP_MODEL_ID, APP_RELEASE_VERSION } from "./src/config/releaseMetadata";
 import { estimateRoiSignalFromBase64 } from "./src/capture/roiSignalEstimator";
 import { APP_DEFAULT_CAPTURE_MODE } from "./src/config/appConfig";
+import {
+  buildRuntimeReleaseGuard,
+  isRuntimeReleaseGuardActionAllowed,
+} from "./src/config/runtimeReleaseGuard";
 import { ApiConnectionSection } from "./src/components/ApiConnectionSection";
 import { MeasurementFormSection } from "./src/components/MeasurementFormSection";
 import { ResponseAndSummarySection } from "./src/components/ResponseAndSummarySection";
@@ -185,6 +189,7 @@ export default function App() {
     () => buildClinicalHubPreflight(apiBaseUrl),
     [apiBaseUrl],
   );
+  const runtimeReleaseGuard = useMemo(() => buildRuntimeReleaseGuard(), []);
 
   const {
     pendingQueue,
@@ -306,6 +311,13 @@ export default function App() {
   ]);
 
   useEffect(() => {
+    if (!isRuntimeReleaseGuardActionAllowed(runtimeReleaseGuard)) {
+      setLastResponse(runtimeReleaseGuard.message);
+      Alert.alert("Release guard blocked", runtimeReleaseGuard.message);
+    }
+  }, [runtimeReleaseGuard]);
+
+  useEffect(() => {
     if (captureRuntimeRef.current == null) {
       captureRuntimeRef.current = new RuntimeCaptureSession();
     }
@@ -410,6 +422,12 @@ export default function App() {
   }
 
   async function startRuntimeCapture(): Promise<void> {
+    if (!isRuntimeReleaseGuardActionAllowed(runtimeReleaseGuard)) {
+      setCaptureStatus(runtimeReleaseGuard.message);
+      Alert.alert("Release guard blocked", runtimeReleaseGuard.message);
+      return;
+    }
+
     const runtime = captureRuntimeRef.current ?? new RuntimeCaptureSession();
     captureRuntimeRef.current = runtime;
 
@@ -542,6 +560,11 @@ export default function App() {
   }
 
   async function testApiConnection(): Promise<void> {
+    if (!isRuntimeReleaseGuardActionAllowed(runtimeReleaseGuard)) {
+      setLastResponse(runtimeReleaseGuard.message);
+      Alert.alert("Release guard blocked", runtimeReleaseGuard.message);
+      return;
+    }
     if (!isClinicalHubPreflightActionAllowed(clinicalHubPreflight)) {
       const message = clinicalHubPreflight.message;
       setLastResponse(message);
@@ -595,6 +618,9 @@ export default function App() {
   }
 
   function validateRequired(): string | null {
+    if (!isRuntimeReleaseGuardActionAllowed(runtimeReleaseGuard)) {
+      return runtimeReleaseGuard.message;
+    }
     if (!isClinicalHubPreflightActionAllowed(clinicalHubPreflight)) {
       return clinicalHubPreflight.message;
     }
@@ -602,6 +628,11 @@ export default function App() {
   }
 
   async function syncPendingQueueWithConfiguredApi(): Promise<void> {
+    if (!isRuntimeReleaseGuardActionAllowed(runtimeReleaseGuard)) {
+      setLastResponse(runtimeReleaseGuard.message);
+      Alert.alert("Release guard blocked", runtimeReleaseGuard.message);
+      return;
+    }
     if (!isClinicalHubPreflightActionAllowed(clinicalHubPreflight)) {
       const message = clinicalHubPreflight.message;
       setLastResponse(message);
@@ -742,6 +773,11 @@ export default function App() {
   }
 
   async function loadComparisonSummary() {
+    if (!isRuntimeReleaseGuardActionAllowed(runtimeReleaseGuard)) {
+      setSummary(null);
+      setSummaryError(runtimeReleaseGuard.message);
+      return;
+    }
     if (!isClinicalHubPreflightActionAllowed(clinicalHubPreflight)) {
       setSummary(null);
       setSummaryError(clinicalHubPreflight.message);
@@ -782,6 +818,11 @@ export default function App() {
   }
 
   async function loadCaptureCoverageSummary() {
+    if (!isRuntimeReleaseGuardActionAllowed(runtimeReleaseGuard)) {
+      setCoverageSummary(null);
+      setCoverageError(runtimeReleaseGuard.message);
+      return;
+    }
     if (!isClinicalHubPreflightActionAllowed(clinicalHubPreflight)) {
       setCoverageSummary(null);
       setCoverageError(clinicalHubPreflight.message);
