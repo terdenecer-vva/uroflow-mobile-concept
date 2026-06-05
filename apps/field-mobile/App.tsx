@@ -8,6 +8,7 @@ import {
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { CameraView, useCameraPermissions } from "expo-camera";
+import * as Device from "expo-device";
 import {
   attemptSubmitEndpoint,
   buildMissingApiBaseUrlMessage,
@@ -79,11 +80,18 @@ import {
   formatSafeExceptionMessage,
   formatSafeResponseProblem,
 } from "./src/utils/appHelpers";
+import { buildDeviceModelLabel } from "./src/utils/deviceIdentity";
 
 const defaultMeasuredAt = new Date().toISOString().slice(0, 19) + "Z";
 
 export default function App() {
   const defaultPlatform = Platform.OS === "ios" ? "ios" : "android";
+  const defaultDeviceModel = buildDeviceModelLabel({
+    platform: defaultPlatform,
+    modelName: Device.modelName,
+    manufacturer: Device.manufacturer,
+    brand: Device.brand,
+  });
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
 
   const [apiBaseUrl, setApiBaseUrl] = useState(DEFAULT_API_BASE_URL);
@@ -98,7 +106,7 @@ export default function App() {
   const [attemptNumber, setAttemptNumber] = useState("1");
   const [measuredAt, setMeasuredAt] = useState(defaultMeasuredAt);
   const [platform, setPlatform] = useState<string>(defaultPlatform);
-  const [deviceModel, setDeviceModel] = useState<string>(Platform.OS);
+  const [deviceModel, setDeviceModel] = useState<string>(defaultDeviceModel);
   const [appVersion, setAppVersion] = useState(APP_RELEASE_VERSION);
   const [captureMode, setCaptureMode] = useState(APP_DEFAULT_CAPTURE_MODE);
 

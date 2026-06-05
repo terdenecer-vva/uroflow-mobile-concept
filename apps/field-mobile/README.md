@@ -24,6 +24,7 @@ Cross-platform mobile client (Expo React Native) for collecting paired measureme
 - Queue controls: `Test API`, `Sync Queue`, `Clear Queue`
 - Persisted local settings (`API URL`, `site/operator`, timeout, summary filter)
 - `API Key` stored in device secure storage (`expo-secure-store`) with AsyncStorage fallback
+- `Device Model` defaults from Expo Device metadata with platform fallback and remains editable for field correction.
 - On successful paired upload, app posts `capture_contract_json` to `POST /api/v1/capture-packages`
 - Runtime capture mode collects live audio + IMU samples (camera permission used for ROI validity flag)
 - In-app `Release Identity` panel shows canonical app version, model/schema, runtime config, privacy/data-residency flags, platform, and payload traceability alignment.
@@ -140,7 +141,7 @@ secret blockers. The artifact has separate machine-readable gates:
 
 - `local_checks_status`: local app metadata, runtime release metadata, EAS profile shape,
   runtime config/defaults such as Clinical Hub v1 endpoint set, disabled debug gates,
-  privacy-by-default switches, single-region data residency policy,
+  privacy-by-default switches, single-region data residency policy, Expo Device identity defaults,
   in-app release identity evidence,
   runtime motion quality gates, derivatives-only feature/media
   manifest gates, pending sync connectivity-restore trigger, device-smoke evidence template/validator,

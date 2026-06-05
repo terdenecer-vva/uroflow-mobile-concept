@@ -84,6 +84,7 @@ In app API section set:
 - `Actor Role`: `operator`
 - `Site ID`: clinic/site code
 - `Operator ID`: current operator code
+- `Device Model`: auto-filled from Expo Device metadata; correct it manually only if the displayed physical model is wrong.
 
 Verify with `Test API` button before first patient run.
 Pending queue auto-sync stays paused until `API Base URL` is configured and starts with
@@ -94,6 +95,7 @@ Before field use, verify the in-app `Release Identity` panel:
 - Runtime mode is `pilot`, endpoint set is `clinical_hub_v1`, and default capture mode is `water_impact`.
 - Privacy flags show raw video/audio off and ROI-only on.
 - Data residency shows `us/single_region` with cross-region sync off.
+- Device platform/model match the physical device that will be recorded in the smoke log.
 - `Payload traceability` is `aligned`; if it shows `edited`, reset the App Version, Model ID, and Capture Mode fields before collecting pilot data.
 
 ## 5. Paired Test Workflow
