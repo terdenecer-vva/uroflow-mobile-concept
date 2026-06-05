@@ -325,6 +325,39 @@ jobs:
           test -n "$QA_SUMMARY"
           REPORT_DATE=$(basename "$(dirname "$QA_SUMMARY")")
           SITE_ID=${CLINICAL_HUB_SITE_ID:-CI-SMOKE}
+          METHOD_COMPARISON_SUMMARY=/tmp/pilot_automation_smoke/method_comparison_summary.json
+
+          CLINICAL_HUB_URL="$CLINICAL_HUB_URL" \
+          CLINICAL_HUB_API_KEY="$CLINICAL_HUB_API_KEY" \
+          CLINICAL_HUB_SITE_ID="$SITE_ID" \
+          METHOD_COMPARISON_SUMMARY="$METHOD_COMPARISON_SUMMARY" \
+          python - <<'PY'
+          import json
+          import os
+          import urllib.parse
+          import urllib.request
+          import uuid
+          from pathlib import Path
+
+          base_url = os.environ["CLINICAL_HUB_URL"].rstrip("/")
+          site_id = os.environ["CLINICAL_HUB_SITE_ID"]
+          query = urllib.parse.urlencode({"site_id": site_id, "quality_status": "valid"})
+          endpoint = f"{base_url}/api/v1/comparison-summary?{query}"
+          request = urllib.request.Request(
+              endpoint,
+              headers={
+                  "x-api-key": os.environ["CLINICAL_HUB_API_KEY"],
+                  "x-site-id": site_id,
+                  "x-actor-role": "data_manager",
+                  "x-request-id": f"ci-comparison-{uuid.uuid4().hex[:12]}",
+              },
+          )
+          with urllib.request.urlopen(request, timeout=30) as response:  # noqa: S310
+              payload = json.loads(response.read().decode("utf-8"))
+          output = Path(os.environ["METHOD_COMPARISON_SUMMARY"])
+          output.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+          print(f"Fetched Clinical Hub method comparison summary: {output}")
+          PY
 
           python scripts/post_pilot_reports_to_clinical_hub.py \
             --base-url "$CLINICAL_HUB_URL" \
@@ -339,7 +372,8 @@ jobs:
             --tfl-summary-json /tmp/pilot_automation_smoke/tfl/tfl_summary.json \
             --drift-summary-json /tmp/pilot_automation_smoke/drift/drift_summary.json \
             --g1-eval-json /tmp/pilot_automation_smoke/g1/g1_eval.json \
-            --gate-summary-json /tmp/pilot_automation_smoke/gate_summary.json
+            --gate-summary-json /tmp/pilot_automation_smoke/gate_summary.json \
+            --method-comparison-summary-json "$METHOD_COMPARISON_SUMMARY"
 
       - name: Upload pilot automation artifacts
         if: always()

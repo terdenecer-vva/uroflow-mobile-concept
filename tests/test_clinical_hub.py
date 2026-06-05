@@ -627,6 +627,14 @@ def test_pilot_automation_reports_crud_and_csv_export(tmp_path: Path) -> None:
             json=_pilot_report_payload(site_id="SITE-002", report_type="g1_eval"),
         )
         assert created_2.status_code == 201
+        created_3 = client.post(
+            "/api/v1/pilot-automation-reports",
+            json=_pilot_report_payload(
+                site_id="SITE-001",
+                report_type="method_comparison_summary",
+            ),
+        )
+        assert created_3.status_code == 201
 
         listing = client.get(
             "/api/v1/pilot-automation-reports",
@@ -650,13 +658,17 @@ def test_pilot_automation_reports_crud_and_csv_export(tmp_path: Path) -> None:
     output_csv = tmp_path / "pilot_reports_export.csv"
     exported_rows = export_pilot_automation_reports_to_csv(db_path=db_path, output_csv=output_csv)
 
-    assert exported_rows == 2
+    assert exported_rows == 3
     with output_csv.open("r", encoding="utf-8", newline="") as file:
         reader = csv.DictReader(file)
         rows = list(reader)
 
-    assert len(rows) == 2
-    assert {row["report_type"] for row in rows} == {"qa_summary", "g1_eval"}
+    assert len(rows) == 3
+    assert {row["report_type"] for row in rows} == {
+        "qa_summary",
+        "g1_eval",
+        "method_comparison_summary",
+    }
 
 
 def test_pilot_report_idempotent_resubmit_returns_existing(tmp_path: Path) -> None:
