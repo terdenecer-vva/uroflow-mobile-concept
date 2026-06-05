@@ -8,6 +8,10 @@ export const APP_CAPTURE_PACKAGES_ENDPOINT_PATH = "/api/v1/capture-packages";
 export const APP_STORE_RAW_VIDEO = false;
 export const APP_STORE_RAW_AUDIO = false;
 export const APP_ROI_ONLY = true;
+export const APP_DATA_RESIDENCY_REGION = "us";
+export const APP_DATA_RESIDENCY_BOUNDARY = "single_region";
+export const APP_ALLOW_CROSS_REGION_SYNC = false;
+export const APP_REQUIRE_REGION_MATCHED_CLINICAL_HUB = true;
 export const APP_ALLOW_DEBUG_CONTROLS = false;
 export const APP_ALLOW_RAW_RESPONSE_DETAILS = false;
 export const APP_ENABLE_VERBOSE_LOGGING = false;
@@ -23,6 +27,13 @@ export const APP_PRIVACY_POLICY = Object.freeze({
   roiOnly: APP_ROI_ONLY,
 });
 
+export const APP_DATA_RESIDENCY_POLICY = Object.freeze({
+  region: APP_DATA_RESIDENCY_REGION,
+  boundary: APP_DATA_RESIDENCY_BOUNDARY,
+  allowCrossRegionSync: APP_ALLOW_CROSS_REGION_SYNC,
+  requireRegionMatchedClinicalHub: APP_REQUIRE_REGION_MATCHED_CLINICAL_HUB,
+});
+
 export const APP_DEBUG_GATES = Object.freeze({
   allowDebugControls: APP_ALLOW_DEBUG_CONTROLS,
   allowRawResponseDetails: APP_ALLOW_RAW_RESPONSE_DETAILS,
@@ -35,5 +46,6 @@ export const APP_RUNTIME_CONFIG = Object.freeze({
   endpointPaths: APP_ENDPOINT_PATHS,
   defaultCaptureMode: APP_DEFAULT_CAPTURE_MODE,
   privacyPolicy: APP_PRIVACY_POLICY,
+  dataResidencyPolicy: APP_DATA_RESIDENCY_POLICY,
   debugGates: APP_DEBUG_GATES,
 });

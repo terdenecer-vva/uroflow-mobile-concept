@@ -108,6 +108,10 @@ def test_build_mobile_release_manifest_script(tmp_path: Path) -> None:
                 "export const APP_STORE_RAW_VIDEO = false;",
                 "export const APP_STORE_RAW_AUDIO = false;",
                 "export const APP_ROI_ONLY = true;",
+                'export const APP_DATA_RESIDENCY_REGION = "us";',
+                'export const APP_DATA_RESIDENCY_BOUNDARY = "single_region";',
+                "export const APP_ALLOW_CROSS_REGION_SYNC = false;",
+                "export const APP_REQUIRE_REGION_MATCHED_CLINICAL_HUB = true;",
                 "export const APP_ALLOW_DEBUG_CONTROLS = false;",
                 "export const APP_ALLOW_RAW_RESPONSE_DETAILS = false;",
                 "export const APP_ENABLE_VERBOSE_LOGGING = false;",
@@ -259,6 +263,10 @@ def test_build_mobile_release_manifest_script(tmp_path: Path) -> None:
     assert payload["runtime_config"]["store_raw_video"] is False
     assert payload["runtime_config"]["store_raw_audio"] is False
     assert payload["runtime_config"]["roi_only"] is True
+    assert payload["runtime_config"]["data_residency_region"] == "us"
+    assert payload["runtime_config"]["data_residency_boundary"] == "single_region"
+    assert payload["runtime_config"]["allow_cross_region_sync"] is False
+    assert payload["runtime_config"]["require_region_matched_clinical_hub"] is True
     assert payload["runtime_config"]["allow_debug_controls"] is False
     assert payload["runtime_config"]["allow_raw_response_details"] is False
     assert payload["runtime_config"]["enable_verbose_logging"] is False

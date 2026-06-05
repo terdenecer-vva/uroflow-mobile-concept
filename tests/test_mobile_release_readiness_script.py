@@ -91,6 +91,7 @@ def test_mobile_release_readiness_reports_external_blockers(tmp_path: Path) -> N
         "app_config_unit_tests_present",
         "paired_payload_unit_tests_present",
         "package_lock_matches_root",
+        "runtime_config_data_residency_policy",
         "runtime_config_default_capture_mode",
         "runtime_config_debug_gates_disabled",
         "runtime_config_endpoint_set",
@@ -301,6 +302,10 @@ def test_mobile_release_readiness_fails_raw_media_runtime_config(tmp_path: Path)
                 "export const APP_STORE_RAW_VIDEO = true;",
                 "export const APP_STORE_RAW_AUDIO = false;",
                 "export const APP_ROI_ONLY = true;",
+                'export const APP_DATA_RESIDENCY_REGION = "us";',
+                'export const APP_DATA_RESIDENCY_BOUNDARY = "single_region";',
+                "export const APP_ALLOW_CROSS_REGION_SYNC = false;",
+                "export const APP_REQUIRE_REGION_MATCHED_CLINICAL_HUB = true;",
                 "export const APP_ALLOW_DEBUG_CONTROLS = false;",
                 "export const APP_ALLOW_RAW_RESPONSE_DETAILS = false;",
                 "export const APP_ENABLE_VERBOSE_LOGGING = false;",
@@ -327,6 +332,59 @@ def test_mobile_release_readiness_fails_raw_media_runtime_config(tmp_path: Path)
     assert "store_raw_video=True" in check["evidence"]
 
 
+def test_mobile_release_readiness_fails_cross_region_runtime_config(tmp_path: Path) -> None:
+    mutated_app_json = tmp_path / "app.json"
+    app_config_path = tmp_path / "src" / "config" / "appConfig.ts"
+    app_config_path.parent.mkdir(parents=True)
+    app_payload = json.loads(APP_JSON.read_text(encoding="utf-8"))
+    mutated_app_json.write_text(json.dumps(app_payload), encoding="utf-8")
+    app_config_path.write_text(
+        "\n".join(
+            [
+                'export const APP_RUNTIME_MODE = "pilot";',
+                'export const APP_ENDPOINT_SET = "clinical_hub_v1";',
+                'export const APP_DEFAULT_CAPTURE_MODE = "water_impact";',
+                (
+                    'export const APP_PAIRED_MEASUREMENTS_ENDPOINT_PATH = '
+                    '"/api/v1/paired-measurements";'
+                ),
+                (
+                    'export const APP_CAPTURE_PACKAGES_ENDPOINT_PATH = '
+                    '"/api/v1/capture-packages";'
+                ),
+                "export const APP_STORE_RAW_VIDEO = false;",
+                "export const APP_STORE_RAW_AUDIO = false;",
+                "export const APP_ROI_ONLY = true;",
+                'export const APP_DATA_RESIDENCY_REGION = "us";',
+                'export const APP_DATA_RESIDENCY_BOUNDARY = "multi_region";',
+                "export const APP_ALLOW_CROSS_REGION_SYNC = true;",
+                "export const APP_REQUIRE_REGION_MATCHED_CLINICAL_HUB = false;",
+                "export const APP_ALLOW_DEBUG_CONTROLS = false;",
+                "export const APP_ALLOW_RAW_RESPONSE_DETAILS = false;",
+                "export const APP_ENABLE_VERBOSE_LOGGING = false;",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    payload = _run_readiness_with_paths(
+        tmp_path / "readiness.json",
+        env={"PATH": os.environ.get("PATH", "")},
+        app_json=mutated_app_json,
+        check=False,
+    )
+
+    check = next(
+        item
+        for item in payload["local_checks"]
+        if item["id"] == "runtime_config_data_residency_policy"
+    )
+    assert payload["status"] == "not_ready"
+    assert payload["local_checks_status"] == "fail"
+    assert check["status"] == "fail"
+    assert "allow_cross_region_sync=True" in check["evidence"]
+
+
 def test_mobile_release_readiness_fails_debug_runtime_config(tmp_path: Path) -> None:
     mutated_app_json = tmp_path / "app.json"
     app_config_path = tmp_path / "src" / "config" / "appConfig.ts"
@@ -350,6 +408,10 @@ def test_mobile_release_readiness_fails_debug_runtime_config(tmp_path: Path) -> 
                 "export const APP_STORE_RAW_VIDEO = false;",
                 "export const APP_STORE_RAW_AUDIO = false;",
                 "export const APP_ROI_ONLY = true;",
+                'export const APP_DATA_RESIDENCY_REGION = "us";',
+                'export const APP_DATA_RESIDENCY_BOUNDARY = "single_region";',
+                "export const APP_ALLOW_CROSS_REGION_SYNC = false;",
+                "export const APP_REQUIRE_REGION_MATCHED_CLINICAL_HUB = true;",
                 "export const APP_ALLOW_DEBUG_CONTROLS = true;",
                 "export const APP_ALLOW_RAW_RESPONSE_DETAILS = false;",
                 "export const APP_ENABLE_VERBOSE_LOGGING = false;",

@@ -9,11 +9,12 @@ Implemented now:
 - Expo React Native field app for paired entry and sync.
 - Clinical Hub API contract for `paired-measurements` and `capture-packages`.
 - Pilot automation and release gates (`v4.2`) in repository.
-- App-level runtime config for pilot mode, Clinical Hub v1 endpoint set, default capture mode, privacy-by-default switches, and disabled debug gates.
+- App-level runtime config for pilot mode, Clinical Hub v1 endpoint set, default capture mode, privacy-by-default switches, single-region data residency policy, and disabled debug gates.
 - Runtime capture quality gates for ROI validity, low-confidence depth, and high-motion IMU artifacts.
 - Derivatives-only feature/media manifest in mobile `ios_capture_v1` payloads, with backend validation that raw media storage/upload flags remain disabled.
 - Release manifest traceability for app version, git SHA, model/schema, runtime config, capture contract feature-manifest evidence, and readiness gate summary.
 - Mobile API response, submit exception outcome, and runtime exception redaction gates for raw body, PHI-like subject/site/operator IDs, and secret-like error details.
+- Mobile release readiness gate for single-region data residency policy (`us`, no cross-region sync, region-matched Clinical Hub required).
 
 Not yet implemented:
 - Real sensor capture pipeline (camera/audio/IMU/depth).
@@ -35,7 +36,7 @@ Not yet implemented:
 ### G3. Security/privacy gap
 - Secure storage introduced for API key, but no media encryption path yet.
 - Mobile response/submit-exception/runtime-exception redaction tests are present; broader device log collection review still needs physical-device evidence.
-- No policy controls for region-specific data residency in mobile config.
+- Mobile data residency policy controls are present; live Clinical Hub region mapping still needs deployment/account evidence.
 
 ### G4. Build/release gap
 - EAS profiles are added but CI does not yet publish artifacts to testers automatically.
@@ -51,7 +52,7 @@ Not yet implemented:
 
 ## B0: Foundation (must finish first)
 1. Split app architecture into modules: `api`, `capture`, `storage`, `sync`, `screens`.
-2. Add app-level config object (`mode`, endpoint set, privacy switches, debug gates). Status: implemented for pilot mode, Clinical Hub v1 endpoint set, default capture mode, privacy switches, and disabled debug gates.
+2. Add app-level config object (`mode`, endpoint set, privacy switches, data residency policy, debug gates). Status: implemented for pilot mode, Clinical Hub v1 endpoint set, default capture mode, privacy switches, single-region data residency policy, and disabled debug gates.
 3. Add release manifest JSON generation (`app_version`, `git_sha`, `model_id`, `schema_version`, readiness gate summary). Status: implemented in Mobile Build artifacts.
 
 DoD:
