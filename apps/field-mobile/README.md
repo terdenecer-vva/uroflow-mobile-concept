@@ -107,7 +107,7 @@ Notes:
   pass with `gap_warning=false` for release handoff.
 - Raw media is not stored by default (privacy-by-default behavior).
 - Temporary runtime audio files created by the native recorder are deleted after each stop/reset;
-  field handoff evidence should still include device-log/storage review on physical devices.
+  field handoff evidence must include `raw_media_temp_files_absent` device storage review.
 - Capture contract payloads include a derivatives-only `feature_manifest` with sample count,
   derived feature keys, and raw media storage/upload flags pinned to `false`.
 

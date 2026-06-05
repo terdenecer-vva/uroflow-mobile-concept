@@ -82,6 +82,11 @@
           "evidence": "Capture payload raw_media flags remain false and derivatives_only is true."
         },
         {
+          "id": "raw_media_temp_files_absent",
+          "status": "pass",
+          "evidence": "Post-capture storage review found no recorder temp audio files, raw video files, or exported media artifacts."
+        },
+        {
           "id": "device_logs_reviewed_no_phi",
           "status": "pass",
           "evidence": "Device logs reviewed; no subject/site/operator IDs, API keys, or raw response bodies observed."
@@ -155,6 +160,11 @@
           "id": "raw_media_disabled",
           "status": "pass",
           "evidence": "Capture payload raw_media flags remain false and derivatives_only is true."
+        },
+        {
+          "id": "raw_media_temp_files_absent",
+          "status": "pass",
+          "evidence": "Post-capture storage review found no recorder temp audio files, raw video files, or exported media artifacts."
         },
         {
           "id": "device_logs_reviewed_no_phi",

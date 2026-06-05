@@ -22,6 +22,7 @@ REQUIRED_SMOKE_CHECK_IDS = (
     "offline_queue_retains_jobs",
     "connectivity_restore_sync",
     "raw_media_disabled",
+    "raw_media_temp_files_absent",
     "device_logs_reviewed_no_phi",
 )
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
