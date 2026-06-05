@@ -135,7 +135,7 @@ secret blockers. The artifact has separate machine-readable gates:
   launch/icon assets, dependency lock alignment, and unit-test evidence that can be verified
   without external credentials.
 - `authenticated_eas_status`: whether `EXPO_TOKEN` and deterministic EAS project identity are ready for an authenticated EAS build trigger.
-- `clinical_hub_live_api_status`: whether live Clinical Hub API smoke/report-push credentials are configured.
+- `clinical_hub_live_api_status`: whether live Clinical Hub API smoke/report-push credentials are configured with an `https` non-localhost URL.
 - `external_readiness_status`: aggregate external status across Expo/EAS + Clinical Hub.
 
 When status is `ready_except_external_credentials`, use `next_actions` in the artifact as the
@@ -145,7 +145,7 @@ release handoff checklist:
 | --- | --- | --- |
 | `configure_expo_token` | `gh secret set EXPO_TOKEN --body "<expo_access_token>"` | Re-run `Mobile Build`; `external_items.expo_token` becomes `present`. |
 | `configure_eas_project_identity` | `gh variable set EAS_PROJECT_ID --body "<eas_project_uuid>"` or commit `expo.extra.eas.projectId` in `app.json` | Re-run `Mobile Build`; `external_items.eas_project_identity` becomes `present`. |
-| `configure_clinical_hub_live_api` | `gh secret set CLINICAL_HUB_URL --body "https://<clinical-hub>"` and `gh secret set CLINICAL_HUB_API_KEY --body "<api_key>"` | Re-run `Mobile Build`; `external_items.clinical_hub_live_api` becomes `present`. |
+| `configure_clinical_hub_live_api` | `gh secret set CLINICAL_HUB_URL --body "https://<clinical-hub>"` and `gh secret set CLINICAL_HUB_API_KEY --body "<api_key>"` | Re-run `Mobile Build`; `external_items.clinical_hub_live_api` becomes `present` rather than `missing`/`invalid`. |
 | `provision_apple_developer_account` | Apple Developer access, signing certificates/profiles, and TestFlight permissions | Trigger signed iOS EAS build and confirm TestFlight upload readiness. |
 | `provision_google_play_account` | Google Play Console access, Android signing, and internal testing track permissions | Trigger signed Android EAS build and confirm Play Internal Testing upload readiness. |
 

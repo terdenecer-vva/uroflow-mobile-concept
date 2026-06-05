@@ -127,6 +127,11 @@ jobs:
               for item in payload.get("external_items", [])
               if item.get("status") == "missing"
           ]
+          invalid = [
+              item["id"]
+              for item in payload.get("external_items", [])
+              if item.get("status") == "invalid"
+          ]
           manual = [
               item["id"]
               for item in payload.get("manual_external_items", [])
@@ -149,6 +154,7 @@ jobs:
               f"- Authenticated EAS build trigger: `{eas_trigger_status}`",
               f"- Clinical Hub live API: `{payload.get('clinical_hub_live_api_status')}`",
               f"- Missing external items: `{', '.join(missing) if missing else 'none'}`",
+              f"- Invalid external items: `{', '.join(invalid) if invalid else 'none'}`",
               f"- Manual external items: `{', '.join(manual) if manual else 'none'}`",
               f"- Next actions: `{', '.join(next_actions) if next_actions else 'none'}`",
           ]

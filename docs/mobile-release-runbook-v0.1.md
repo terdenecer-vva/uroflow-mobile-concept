@@ -11,7 +11,7 @@ Scope: pilot installable builds for Uroflow Field Mobile
 4. `EAS_PROJECT_ID` configured as a GitHub repo variable or `expo.extra.eas.projectId` set in `app.json`.
 5. Expo project credentials configured for iOS and Android signing.
 6. Clinical Hub secrets configured when live API smoke/report push is part of the release:
-   - `CLINICAL_HUB_URL`
+   - `CLINICAL_HUB_URL` (`https://...`, non-localhost for live release readiness)
    - `CLINICAL_HUB_API_KEY`
 
 ## 2) Trigger preview build
@@ -27,7 +27,7 @@ From GitHub Actions:
    - `Local checks` is `pass`,
    - `Authenticated EAS readiness` is `pass` before attempting an EAS build trigger,
    - `Clinical Hub live API` is `present` before live API smoke/report push is expected,
-   - missing external items are understood and either configured or accepted as blockers for this run.
+   - missing or invalid external items are understood and either configured or accepted as blockers for this run.
    - `Next actions` maps the remaining external blockers to concrete setup tasks.
 5. Verify `eas-build` starts. If `Authenticated EAS readiness` is `blocked`, `eas-build` is skipped by design and the readiness artifact is the handoff output.
 6. Open workflow summary (`Mobile EAS Build`) and copy build links.
@@ -54,10 +54,10 @@ Workflow generates artifact `mobile-release-manifest` containing:
 
 Workflow also generates artifact `mobile-release-readiness` containing:
 - git SHA/ref/run-id/workflow traceability,
-- local mobile readiness checks (`app.json`, `eas.json`, runtime release metadata/defaults, package scripts, lockfile, pinned tooling, unit-test coverage wiring),
+- local mobile readiness checks (`app.json`, `eas.json`, runtime release metadata/defaults, package scripts, lockfile, pinned tooling, API response redaction, unit-test coverage wiring),
 - external credential state without secret values,
 - authenticated EAS readiness status and specific EAS blockers,
-- live Clinical Hub API readiness status,
+- live Clinical Hub API readiness status (`present`, `missing`, or `invalid`),
 - manual release requirements for Apple Developer and Google Play accounts,
 - machine-readable `next_actions` for configuring missing GitHub secrets/variables and manual store-account handoff.
 
