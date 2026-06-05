@@ -24,3 +24,17 @@ def test_mobile_build_workflow_runs_for_release_script_changes() -> None:
 
     assert required_paths.issubset(set(triggers["push"]["paths"]))
     assert required_paths.issubset(set(triggers["pull_request"]["paths"]))
+
+
+def test_mobile_build_workflow_uploads_readiness_before_local_failure() -> None:
+    payload = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
+    steps = payload["jobs"]["preflight"]["steps"]
+    step_names = [step.get("name") for step in steps]
+
+    build_index = step_names.index("Build release readiness report")
+    upload_index = step_names.index("Upload release readiness report")
+    fail_index = step_names.index("Fail on local release readiness errors")
+
+    assert build_index < upload_index < fail_index
+    assert "mobile-release-readiness-exit-code" in steps[build_index]["run"]
+    assert "mobile-release-readiness artifact" in steps[fail_index]["run"]
