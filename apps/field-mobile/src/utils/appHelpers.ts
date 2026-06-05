@@ -122,11 +122,21 @@ export function formatSafeResponseProblem(
   return `${statusLabel} ${summarizePendingError(responseBody) ?? "server_or_client_response"}`;
 }
 
+export function summarizeSafeExceptionCategory(
+  error: unknown,
+  fallbackCategory: "network_or_timeout" | "server_or_client_response" = "server_or_client_response",
+): string {
+  const category = summarizePendingError(String(error)) ?? fallbackCategory;
+  return category === "server_or_client_response" ? fallbackCategory : category;
+}
+
 export function formatSafeExceptionMessage(
   error: unknown,
   fallbackStatusLabel: "ERROR" | "NETWORK" = "ERROR",
 ): string {
-  return formatSafeResponseProblem(null, String(error), fallbackStatusLabel);
+  const fallbackCategory =
+    fallbackStatusLabel === "NETWORK" ? "network_or_timeout" : "server_or_client_response";
+  return `${fallbackStatusLabel} ${summarizeSafeExceptionCategory(error, fallbackCategory)}`;
 }
 
 export function normalizeActorRoleInput(rawValue: string | null | undefined): string {

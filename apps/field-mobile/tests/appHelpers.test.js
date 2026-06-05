@@ -88,6 +88,20 @@ test("formatSafeExceptionMessage redacts mobile PHI and secret-like details", ()
   assert.equal(message.includes("secret-token"), false);
 });
 
+test("summarizeSafeExceptionCategory returns safe categories without raw exception text", () => {
+  assert.equal(
+    helpers.summarizeSafeExceptionCategory(
+      "Runtime failure subject_id=SUBJ-001 api_key=secret-token",
+      "network_or_timeout",
+    ),
+    "auth_or_permission",
+  );
+  assert.equal(
+    helpers.summarizeSafeExceptionCategory("Unexpected native bridge failure", "network_or_timeout"),
+    "network_or_timeout",
+  );
+});
+
 test("formatSafeExceptionMessage preserves network category without raw exception text", () => {
   assert.equal(
     helpers.formatSafeExceptionMessage("TypeError: failed to fetch subject_id=SUBJ-002", "NETWORK"),

@@ -119,7 +119,7 @@ test("attemptSubmitEndpoint keeps network failures retryable", async () => {
   const originalFetch = global.fetch;
   try {
     global.fetch = async () => {
-      throw new Error("failed to fetch");
+      throw new Error("failed to fetch subject_id=SUBJ-001 api_key=secret-token");
     };
 
     const result = await clinicalHub.attemptSubmitEndpoint({
@@ -139,7 +139,9 @@ test("attemptSubmitEndpoint keeps network failures retryable", async () => {
     assert.equal(result.ok, false);
     assert.equal(result.statusCode, null);
     assert.equal(result.retryable, true);
-    assert.match(result.body, /failed to fetch/);
+    assert.equal(result.body, "network_or_timeout");
+    assert.equal(result.body.includes("SUBJ-001"), false);
+    assert.equal(result.body.includes("secret-token"), false);
   } finally {
     global.fetch = originalFetch;
   }

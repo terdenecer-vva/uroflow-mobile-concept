@@ -696,6 +696,7 @@ def build_readiness_report(
     app_ts_path = mobile_root / "App.tsx"
     app_config_tests_path = mobile_root / "tests" / "appConfig.test.js"
     app_helpers_path = mobile_root / "src" / "utils" / "appHelpers.ts"
+    clinical_hub_source_path = mobile_root / "src" / "api" / "clinicalHub.ts"
     connection_check_source_path = mobile_root / "src" / "api" / "connectionCheck.ts"
     pending_sync_queue_source_path = mobile_root / "src" / "utils" / "pendingSyncQueue.ts"
     pending_sync_hook_source_path = mobile_root / "src" / "hooks" / "usePendingSyncQueue.ts"
@@ -723,12 +724,14 @@ def build_readiness_report(
     submit_outcome_tests_path = mobile_root / "tests" / "submitOutcome.test.js"
     app_ts_source = _read_file_text(app_ts_path)
     app_helpers_source = _read_file_text(app_helpers_path)
+    clinical_hub_source = _read_file_text(clinical_hub_source_path)
     connection_check_source = _read_file_text(connection_check_source_path)
     pending_sync_queue_source = _read_file_text(pending_sync_queue_source_path)
     pending_sync_hook_source = _read_file_text(pending_sync_hook_source_path)
     pending_storage_source = _read_file_text(pending_storage_source_path)
     submit_outcome_source = _read_file_text(submit_outcome_source_path)
     helper_tests_source = _read_file_text(helper_tests_path)
+    clinical_hub_tests_source = _read_file_text(clinical_hub_api_tests_path)
     connection_check_tests_source = _read_file_text(connection_check_tests_path)
     pending_sync_queue_tests_source = _read_file_text(pending_sync_queue_tests_path)
     pending_submission_storage_tests_source = _read_file_text(
@@ -897,6 +900,8 @@ def build_readiness_report(
         "app_network_errors": 'formatSafeResponseProblem(null, String(error), "NETWORK")'
         in app_ts_source,
         "connection_check": "formatSafeResponseProblem(status, body)" in connection_check_source,
+        "submit_exception_body_redaction": "summarizeSafeExceptionCategory(error, "
+        in clinical_hub_source,
         "submit_outcome": "formatSafeResponseProblem(result.statusCode, result.body"
         in submit_outcome_source,
         "pending_sync_attempt": "summarizePendingError(options.result.body)"
@@ -904,6 +909,7 @@ def build_readiness_report(
         "pending_enqueue": "summarizePendingError(lastError)" in pending_sync_hook_source,
         "pending_storage_migration": "summarizePendingError(rawLastError)"
         in pending_storage_source,
+        "no_raw_submit_exception_body": "body: String(error)" not in clinical_hub_source,
         "no_raw_summary_body": "HTTP ${response.status}: ${body}" not in app_ts_source,
         "no_raw_summary_catch": "setSummaryError(String(error))" not in app_ts_source,
         "no_raw_coverage_catch": "setCoverageError(String(error))" not in app_ts_source,
@@ -922,6 +928,9 @@ def build_readiness_report(
         "pending_storage_migration_test": "redacts migrated raw last errors"
         in pending_submission_storage_tests_source,
         "submit_outcome_test": "without raw body" in submit_outcome_tests_source,
+        "submit_exception_body_test": "network failures retryable" in clinical_hub_tests_source
+        and "secret-token" in clinical_hub_tests_source
+        and '"network_or_timeout"' in clinical_hub_tests_source,
     }
     _check(
         checks,

@@ -13,7 +13,7 @@ Implemented now:
 - Runtime capture quality gates for ROI validity, low-confidence depth, and high-motion IMU artifacts.
 - Derivatives-only feature/media manifest in mobile `ios_capture_v1` payloads, with backend validation that raw media storage/upload flags remain disabled.
 - Release manifest traceability for app version, git SHA, model/schema, runtime config, capture contract feature-manifest evidence, and readiness gate summary.
-- Mobile API response and runtime exception redaction gates for raw body, PHI-like subject/site/operator IDs, and secret-like error details.
+- Mobile API response, submit exception outcome, and runtime exception redaction gates for raw body, PHI-like subject/site/operator IDs, and secret-like error details.
 
 Not yet implemented:
 - Real sensor capture pipeline (camera/audio/IMU/depth).
@@ -34,7 +34,7 @@ Not yet implemented:
 
 ### G3. Security/privacy gap
 - Secure storage introduced for API key, but no media encryption path yet.
-- Mobile response/exception redaction tests are present; broader device log collection review still needs physical-device evidence.
+- Mobile response/submit-exception/runtime-exception redaction tests are present; broader device log collection review still needs physical-device evidence.
 - No policy controls for region-specific data residency in mobile config.
 
 ### G4. Build/release gap
