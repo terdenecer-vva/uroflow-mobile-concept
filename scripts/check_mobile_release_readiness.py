@@ -81,19 +81,39 @@ def _load_app_runtime_config(app_json: Path) -> dict[str, str | bool | None]:
         return {
             "path": str(path),
             "runtime_mode": None,
+            "endpoint_set": None,
             "default_capture_mode": None,
+            "paired_measurements_endpoint_path": None,
+            "capture_packages_endpoint_path": None,
             "store_raw_video": None,
             "store_raw_audio": None,
             "roi_only": None,
+            "allow_debug_controls": None,
+            "allow_raw_response_details": None,
+            "enable_verbose_logging": None,
         }
     source = path.read_text(encoding="utf-8")
     return {
         "path": str(path),
         "runtime_mode": _read_ts_string_constant(source, "APP_RUNTIME_MODE"),
+        "endpoint_set": _read_ts_string_constant(source, "APP_ENDPOINT_SET"),
         "default_capture_mode": _read_ts_string_constant(source, "APP_DEFAULT_CAPTURE_MODE"),
+        "paired_measurements_endpoint_path": _read_ts_string_constant(
+            source, "APP_PAIRED_MEASUREMENTS_ENDPOINT_PATH"
+        ),
+        "capture_packages_endpoint_path": _read_ts_string_constant(
+            source, "APP_CAPTURE_PACKAGES_ENDPOINT_PATH"
+        ),
         "store_raw_video": _read_ts_boolean_constant(source, "APP_STORE_RAW_VIDEO"),
         "store_raw_audio": _read_ts_boolean_constant(source, "APP_STORE_RAW_AUDIO"),
         "roi_only": _read_ts_boolean_constant(source, "APP_ROI_ONLY"),
+        "allow_debug_controls": _read_ts_boolean_constant(source, "APP_ALLOW_DEBUG_CONTROLS"),
+        "allow_raw_response_details": _read_ts_boolean_constant(
+            source, "APP_ALLOW_RAW_RESPONSE_DETAILS"
+        ),
+        "enable_verbose_logging": _read_ts_boolean_constant(
+            source, "APP_ENABLE_VERBOSE_LOGGING"
+        ),
     }
 
 
@@ -354,17 +374,48 @@ def build_readiness_report(
         checks,
         "runtime_config_module",
         bool(app_runtime_config.get("runtime_mode"))
+        and bool(app_runtime_config.get("endpoint_set"))
         and bool(app_runtime_config.get("default_capture_mode"))
+        and bool(app_runtime_config.get("paired_measurements_endpoint_path"))
+        and bool(app_runtime_config.get("capture_packages_endpoint_path"))
         and app_runtime_config.get("store_raw_video") is not None
         and app_runtime_config.get("store_raw_audio") is not None
-        and app_runtime_config.get("roi_only") is not None,
+        and app_runtime_config.get("roi_only") is not None
+        and app_runtime_config.get("allow_debug_controls") is not None
+        and app_runtime_config.get("allow_raw_response_details") is not None
+        and app_runtime_config.get("enable_verbose_logging") is not None,
         (
             f"path={app_runtime_config.get('path')}, "
             f"runtime_mode={app_runtime_config.get('runtime_mode')!r}, "
+            f"endpoint_set={app_runtime_config.get('endpoint_set')!r}, "
             f"default_capture_mode={app_runtime_config.get('default_capture_mode')!r}, "
+            "paired_measurements_endpoint_path="
+            f"{app_runtime_config.get('paired_measurements_endpoint_path')!r}, "
+            "capture_packages_endpoint_path="
+            f"{app_runtime_config.get('capture_packages_endpoint_path')!r}, "
             f"store_raw_video={app_runtime_config.get('store_raw_video')!r}, "
             f"store_raw_audio={app_runtime_config.get('store_raw_audio')!r}, "
-            f"roi_only={app_runtime_config.get('roi_only')!r}"
+            f"roi_only={app_runtime_config.get('roi_only')!r}, "
+            f"allow_debug_controls={app_runtime_config.get('allow_debug_controls')!r}, "
+            "allow_raw_response_details="
+            f"{app_runtime_config.get('allow_raw_response_details')!r}, "
+            f"enable_verbose_logging={app_runtime_config.get('enable_verbose_logging')!r}"
+        ),
+    )
+    _check(
+        checks,
+        "runtime_config_endpoint_set",
+        app_runtime_config.get("endpoint_set") == "clinical_hub_v1"
+        and app_runtime_config.get("paired_measurements_endpoint_path")
+        == "/api/v1/paired-measurements"
+        and app_runtime_config.get("capture_packages_endpoint_path")
+        == "/api/v1/capture-packages",
+        (
+            f"endpoint_set={app_runtime_config.get('endpoint_set')!r}, "
+            "paired_measurements_endpoint_path="
+            f"{app_runtime_config.get('paired_measurements_endpoint_path')!r}, "
+            "capture_packages_endpoint_path="
+            f"{app_runtime_config.get('capture_packages_endpoint_path')!r}"
         ),
     )
     _check(
@@ -383,6 +434,19 @@ def build_readiness_report(
             f"store_raw_video={app_runtime_config.get('store_raw_video')!r}, "
             f"store_raw_audio={app_runtime_config.get('store_raw_audio')!r}, "
             f"roi_only={app_runtime_config.get('roi_only')!r}"
+        ),
+    )
+    _check(
+        checks,
+        "runtime_config_debug_gates_disabled",
+        app_runtime_config.get("allow_debug_controls") is False
+        and app_runtime_config.get("allow_raw_response_details") is False
+        and app_runtime_config.get("enable_verbose_logging") is False,
+        (
+            f"allow_debug_controls={app_runtime_config.get('allow_debug_controls')!r}, "
+            "allow_raw_response_details="
+            f"{app_runtime_config.get('allow_raw_response_details')!r}, "
+            f"enable_verbose_logging={app_runtime_config.get('enable_verbose_logging')!r}"
         ),
     )
     _check(

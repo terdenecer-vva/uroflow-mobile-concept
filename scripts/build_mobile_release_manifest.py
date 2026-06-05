@@ -87,19 +87,39 @@ def _app_runtime_config(app_json: Path) -> dict[str, str | bool | None]:
         return {
             "path": str(path),
             "runtime_mode": None,
+            "endpoint_set": None,
             "default_capture_mode": None,
+            "paired_measurements_endpoint_path": None,
+            "capture_packages_endpoint_path": None,
             "store_raw_video": None,
             "store_raw_audio": None,
             "roi_only": None,
+            "allow_debug_controls": None,
+            "allow_raw_response_details": None,
+            "enable_verbose_logging": None,
         }
     source = path.read_text(encoding="utf-8")
     return {
         "path": str(path),
         "runtime_mode": _read_ts_string_constant(source, "APP_RUNTIME_MODE"),
+        "endpoint_set": _read_ts_string_constant(source, "APP_ENDPOINT_SET"),
         "default_capture_mode": _read_ts_string_constant(source, "APP_DEFAULT_CAPTURE_MODE"),
+        "paired_measurements_endpoint_path": _read_ts_string_constant(
+            source, "APP_PAIRED_MEASUREMENTS_ENDPOINT_PATH"
+        ),
+        "capture_packages_endpoint_path": _read_ts_string_constant(
+            source, "APP_CAPTURE_PACKAGES_ENDPOINT_PATH"
+        ),
         "store_raw_video": _read_ts_boolean_constant(source, "APP_STORE_RAW_VIDEO"),
         "store_raw_audio": _read_ts_boolean_constant(source, "APP_STORE_RAW_AUDIO"),
         "roi_only": _read_ts_boolean_constant(source, "APP_ROI_ONLY"),
+        "allow_debug_controls": _read_ts_boolean_constant(source, "APP_ALLOW_DEBUG_CONTROLS"),
+        "allow_raw_response_details": _read_ts_boolean_constant(
+            source, "APP_ALLOW_RAW_RESPONSE_DETAILS"
+        ),
+        "enable_verbose_logging": _read_ts_boolean_constant(
+            source, "APP_ENABLE_VERBOSE_LOGGING"
+        ),
     }
 
 

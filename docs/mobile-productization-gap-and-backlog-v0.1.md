@@ -9,7 +9,7 @@ Implemented now:
 - Expo React Native field app for paired entry and sync.
 - Clinical Hub API contract for `paired-measurements` and `capture-packages`.
 - Pilot automation and release gates (`v4.2`) in repository.
-- App-level runtime config for pilot mode, default capture mode, and privacy-by-default switches.
+- App-level runtime config for pilot mode, Clinical Hub v1 endpoint set, default capture mode, privacy-by-default switches, and disabled debug gates.
 
 Not yet implemented:
 - Real sensor capture pipeline (camera/audio/IMU/depth).
@@ -47,7 +47,7 @@ Not yet implemented:
 
 ## B0: Foundation (must finish first)
 1. Split app architecture into modules: `api`, `capture`, `storage`, `sync`, `screens`.
-2. Add app-level config object (`mode`, endpoint set, privacy switches, debug gates). Status: partially implemented for pilot mode, default capture mode, and privacy switches.
+2. Add app-level config object (`mode`, endpoint set, privacy switches, debug gates). Status: implemented for pilot mode, Clinical Hub v1 endpoint set, default capture mode, privacy switches, and disabled debug gates.
 3. Add release manifest JSON generation (`app_version`, `git_sha`, `model_id`, `schema_version`).
 
 DoD:

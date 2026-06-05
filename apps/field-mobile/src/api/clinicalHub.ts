@@ -4,6 +4,7 @@ import type {
   RequestHeaderContext,
   SubmitAttemptResult,
 } from "../types";
+import { APP_ENDPOINT_PATHS } from "../config/appConfig";
 import { clampTimeoutMs, classifyRetryable, createRequestId } from "../utils/appHelpers";
 
 export function buildBaseUrl(apiBaseUrl: string): string {
@@ -19,10 +20,7 @@ export function buildMissingApiBaseUrlMessage(): string {
 }
 
 export function endpointPath(endpoint: PendingEndpoint): string {
-  if (endpoint === "capture_packages") {
-    return "/api/v1/capture-packages";
-  }
-  return "/api/v1/paired-measurements";
+  return APP_ENDPOINT_PATHS[endpoint];
 }
 
 export function buildRequestHeaders(

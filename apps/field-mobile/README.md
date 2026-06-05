@@ -120,7 +120,7 @@ CI:
   - `build_platform` (`all` / `ios` / `android`)
   - `wait_for_build` (`true` / `false`)
 - `mobile-build` uploads:
-  - `mobile-release-manifest` (version + runtime release metadata + git SHA + model/schema traceability)
+  - `mobile-release-manifest` (version + runtime release metadata/config + git SHA + model/schema traceability)
   - `mobile-release-readiness` (git traceability + local readiness checks + explicit external credential blockers)
   - `mobile-eas-build-result-<run_id>` (raw EAS JSON response for build IDs/URLs)
 - Workflow summary includes release readiness status and direct EAS build links for operator/release use.
@@ -131,7 +131,8 @@ CI:
 secret blockers. The artifact has separate machine-readable gates:
 
 - `local_checks_status`: local app metadata, runtime release metadata, EAS profile shape,
-  runtime config/defaults such as privacy-by-default switches and non-localhost API URL defaults,
+  runtime config/defaults such as Clinical Hub v1 endpoint set, disabled debug gates,
+  privacy-by-default switches, and non-localhost API URL defaults,
   store privacy declarations,
   launch/icon assets, dependency lock alignment, and unit-test evidence that can be verified
   without external credentials.
