@@ -74,6 +74,27 @@ test("formatSafeResponseProblem preserves status without leaking raw response bo
   );
 });
 
+test("formatSafeExceptionMessage redacts mobile PHI and secret-like details", () => {
+  const message = helpers.formatSafeExceptionMessage(
+    new Error(
+      "Runtime failure for subject_id=SUBJ-001 site_id=SITE-001 operator_id=OP-01 api_key=secret-token",
+    ),
+  );
+
+  assert.equal(message, "ERROR auth_or_permission");
+  assert.equal(message.includes("SUBJ-001"), false);
+  assert.equal(message.includes("SITE-001"), false);
+  assert.equal(message.includes("OP-01"), false);
+  assert.equal(message.includes("secret-token"), false);
+});
+
+test("formatSafeExceptionMessage preserves network category without raw exception text", () => {
+  assert.equal(
+    helpers.formatSafeExceptionMessage("TypeError: failed to fetch subject_id=SUBJ-002", "NETWORK"),
+    "NETWORK network_or_timeout",
+  );
+});
+
 test("buildHeaderContextFromValues normalizes operator context and preserves request id", () => {
   assert.deepEqual(
     helpers.buildHeaderContextFromValues(
