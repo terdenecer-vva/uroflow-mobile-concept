@@ -706,9 +706,11 @@ def build_readiness_report(
     clinical_hub_api_tests_path = mobile_root / "tests" / "clinicalHub.test.js"
     connection_check_tests_path = mobile_root / "tests" / "connectionCheck.test.js"
     capture_package_payload_tests_path = mobile_root / "tests" / "capturePackagePayload.test.js"
+    capture_contract_source_path = mobile_root / "src" / "capture" / "buildCaptureContract.ts"
     capture_tests_path = mobile_root / "tests" / "captureContract.test.js"
     paired_payload_tests_path = mobile_root / "tests" / "pairedPayload.test.js"
     roi_signal_tests_path = mobile_root / "tests" / "roiSignalEstimator.test.js"
+    runtime_metrics_source_path = mobile_root / "src" / "capture" / "runtimeMetrics.ts"
     runtime_metrics_tests_path = mobile_root / "tests" / "runtimeMetrics.test.js"
     pending_sync_queue_tests_path = mobile_root / "tests" / "pendingSyncQueue.test.js"
     pending_submission_storage_tests_path = (
@@ -730,6 +732,10 @@ def build_readiness_report(
         pending_submission_storage_tests_path
     )
     submit_outcome_tests_source = _read_file_text(submit_outcome_tests_path)
+    capture_contract_source = _read_file_text(capture_contract_source_path)
+    capture_tests_source = _read_file_text(capture_tests_path)
+    runtime_metrics_source = _read_file_text(runtime_metrics_source_path)
+    runtime_metrics_tests_source = _read_file_text(runtime_metrics_tests_path)
     _check(
         checks,
         "unit_test_script",
@@ -807,6 +813,27 @@ def build_readiness_report(
         "runtime_metrics_unit_tests_present",
         runtime_metrics_tests_path.is_file(),
         f"path={runtime_metrics_tests_path}",
+    )
+    _check(
+        checks,
+        "runtime_motion_quality_gate_sources",
+        "HIGH_MOTION_SAMPLE_THRESHOLD" in runtime_metrics_source
+        and "highMotionRatio" in runtime_metrics_source
+        and "high_motion_ratio" in capture_contract_source
+        and "captureHighMotionRatio" in app_ts_source,
+        (
+            f"runtime_metrics={runtime_metrics_source_path}, "
+            f"capture_contract={capture_contract_source_path}, "
+            f"app={app_ts_path}"
+        ),
+    )
+    _check(
+        checks,
+        "runtime_motion_quality_gate_unit_tests_present",
+        "gates high-motion capture artifacts" in runtime_metrics_tests_source
+        and "highMotionRatio" in runtime_metrics_tests_source
+        and "high_motion_ratio" in capture_tests_source,
+        f"paths={[str(runtime_metrics_tests_path), str(capture_tests_path)]}",
     )
     _check(
         checks,

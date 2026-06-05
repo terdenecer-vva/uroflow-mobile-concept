@@ -196,6 +196,7 @@ test("buildCaptureContractPayloadFromSamples sanitizes runtime analysis", () => 
         quality_status: "repeat",
         roi_valid_ratio: 2,
         low_confidence_ratio: -1,
+        high_motion_ratio: 1.5,
       },
     },
   });
@@ -215,5 +216,6 @@ test("buildCaptureContractPayloadFromSamples sanitizes runtime analysis", () => 
     quality_status: "repeat",
     roi_valid_ratio: 1,
     low_confidence_ratio: 0,
+    high_motion_ratio: 1,
   });
 });

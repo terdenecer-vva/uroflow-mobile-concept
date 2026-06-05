@@ -15,6 +15,7 @@ import {
   calculateAverageMotionNorm,
   clamp,
   deriveRuntimeCaptureMetrics,
+  HIGH_MOTION_SAMPLE_THRESHOLD,
   round4,
   scoreRuntimeCaptureQuality,
   type RuntimeCaptureDerivedMetrics,
@@ -332,7 +333,7 @@ export class RuntimeCaptureSession {
       this.latestPreviewReady &&
       this.latestRoiLocked &&
       this.latestRoiValidByFrame &&
-      this.latestMotionNorm < 0.35;
+      this.latestMotionNorm < HIGH_MOTION_SAMPLE_THRESHOLD;
 
     this.samples.push({
       t_s: round4(elapsedS),

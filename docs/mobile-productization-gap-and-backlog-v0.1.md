@@ -10,6 +10,7 @@ Implemented now:
 - Clinical Hub API contract for `paired-measurements` and `capture-packages`.
 - Pilot automation and release gates (`v4.2`) in repository.
 - App-level runtime config for pilot mode, Clinical Hub v1 endpoint set, default capture mode, privacy-by-default switches, and disabled debug gates.
+- Runtime capture quality gates for ROI validity, low-confidence depth, and high-motion IMU artifacts.
 
 Not yet implemented:
 - Real sensor capture pipeline (camera/audio/IMU/depth).
@@ -19,13 +20,13 @@ Not yet implemented:
 ## 2) Gap analysis (what blocks real install-and-test)
 
 ### G1. Sensor capture gap
-- Missing camera/audio capture session manager.
-- Missing ROI-only processing pipeline and artifact flags.
-- Missing IMU motion gating in app runtime.
+- Native sensor capture exists as a pilot runtime path, but still needs physical-device calibration against target iPhone/Android models.
+- ROI-only processing pipeline is proxy-based and still needs native-grade ROI extraction on device.
+- IMU motion gating is implemented in runtime quality scoring, but threshold calibration needs real device smoke evidence.
 
 ### G2. Data contract gap
-- Capture contract currently scaffolded; no live sensor samples yet.
-- `capture-packages` not queued for offline retry.
+- Capture contract can use live runtime samples, with scaffold fallback still available.
+- `capture-packages` are queued for offline retry, but device-level E2E replay evidence still needs to be archived.
 - No direct upload of feature bundles/media manifests.
 
 ### G3. Security/privacy gap
@@ -59,7 +60,7 @@ DoD:
 1. Implement capture start/stop session service.
 2. Record audio envelope + ROI motion/texture + IMU jitter over unified timeline.
 3. Build live `ios_capture_v1` payload from runtime samples.
-4. Add quality pre-checks before submit (`roi_valid_ratio`, motion threshold, depth confidence ratio).
+4. Add quality pre-checks before submit (`roi_valid_ratio`, motion threshold, depth confidence ratio). Status: implemented in runtime payload scoring; needs physical-device threshold calibration.
 
 DoD:
 - Single-button record flow works on physical iPhone and Android.

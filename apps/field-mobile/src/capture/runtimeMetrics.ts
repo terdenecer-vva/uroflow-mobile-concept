@@ -21,12 +21,17 @@ export type RuntimeCaptureQuality = {
   qualityStatus: "valid" | "repeat" | "reject";
   roiValidRatio: number;
   lowConfidenceRatio: number;
+  highMotionRatio: number;
 };
 
 export type RuntimeFlowPoint = {
   t_s: number;
   flow_ml_s: number;
 };
+
+export const HIGH_MOTION_SAMPLE_THRESHOLD = 0.35;
+const HIGH_MOTION_REPEAT_RATIO = 0.2;
+const HIGH_MOTION_REJECT_RATIO = 0.45;
 
 export function clamp(value: number, minValue: number, maxValue: number): number {
   return Math.max(minValue, Math.min(maxValue, value));
@@ -162,20 +167,30 @@ export function scoreRuntimeCaptureQuality(input: {
   const sampleCount = Math.max(1, input.samples.length);
   const roiValidCount = input.samples.filter((sample) => sample.roi_valid).length;
   const lowConfidenceCount = input.samples.filter((sample) => sample.depth_confidence < 0.6).length;
+  const highMotionCount = input.samples.filter(
+    (sample) => sample.motion_norm >= HIGH_MOTION_SAMPLE_THRESHOLD,
+  ).length;
 
   const roiValidRatio = roiValidCount / sampleCount;
   const lowConfidenceRatio = lowConfidenceCount / sampleCount;
+  const highMotionRatio = highMotionCount / sampleCount;
 
   let score = 100;
   score -= clamp(input.averageMotionNorm * 80, 0, 60);
   score -= clamp((1 - roiValidRatio) * 70, 0, 50);
   score -= clamp(lowConfidenceRatio * 40, 0, 25);
+  score -= clamp(highMotionRatio * 50, 0, 30);
   score = clamp(score, 0, 100);
 
   let qualityStatus: RuntimeCaptureQuality["qualityStatus"] = "valid";
-  if (score < 50 || roiValidRatio < 0.55) {
+  if (score < 50 || roiValidRatio < 0.55 || highMotionRatio > HIGH_MOTION_REJECT_RATIO) {
     qualityStatus = "reject";
-  } else if (score < 75 || roiValidRatio < 0.8 || lowConfidenceRatio > 0.35) {
+  } else if (
+    score < 75 ||
+    roiValidRatio < 0.8 ||
+    lowConfidenceRatio > 0.35 ||
+    highMotionRatio > HIGH_MOTION_REPEAT_RATIO
+  ) {
     qualityStatus = "repeat";
   }
 
@@ -184,5 +199,6 @@ export function scoreRuntimeCaptureQuality(input: {
     qualityStatus,
     roiValidRatio: round4(roiValidRatio),
     lowConfidenceRatio: round4(lowConfidenceRatio),
+    highMotionRatio: round4(highMotionRatio),
   };
 }
