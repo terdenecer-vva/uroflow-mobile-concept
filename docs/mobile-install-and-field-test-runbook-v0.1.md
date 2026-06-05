@@ -75,6 +75,8 @@ In app API section set:
 - `Operator ID`: current operator code
 
 Verify with `Test API` button before first patient run.
+Pending queue auto-sync stays paused until `API Base URL` is configured and starts with
+`http://` or `https://`.
 
 ## 5. Paired Test Workflow
 

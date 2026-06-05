@@ -27,6 +27,12 @@ export type PendingSyncStatusSummary = {
   droppedNonRetryable: number;
 };
 
+export type PendingAutoSyncGate = {
+  settingsHydrated: boolean;
+  pendingCount: number;
+  apiConfigured: boolean;
+};
+
 export function splitPendingSyncBatch(
   queue: PendingSubmission[],
   maxBatchSize = MAX_PENDING_SYNC_BATCH_SIZE,
@@ -38,6 +44,10 @@ export function splitPendingSyncBatch(
     batch: queue.slice(0, batchSize),
     deferred: queue.slice(batchSize),
   };
+}
+
+export function shouldAutoSyncPendingQueue(gate: PendingAutoSyncGate): boolean {
+  return gate.settingsHydrated && gate.pendingCount > 0 && gate.apiConfigured;
 }
 
 export function buildPendingSyncAttempt(options: {

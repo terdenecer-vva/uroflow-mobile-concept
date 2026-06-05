@@ -61,6 +61,41 @@ test("splitPendingSyncBatch caps sync batches and preserves deferred order", () 
   );
 });
 
+test("shouldAutoSyncPendingQueue requires hydrated settings, pending work, and configured API", () => {
+  assert.equal(
+    pending.shouldAutoSyncPendingQueue({
+      settingsHydrated: true,
+      pendingCount: 1,
+      apiConfigured: true,
+    }),
+    true,
+  );
+  assert.equal(
+    pending.shouldAutoSyncPendingQueue({
+      settingsHydrated: false,
+      pendingCount: 1,
+      apiConfigured: true,
+    }),
+    false,
+  );
+  assert.equal(
+    pending.shouldAutoSyncPendingQueue({
+      settingsHydrated: true,
+      pendingCount: 0,
+      apiConfigured: true,
+    }),
+    false,
+  );
+  assert.equal(
+    pending.shouldAutoSyncPendingQueue({
+      settingsHydrated: true,
+      pendingCount: 1,
+      apiConfigured: false,
+    }),
+    false,
+  );
+});
+
 test("buildPendingSyncAttempt records successful capture package submissions", () => {
   const headerContext = {
     api_key: "current-key",

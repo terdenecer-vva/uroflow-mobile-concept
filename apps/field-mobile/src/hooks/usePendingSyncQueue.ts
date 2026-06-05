@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, AppState } from "react-native";
 
-import { attemptSubmitEndpoint } from "../api/clinicalHub";
+import {
+  attemptSubmitEndpoint,
+  buildMissingApiBaseUrlMessage,
+  isConfiguredApiBaseUrl,
+} from "../api/clinicalHub";
 import {
   loadPendingSubmissions,
   savePendingSubmissions,
@@ -16,6 +20,7 @@ import { createPendingId, resolvePendingHeaderContext } from "../utils/appHelper
 import {
   buildPendingSyncAttempt,
   buildPendingSyncStatusMessage,
+  shouldAutoSyncPendingQueue,
   splitPendingSyncBatch,
 } from "../utils/pendingSyncQueue";
 
@@ -39,6 +44,7 @@ export function usePendingSyncQueue({
   const [syncStatusMessage, setSyncStatusMessage] = useState("");
   const syncInFlightRef = useRef(false);
   const autoSyncIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const apiConfigured = isConfiguredApiBaseUrl(apiBaseUrl);
 
   const persistPendingQueue = useCallback(async (queue: PendingSubmission[]): Promise<void> => {
     await savePendingSubmissions(queue);
@@ -76,6 +82,15 @@ export function usePendingSyncQueue({
 
   const syncPendingSubmissions = useCallback(
     async (showAlert = true): Promise<void> => {
+      if (!apiConfigured) {
+        const message = buildMissingApiBaseUrlMessage();
+        setSyncStatusMessage(message);
+        onLastResponse(message);
+        if (showAlert) {
+          Alert.alert("API URL required", message);
+        }
+        return;
+      }
       if (syncInFlightRef.current) {
         return;
       }
@@ -149,6 +164,7 @@ export function usePendingSyncQueue({
       }
     },
     [
+      apiConfigured,
       apiBaseUrl,
       onLastResponse,
       persistPendingQueue,
@@ -182,10 +198,19 @@ export function usePendingSyncQueue({
   }, []);
 
   useEffect(() => {
-    if (!settingsHydrated || pendingQueue.length === 0) {
+    const shouldAutoSync = shouldAutoSyncPendingQueue({
+      settingsHydrated,
+      pendingCount: pendingQueue.length,
+      apiConfigured,
+    });
+
+    if (!shouldAutoSync) {
       if (autoSyncIntervalRef.current != null) {
         clearInterval(autoSyncIntervalRef.current);
         autoSyncIntervalRef.current = null;
+      }
+      if (settingsHydrated && pendingQueue.length > 0 && !apiConfigured) {
+        setSyncStatusMessage(buildMissingApiBaseUrlMessage());
       }
       return;
     }
@@ -204,18 +229,18 @@ export function usePendingSyncQueue({
         autoSyncIntervalRef.current = null;
       }
     };
-  }, [pendingQueue.length, settingsHydrated, syncPendingSubmissions]);
+  }, [apiConfigured, pendingQueue.length, settingsHydrated, syncPendingSubmissions]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener("change", (state) => {
-      if (state === "active" && pendingQueue.length > 0) {
+      if (state === "active" && pendingQueue.length > 0 && apiConfigured) {
         void syncPendingSubmissions(false);
       }
     });
     return () => {
       subscription.remove();
     };
-  }, [pendingQueue.length, syncPendingSubmissions]);
+  }, [apiConfigured, pendingQueue.length, syncPendingSubmissions]);
 
   return {
     pendingQueue,
