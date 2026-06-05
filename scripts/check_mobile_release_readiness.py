@@ -1312,6 +1312,11 @@ def build_readiness_report(
         "restore_sync_check": "connectivity_restore_sync" in mobile_device_smoke_template_source,
         "log_phi_review_check": "device_logs_reviewed_no_phi"
         in mobile_device_smoke_template_source,
+        "runtime_timeline_evidence": "runtime_timeline"
+        in mobile_device_smoke_template_source
+        and "runtime_timeline_integrity" in mobile_device_smoke_template_source
+        and "capture_payload.analysis.runtime_timeline"
+        in mobile_device_smoke_template_source,
     }
     _check(
         checks,
@@ -1327,6 +1332,10 @@ def build_readiness_report(
         in mobile_device_smoke_validator_source,
         "no_phi_log_review": "device_logs_reviewed_no_phi"
         in mobile_device_smoke_validator_source,
+        "runtime_timeline_validation": "_validate_runtime_timeline"
+        in mobile_device_smoke_validator_source
+        and "runtime_timeline_integrity" in mobile_device_smoke_validator_source
+        and "gap_warning must be false" in mobile_device_smoke_validator_source,
     }
     _check(
         checks,
@@ -1340,6 +1349,10 @@ def build_readiness_report(
         "ios_android_matrix_test": "requires_ios_and_android"
         in mobile_device_smoke_validator_tests_source,
         "required_checks_test": "requires_passing_required_checks"
+        in mobile_device_smoke_validator_tests_source,
+        "runtime_timeline_required_test": "requires_runtime_timeline"
+        in mobile_device_smoke_validator_tests_source,
+        "runtime_timeline_gap_warning_test": "rejects_timeline_gap_warning"
         in mobile_device_smoke_validator_tests_source,
     }
     _check(

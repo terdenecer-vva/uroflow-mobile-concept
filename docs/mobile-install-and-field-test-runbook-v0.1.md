@@ -111,8 +111,8 @@ Per subject/attempt:
    - `quality score/status`
    - `roi_valid_ratio` and `low_confidence_ratio`
    - `Runtime Q(t) Preview`
-   - after export, `capture_payload.analysis.runtime_timeline.gap_warning=false`
-     or an operator note explaining the timing interruption
+   - after export, `capture_payload.analysis.runtime_timeline.gap_warning=false`;
+     repeat or mark the run for review when timing gaps are reported
 6. Enter reference metrics (`Qmax/Qavg/Vvoid` and optional time metrics).
 7. Submit paired measurement.
 8. If network failed, ensure queue item exists and run `Sync Queue` later.
@@ -207,6 +207,8 @@ GitHub Actions automation:
 
 - Reject run if app cannot detect event or operator moved phone heavily.
 - Repeat run if app `quality_status=repeat`.
+- Copy `capture_payload.analysis.runtime_timeline` into the device smoke log and keep
+  `gap_warning=false` for release handoff evidence.
 - Flag run for review if:
   - `roi_valid_ratio < 0.80`
   - `low_confidence_ratio > 0.35`

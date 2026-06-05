@@ -99,6 +99,8 @@ Notes:
 - Runtime quality scoring includes `roi_valid_ratio`, `low_confidence_ratio`, and `high_motion_ratio`.
 - Runtime contract analysis includes `runtime_timeline` so Clinical Hub evidence can flag
   timing gaps caused by foreground stalls or device load.
+- Physical-device smoke logs must copy `capture_payload.analysis.runtime_timeline` and
+  pass with `gap_warning=false` for release handoff.
 - Raw media is not stored by default (privacy-by-default behavior).
 - Capture contract payloads include a derivatives-only `feature_manifest` with sample count,
   derived feature keys, and raw media storage/upload flags pinned to `false`.

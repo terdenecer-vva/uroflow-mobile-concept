@@ -23,6 +23,8 @@ Implemented now:
 - Deterministic mobile sync smoke covering queued paired+capture replay after network restore.
 - Mobile Build release notes artifact and manifest traceability for operator-facing build handoff.
 - Physical-device smoke evidence JSON template and validator for iOS+Android release handoff.
+- Physical-device smoke evidence requires per-device runtime timeline integrity metadata
+  with `gap_warning=false`.
 - Store rollout handoff JSON template, validator, and Mobile Build artifact for TestFlight/Play Internal traceability.
 - Mobile release bundle verifier for manifest/readiness/notes/store-handoff artifact consistency.
 - In-app Release Identity panel for app/model/schema/runtime/privacy/data-residency evidence on device.
@@ -61,7 +63,9 @@ Not yet implemented:
 ### G5. Verification gap
 - Mobile tests include TypeScript, unit, export, and deterministic sync replay coverage.
 - Deterministic replay tests cover capture contract generation and queued paired+capture sync; physical-device evidence now has a validator/template but still needs real-device execution.
-- Device-matrix smoke evidence requires at least one iPhone and one Android run in `mobile_device_smoke_log_v0.1`.
+- Device-matrix smoke evidence requires at least one iPhone and one Android run in
+  `mobile_device_smoke_log_v0.1`, including runtime timeline evidence from
+  `capture_payload.analysis.runtime_timeline`.
 
 ## 3) Backlog (implementation order)
 

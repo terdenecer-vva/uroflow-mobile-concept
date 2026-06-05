@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import re
 from datetime import datetime
 from pathlib import Path
@@ -15,6 +16,7 @@ REQUIRED_SMOKE_CHECK_IDS = (
     "api_connection_check",
     "capture_start_stop",
     "contract_payload_ready",
+    "runtime_timeline_integrity",
     "paired_measurement_submit",
     "capture_package_submit",
     "offline_queue_retains_jobs",
@@ -47,6 +49,15 @@ def _is_iso_timestamp(value: str) -> bool:
     return True
 
 
+def _is_non_negative_number(value: Any) -> bool:
+    return (
+        isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and math.isfinite(float(value))
+        and value >= 0
+    )
+
+
 def _validate_release(release: dict[str, Any], errors: list[str]) -> None:
     required_text_fields = (
         "git_sha",
@@ -76,6 +87,56 @@ def _check_map(device: dict[str, Any]) -> dict[str, dict[str, Any]]:
     return checks
 
 
+def _validate_runtime_timeline(
+    device: dict[str, Any],
+    prefix: str,
+    errors: list[str],
+) -> None:
+    timeline = _as_dict(device.get("runtime_timeline"))
+    if not timeline:
+        errors.append(f"{prefix}.runtime_timeline is required")
+        return
+
+    source_payload_path = _read_text(timeline.get("source_payload_path"))
+    if source_payload_path != "capture_payload.analysis.runtime_timeline":
+        errors.append(
+            f"{prefix}.runtime_timeline.source_payload_path must be "
+            "'capture_payload.analysis.runtime_timeline'"
+        )
+
+    if timeline.get("clock_source") != "elapsed_wall_clock_ms":
+        errors.append(
+            f"{prefix}.runtime_timeline.clock_source must be 'elapsed_wall_clock_ms'"
+        )
+
+    sample_count = timeline.get("sample_count")
+    if not isinstance(sample_count, int) or isinstance(sample_count, bool):
+        errors.append(f"{prefix}.runtime_timeline.sample_count must be an integer")
+    elif sample_count < 2:
+        errors.append(f"{prefix}.runtime_timeline.sample_count must be >= 2")
+
+    for field in (
+        "duration_s",
+        "median_sample_step_s",
+        "max_sample_gap_s",
+        "max_sample_gap_ratio",
+    ):
+        if not _is_non_negative_number(timeline.get(field)):
+            errors.append(
+                f"{prefix}.runtime_timeline.{field} must be a non-negative number"
+            )
+
+    if timeline.get("duration_s") == 0:
+        errors.append(f"{prefix}.runtime_timeline.duration_s must be > 0")
+    if timeline.get("median_sample_step_s") == 0:
+        errors.append(f"{prefix}.runtime_timeline.median_sample_step_s must be > 0")
+
+    if timeline.get("gap_warning") is not False:
+        errors.append(
+            f"{prefix}.runtime_timeline.gap_warning must be false for release smoke evidence"
+        )
+
+
 def _validate_device(device: dict[str, Any], index: int, errors: list[str]) -> str:
     prefix = f"devices[{index}]"
     platform = _read_text(device.get("platform")).lower()
@@ -85,6 +146,8 @@ def _validate_device(device: dict[str, Any], index: int, errors: list[str]) -> s
     for field in ("device_model", "os_version", "install_source", "app_build"):
         if not _read_text(device.get(field)):
             errors.append(f"{prefix}.{field} is required")
+
+    _validate_runtime_timeline(device, prefix, errors)
 
     checks = _check_map(device)
     for check_id in REQUIRED_SMOKE_CHECK_IDS:
