@@ -88,6 +88,8 @@ Notes:
 - Camera preview + ROI lock state are included in runtime quality gating.
 - Runtime quality scoring includes `roi_valid_ratio`, `low_confidence_ratio`, and `high_motion_ratio`.
 - Raw media is not stored by default (privacy-by-default behavior).
+- Capture contract payloads include a derivatives-only `feature_manifest` with sample count,
+  derived feature keys, and raw media storage/upload flags pinned to `false`.
 
 ## API URL
 
@@ -133,7 +135,8 @@ secret blockers. The artifact has separate machine-readable gates:
 
 - `local_checks_status`: local app metadata, runtime release metadata, EAS profile shape,
   runtime config/defaults such as Clinical Hub v1 endpoint set, disabled debug gates,
-  privacy-by-default switches, runtime motion quality gates, and non-localhost API URL defaults,
+  privacy-by-default switches, runtime motion quality gates, derivatives-only feature/media
+  manifest gates, and non-localhost API URL defaults,
   store privacy declarations,
   launch/icon assets, dependency lock alignment, and unit-test evidence that can be verified
   without external credentials.

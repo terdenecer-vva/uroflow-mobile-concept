@@ -708,6 +708,9 @@ def build_readiness_report(
     capture_package_payload_tests_path = mobile_root / "tests" / "capturePackagePayload.test.js"
     capture_contract_source_path = mobile_root / "src" / "capture" / "buildCaptureContract.ts"
     capture_tests_path = mobile_root / "tests" / "captureContract.test.js"
+    repo_root = mobile_root.parent.parent
+    backend_capture_contract_path = repo_root / "src" / "uroflow_mobile" / "capture_contract.py"
+    backend_capture_tests_path = repo_root / "tests" / "test_capture_contract.py"
     paired_payload_tests_path = mobile_root / "tests" / "pairedPayload.test.js"
     roi_signal_tests_path = mobile_root / "tests" / "roiSignalEstimator.test.js"
     runtime_metrics_source_path = mobile_root / "src" / "capture" / "runtimeMetrics.ts"
@@ -734,6 +737,8 @@ def build_readiness_report(
     submit_outcome_tests_source = _read_file_text(submit_outcome_tests_path)
     capture_contract_source = _read_file_text(capture_contract_source_path)
     capture_tests_source = _read_file_text(capture_tests_path)
+    backend_capture_contract_source = _read_file_text(backend_capture_contract_path)
+    backend_capture_tests_source = _read_file_text(backend_capture_tests_path)
     runtime_metrics_source = _read_file_text(runtime_metrics_source_path)
     runtime_metrics_tests_source = _read_file_text(runtime_metrics_tests_path)
     _check(
@@ -834,6 +839,33 @@ def build_readiness_report(
         and "highMotionRatio" in runtime_metrics_tests_source
         and "high_motion_ratio" in capture_tests_source,
         f"paths={[str(runtime_metrics_tests_path), str(capture_tests_path)]}",
+    )
+    _check(
+        checks,
+        "mobile_feature_media_manifest_sources",
+        "feature_manifest" in capture_contract_source
+        and "mobile_feature_manifest_v0.1" in capture_contract_source
+        and "derivatives_only" in capture_contract_source
+        and "raw_media" in capture_contract_source
+        and "upload_raw_audio" in capture_contract_source
+        and "feature_manifest" in backend_capture_contract_source
+        and "FEATURE_MANIFEST_VERSION" in backend_capture_contract_source
+        and "derivatives_only must be true" in backend_capture_contract_source
+        and "upload_raw_audio" in backend_capture_contract_source
+        and "raw_media.{flag} must be false" in backend_capture_contract_source,
+        (
+            f"mobile_capture_contract={capture_contract_source_path}, "
+            f"backend_capture_contract={backend_capture_contract_path}"
+        ),
+    )
+    _check(
+        checks,
+        "mobile_feature_media_manifest_unit_tests_present",
+        "assertDerivativesOnlyFeatureManifest" in capture_tests_source
+        and "runtime_quality.high_motion_ratio" in capture_tests_source
+        and "allows_derivatives_only_feature_manifest" in backend_capture_tests_source
+        and "rejects_feature_manifest_raw_media_upload" in backend_capture_tests_source,
+        f"paths={[str(capture_tests_path), str(backend_capture_tests_path)]}",
     )
     _check(
         checks,

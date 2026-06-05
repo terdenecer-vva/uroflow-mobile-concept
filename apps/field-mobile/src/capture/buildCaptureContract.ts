@@ -32,6 +32,24 @@ export type CaptureContractAnalysis = {
   };
 };
 
+export type CaptureContractFeatureManifest = {
+  version: "mobile_feature_manifest_v0.1";
+  source: string;
+  derivatives_only: true;
+  sample_count: number;
+  feature_keys: string[];
+  raw_media: {
+    store_raw_video: false;
+    store_raw_audio: false;
+    upload_raw_video: false;
+    upload_raw_audio: false;
+  };
+  privacy: {
+    roi_only: true;
+    media_scope: "roi_derivatives_only";
+  };
+};
+
 export type CaptureContractPayload = {
   schema_version: typeof APP_CAPTURE_SCHEMA_VERSION;
   session: {
@@ -57,6 +75,7 @@ export type CaptureContractPayload = {
       roi_only: true;
     };
   };
+  feature_manifest: CaptureContractFeatureManifest;
   samples: CaptureContractSample[];
   analysis?: CaptureContractAnalysis;
 };
@@ -91,6 +110,16 @@ export type BuildCaptureContractFromSamplesInput = {
 
 const DEFAULT_ML_PER_MM = 8.0;
 const DEFAULT_SAMPLE_STEP_S = 0.5;
+const FEATURE_MANIFEST_VERSION = "mobile_feature_manifest_v0.1";
+const BASE_FEATURE_KEYS = Object.freeze([
+  "t_s",
+  "depth_level_mm",
+  "rgb_level_mm",
+  "depth_confidence",
+  "audio_rms_dbfs",
+  "motion_norm",
+  "roi_valid",
+]);
 
 function clamp(value: number, minValue: number, maxValue: number): number {
   return Math.max(minValue, Math.min(maxValue, value));
@@ -262,11 +291,46 @@ function buildPrivacyNode(): CaptureContractPayload["session"]["privacy"] {
   };
 }
 
+function buildFeatureManifest(
+  source: string,
+  samples: CaptureContractSample[],
+  analysis: CaptureContractAnalysis | undefined,
+): CaptureContractFeatureManifest {
+  const featureKeys = new Set<string>(BASE_FEATURE_KEYS);
+  if (analysis?.runtime_flow_series && analysis.runtime_flow_series.length > 0) {
+    featureKeys.add("runtime_flow_series.flow_ml_s");
+  }
+  if (analysis?.runtime_quality) {
+    Object.keys(analysis.runtime_quality).forEach((key) => {
+      featureKeys.add(`runtime_quality.${key}`);
+    });
+  }
+
+  return {
+    version: FEATURE_MANIFEST_VERSION,
+    source: source.trim() || "mobile_scaffold",
+    derivatives_only: true,
+    sample_count: samples.length,
+    feature_keys: Array.from(featureKeys).sort(),
+    raw_media: {
+      store_raw_video: APP_PRIVACY_POLICY.storeRawVideo,
+      store_raw_audio: APP_PRIVACY_POLICY.storeRawAudio,
+      upload_raw_video: false,
+      upload_raw_audio: false,
+    },
+    privacy: {
+      roi_only: APP_PRIVACY_POLICY.roiOnly,
+      media_scope: "roi_derivatives_only",
+    },
+  };
+}
+
 export function buildCaptureContractPayload(
   input: BuildCaptureContractInput,
 ): CaptureContractPayload {
   const model = input.deviceModel?.trim() || "unknown-device";
   const appVersion = input.appVersion?.trim() || APP_RELEASE_VERSION;
+  const samples = createSamples(input);
 
   return {
     schema_version: APP_CAPTURE_SCHEMA_VERSION,
@@ -289,7 +353,8 @@ export function buildCaptureContractPayload(
       },
       privacy: buildPrivacyNode(),
     },
-    samples: createSamples(input),
+    feature_manifest: buildFeatureManifest("mobile_scaffold", samples, undefined),
+    samples,
   };
 }
 
@@ -353,6 +418,11 @@ export function buildCaptureContractPayloadFromSamples(
       },
       privacy: buildPrivacyNode(),
     },
+    feature_manifest: buildFeatureManifest(
+      source || "runtime-audio-imu-camera-proxy",
+      safeSamples,
+      analysis,
+    ),
     samples: safeSamples,
   };
   if (analysis) {
