@@ -21,8 +21,20 @@ export type CaptureContractRuntimeFlowPoint = {
   flow_ml_s: number;
 };
 
+export type CaptureContractRuntimeTimeline = {
+  clock_source: "elapsed_wall_clock_ms";
+  sample_count: number;
+  duration_s: number;
+  median_sample_step_s: number | null;
+  max_sample_gap_s: number | null;
+  max_sample_gap_ratio: number | null;
+  monotonic: boolean;
+  gap_warning: boolean;
+};
+
 export type CaptureContractAnalysis = {
   runtime_flow_series?: CaptureContractRuntimeFlowPoint[];
+  runtime_timeline?: CaptureContractRuntimeTimeline;
   runtime_quality?: {
     quality_score?: number;
     quality_status?: CaptureContractQualityStatus;
@@ -129,6 +141,18 @@ function round4(value: number): number {
   return Math.round(value * 10000) / 10000;
 }
 
+function median(values: number[]): number | null {
+  if (values.length === 0) {
+    return null;
+  }
+  const sorted = [...values].sort((a, b) => a - b);
+  const midpoint = Math.floor(sorted.length / 2);
+  if (sorted.length % 2 === 1) {
+    return sorted[midpoint];
+  }
+  return (sorted[midpoint - 1] + sorted[midpoint]) / 2;
+}
+
 function normalizeStartedAt(startedAtIso: string): string {
   const parsed = new Date(startedAtIso);
   if (Number.isNaN(parsed.getTime())) {
@@ -163,6 +187,75 @@ function sanitizeRuntimeFlowSeries(
     reduced.push(lastPoint);
   }
   return reduced;
+}
+
+function sanitizeNullablePositiveMetric(value: number | null | undefined): number | null {
+  if (value == null || !Number.isFinite(value)) {
+    return null;
+  }
+  return round4(Math.max(0, value));
+}
+
+function sanitizeNonNegativeInteger(value: number): number {
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+  return Math.max(0, Math.round(value));
+}
+
+export function deriveRuntimeTimeline(
+  samples: CaptureContractSample[],
+): CaptureContractRuntimeTimeline {
+  const timestamps = samples
+    .map((sample) => sample.t_s)
+    .filter((timestamp) => Number.isFinite(timestamp) && timestamp >= 0);
+  const deltas: number[] = [];
+  for (let index = 1; index < timestamps.length; index += 1) {
+    deltas.push(timestamps[index] - timestamps[index - 1]);
+  }
+
+  const monotonic = deltas.every((delta) => delta > 0);
+  const positiveDeltas = deltas.filter((delta) => delta > 0);
+  const medianStep = median(positiveDeltas);
+  const maxGap = positiveDeltas.length > 0 ? Math.max(...positiveDeltas) : null;
+  const maxGapRatio =
+    medianStep != null && medianStep > 0 && maxGap != null ? maxGap / medianStep : null;
+  const duration =
+    timestamps.length >= 2 ? timestamps[timestamps.length - 1] - timestamps[0] : 0;
+
+  return {
+    clock_source: "elapsed_wall_clock_ms",
+    sample_count: samples.length,
+    duration_s: round4(Math.max(0, duration)),
+    median_sample_step_s: sanitizeNullablePositiveMetric(medianStep),
+    max_sample_gap_s: sanitizeNullablePositiveMetric(maxGap),
+    max_sample_gap_ratio: sanitizeNullablePositiveMetric(maxGapRatio),
+    monotonic,
+    gap_warning:
+      !monotonic ||
+      (maxGapRatio != null && maxGapRatio > 2.5) ||
+      (maxGap != null && maxGap > 1.5),
+  };
+}
+
+function sanitizeRuntimeTimeline(
+  timeline: CaptureContractRuntimeTimeline | undefined,
+): CaptureContractRuntimeTimeline | undefined {
+  if (!timeline) {
+    return undefined;
+  }
+  return {
+    clock_source: "elapsed_wall_clock_ms",
+    sample_count: sanitizeNonNegativeInteger(timeline.sample_count),
+    duration_s: Number.isFinite(timeline.duration_s)
+      ? round4(Math.max(0, timeline.duration_s))
+      : 0,
+    median_sample_step_s: sanitizeNullablePositiveMetric(timeline.median_sample_step_s),
+    max_sample_gap_s: sanitizeNullablePositiveMetric(timeline.max_sample_gap_s),
+    max_sample_gap_ratio: sanitizeNullablePositiveMetric(timeline.max_sample_gap_ratio),
+    monotonic: timeline.monotonic === true,
+    gap_warning: timeline.gap_warning === true,
+  };
 }
 
 function sanitizeNullableLevel(value: number | null): number | null {
@@ -202,12 +295,12 @@ function sanitizeRuntimeSamples(samples: CaptureContractSample[]): CaptureContra
 
 function sanitizeAnalysis(
   analysis: CaptureContractAnalysis | undefined,
+  fallbackTimeline?: CaptureContractRuntimeTimeline,
 ): CaptureContractAnalysis | undefined {
-  if (!analysis) {
-    return undefined;
-  }
-  const runtimeFlowSeries = sanitizeRuntimeFlowSeries(analysis.runtime_flow_series);
-  const runtimeQualityRaw = analysis.runtime_quality;
+  const runtimeFlowSeries = sanitizeRuntimeFlowSeries(analysis?.runtime_flow_series);
+  const runtimeTimeline =
+    sanitizeRuntimeTimeline(analysis?.runtime_timeline) ?? fallbackTimeline;
+  const runtimeQualityRaw = analysis?.runtime_quality;
   const runtimeQuality: CaptureContractAnalysis["runtime_quality"] = {};
   if (runtimeQualityRaw) {
     if (Number.isFinite(runtimeQualityRaw.quality_score)) {
@@ -237,11 +330,12 @@ function sanitizeAnalysis(
     }
   }
   const hasRuntimeQuality = Object.keys(runtimeQuality).length > 0;
-  if (!hasRuntimeQuality && runtimeFlowSeries.length === 0) {
+  if (!hasRuntimeQuality && runtimeFlowSeries.length === 0 && !runtimeTimeline) {
     return undefined;
   }
   return {
     ...(runtimeFlowSeries.length > 0 ? { runtime_flow_series: runtimeFlowSeries } : {}),
+    ...(runtimeTimeline ? { runtime_timeline: runtimeTimeline } : {}),
     ...(hasRuntimeQuality ? { runtime_quality: runtimeQuality } : {}),
   };
 }
@@ -299,6 +393,11 @@ function buildFeatureManifest(
   const featureKeys = new Set<string>(BASE_FEATURE_KEYS);
   if (analysis?.runtime_flow_series && analysis.runtime_flow_series.length > 0) {
     featureKeys.add("runtime_flow_series.flow_ml_s");
+  }
+  if (analysis?.runtime_timeline) {
+    Object.keys(analysis.runtime_timeline).forEach((key) => {
+      featureKeys.add(`runtime_timeline.${key}`);
+    });
   }
   if (analysis?.runtime_quality) {
     Object.keys(analysis.runtime_quality).forEach((key) => {
@@ -395,7 +494,7 @@ export function buildCaptureContractPayloadFromSamples(
       },
     ];
   }
-  const analysis = sanitizeAnalysis(input.analysis);
+  const analysis = sanitizeAnalysis(input.analysis, deriveRuntimeTimeline(safeSamples));
 
   const payload: CaptureContractPayload = {
     schema_version: APP_CAPTURE_SCHEMA_VERSION,

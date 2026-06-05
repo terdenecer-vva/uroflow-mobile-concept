@@ -109,6 +109,80 @@ def _validate_feature_manifest(
             )
 
 
+def _validate_nullable_non_negative_number(
+    value: Any,
+    *,
+    field_name: str,
+    errors: list[str],
+) -> None:
+    if value is None:
+        return
+    if not _is_finite_number(value) or float(value) < 0:
+        errors.append(f"{field_name} must be null or a non-negative finite number")
+
+
+def _validate_analysis(
+    analysis: Any,
+    *,
+    sample_count: int,
+    errors: list[str],
+) -> None:
+    if analysis is None:
+        return
+    if not isinstance(analysis, dict):
+        errors.append("analysis must be an object when provided")
+        return
+
+    runtime_timeline = analysis.get("runtime_timeline")
+    if runtime_timeline is None:
+        return
+    if not isinstance(runtime_timeline, dict):
+        errors.append("analysis.runtime_timeline must be an object when provided")
+        return
+
+    if runtime_timeline.get("clock_source") != "elapsed_wall_clock_ms":
+        errors.append(
+            "analysis.runtime_timeline.clock_source must be 'elapsed_wall_clock_ms'"
+        )
+
+    timeline_sample_count = runtime_timeline.get("sample_count")
+    if not isinstance(timeline_sample_count, int) or isinstance(
+        timeline_sample_count, bool
+    ):
+        errors.append("analysis.runtime_timeline.sample_count must be an integer")
+    elif timeline_sample_count != sample_count:
+        errors.append(
+            "analysis.runtime_timeline.sample_count must match samples length"
+        )
+
+    duration_s = runtime_timeline.get("duration_s")
+    if not _is_finite_number(duration_s) or float(duration_s) < 0:
+        errors.append(
+            "analysis.runtime_timeline.duration_s must be a non-negative finite number"
+        )
+
+    _validate_nullable_non_negative_number(
+        runtime_timeline.get("median_sample_step_s"),
+        field_name="analysis.runtime_timeline.median_sample_step_s",
+        errors=errors,
+    )
+    _validate_nullable_non_negative_number(
+        runtime_timeline.get("max_sample_gap_s"),
+        field_name="analysis.runtime_timeline.max_sample_gap_s",
+        errors=errors,
+    )
+    _validate_nullable_non_negative_number(
+        runtime_timeline.get("max_sample_gap_ratio"),
+        field_name="analysis.runtime_timeline.max_sample_gap_ratio",
+        errors=errors,
+    )
+
+    if not isinstance(runtime_timeline.get("monotonic"), bool):
+        errors.append("analysis.runtime_timeline.monotonic must be boolean")
+    if not isinstance(runtime_timeline.get("gap_warning"), bool):
+        errors.append("analysis.runtime_timeline.gap_warning must be boolean")
+
+
 def validate_capture_payload(payload: dict[str, Any]) -> CaptureValidationReport:
     errors: list[str] = []
     warnings: list[str] = []
@@ -227,6 +301,11 @@ def validate_capture_payload(payload: dict[str, Any]) -> CaptureValidationReport
 
     _validate_feature_manifest(
         payload.get("feature_manifest"),
+        sample_count=sample_count,
+        errors=errors,
+    )
+    _validate_analysis(
+        payload.get("analysis"),
         sample_count=sample_count,
         errors=errors,
     )

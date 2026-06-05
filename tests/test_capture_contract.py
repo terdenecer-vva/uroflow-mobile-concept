@@ -128,12 +128,62 @@ def test_validate_capture_payload_allows_optional_analysis_block() -> None:
             "roi_valid_ratio": 0.94,
             "low_confidence_ratio": 0.08,
         },
+        "runtime_timeline": {
+            "clock_source": "elapsed_wall_clock_ms",
+            "sample_count": 3,
+            "duration_s": 1.0,
+            "median_sample_step_s": 0.5,
+            "max_sample_gap_s": 0.5,
+            "max_sample_gap_ratio": 1.0,
+            "monotonic": True,
+            "gap_warning": False,
+        },
     }
 
     report = validate_capture_payload(payload)
 
     assert report.valid is True
     assert report.errors == []
+
+
+def test_validate_capture_payload_rejects_invalid_runtime_timeline() -> None:
+    payload = _valid_payload()
+    payload["analysis"] = {
+        "runtime_timeline": {
+            "clock_source": "device_wall_clock",
+            "sample_count": 99,
+            "duration_s": -1,
+            "median_sample_step_s": "0.5",
+            "max_sample_gap_s": -0.1,
+            "max_sample_gap_ratio": None,
+            "monotonic": "yes",
+            "gap_warning": "no",
+        },
+    }
+
+    report = validate_capture_payload(payload)
+
+    assert report.valid is False
+    assert (
+        "analysis.runtime_timeline.clock_source must be 'elapsed_wall_clock_ms'"
+        in report.errors
+    )
+    assert "analysis.runtime_timeline.sample_count must match samples length" in report.errors
+    assert (
+        "analysis.runtime_timeline.duration_s must be a non-negative finite number"
+        in report.errors
+    )
+    assert (
+        "analysis.runtime_timeline.median_sample_step_s must be null "
+        "or a non-negative finite number"
+        in report.errors
+    )
+    assert (
+        "analysis.runtime_timeline.max_sample_gap_s must be null or a non-negative finite number"
+        in report.errors
+    )
+    assert "analysis.runtime_timeline.monotonic must be boolean" in report.errors
+    assert "analysis.runtime_timeline.gap_warning must be boolean" in report.errors
 
 
 def test_validate_capture_payload_allows_derivatives_only_feature_manifest() -> None:

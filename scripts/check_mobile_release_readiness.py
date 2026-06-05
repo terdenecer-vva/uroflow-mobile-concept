@@ -1209,6 +1209,29 @@ def build_readiness_report(
     )
     _check(
         checks,
+        "runtime_timeline_analysis_sources",
+        "runtime_timeline" in capture_contract_source
+        and "deriveRuntimeTimeline" in capture_contract_source
+        and "elapsed_wall_clock_ms" in capture_contract_source
+        and "max_sample_gap_ratio" in capture_contract_source
+        and "runtime_timeline" in backend_capture_contract_source
+        and "analysis.runtime_timeline.sample_count must match samples length"
+        in backend_capture_contract_source,
+        (
+            f"mobile_capture_contract={capture_contract_source_path}, "
+            f"backend_capture_contract={backend_capture_contract_path}"
+        ),
+    )
+    _check(
+        checks,
+        "runtime_timeline_analysis_unit_tests_present",
+        "adds runtime timeline analysis" in capture_tests_source
+        and "rejects_invalid_runtime_timeline" in backend_capture_tests_source
+        and "elapsed_wall_clock_ms" in backend_capture_tests_source,
+        f"paths={[str(capture_tests_path), str(backend_capture_tests_path)]}",
+    )
+    _check(
+        checks,
         "pending_sync_queue_unit_tests_present",
         pending_sync_queue_tests_path.is_file(),
         f"path={pending_sync_queue_tests_path}",

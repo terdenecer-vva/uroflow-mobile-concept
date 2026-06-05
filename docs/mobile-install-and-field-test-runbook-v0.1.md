@@ -111,6 +111,8 @@ Per subject/attempt:
    - `quality score/status`
    - `roi_valid_ratio` and `low_confidence_ratio`
    - `Runtime Q(t) Preview`
+   - after export, `capture_payload.analysis.runtime_timeline.gap_warning=false`
+     or an operator note explaining the timing interruption
 6. Enter reference metrics (`Qmax/Qavg/Vvoid` and optional time metrics).
 7. Submit paired measurement.
 8. If network failed, ensure queue item exists and run `Sync Queue` later.
@@ -208,6 +210,7 @@ GitHub Actions automation:
 - Flag run for review if:
   - `roi_valid_ratio < 0.80`
   - `low_confidence_ratio > 0.35`
+  - `analysis.runtime_timeline.gap_warning=true`
   - capture package missing in joined export.
 
 ## 8. Security And Privacy Minimum

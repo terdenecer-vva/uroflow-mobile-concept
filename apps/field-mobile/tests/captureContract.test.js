@@ -81,7 +81,16 @@ test("buildCaptureContractPayloadFromSamples creates fallback samples for empty 
     payload.samples.map((sample) => sample.t_s),
     [0, 0.5],
   );
-  assert.equal(payload.analysis, undefined);
+  assert.deepEqual(payload.analysis.runtime_timeline, {
+    clock_source: "elapsed_wall_clock_ms",
+    sample_count: 2,
+    duration_s: 0.5,
+    median_sample_step_s: 0.5,
+    max_sample_gap_s: 0.5,
+    max_sample_gap_ratio: 1,
+    monotonic: true,
+    gap_warning: false,
+  });
   assertDerivativesOnlyFeatureManifest(payload, "runtime-audio-imu");
 });
 
@@ -247,6 +256,75 @@ test("buildCaptureContractPayloadFromSamples sanitizes runtime analysis", () => 
   );
   assert.equal(
     payload.feature_manifest.feature_keys.includes("runtime_quality.high_motion_ratio"),
+    true,
+  );
+});
+
+test("buildCaptureContractPayloadFromSamples adds runtime timeline analysis", () => {
+  const payload = capture.buildCaptureContractPayloadFromSamples({
+    sessionId: "SESSION-TIMELINE",
+    syncId: "SYNC-TIMELINE",
+    startedAtIso: "2026-06-04T01:02:03Z",
+    captureMode: "water_impact",
+    deviceModel: "Pixel",
+    iosVersion: "android-16",
+    appVersion: "0.1.0",
+    samples: [
+      {
+        t_s: 0,
+        depth_level_mm: 0,
+        rgb_level_mm: 0,
+        depth_confidence: 0.9,
+        audio_rms_dbfs: -45,
+        motion_norm: 0.02,
+        roi_valid: true,
+      },
+      {
+        t_s: 0.5,
+        depth_level_mm: 0.2,
+        rgb_level_mm: 0.19,
+        depth_confidence: 0.8,
+        audio_rms_dbfs: -44,
+        motion_norm: 0.03,
+        roi_valid: true,
+      },
+      {
+        t_s: 0.99,
+        depth_level_mm: 0.3,
+        rgb_level_mm: 0.28,
+        depth_confidence: 0.82,
+        audio_rms_dbfs: -42,
+        motion_norm: 0.04,
+        roi_valid: true,
+      },
+      {
+        t_s: 3.5,
+        depth_level_mm: 0.8,
+        rgb_level_mm: 0.76,
+        depth_confidence: 0.78,
+        audio_rms_dbfs: -41,
+        motion_norm: 0.05,
+        roi_valid: true,
+      },
+    ],
+  });
+
+  assert.deepEqual(payload.analysis.runtime_timeline, {
+    clock_source: "elapsed_wall_clock_ms",
+    sample_count: 4,
+    duration_s: 3.5,
+    median_sample_step_s: 0.5,
+    max_sample_gap_s: 2.51,
+    max_sample_gap_ratio: 5.02,
+    monotonic: true,
+    gap_warning: true,
+  });
+  assert.equal(
+    payload.feature_manifest.feature_keys.includes("runtime_timeline.max_sample_gap_s"),
+    true,
+  );
+  assert.equal(
+    payload.feature_manifest.feature_keys.includes("runtime_timeline.clock_source"),
     true,
   );
 });
