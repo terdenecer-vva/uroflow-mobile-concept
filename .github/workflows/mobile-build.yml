@@ -176,6 +176,7 @@ jobs:
           python3 ../../scripts/build_mobile_release_manifest.py \
             --app-json app.json \
             --output /tmp/mobile-release-manifest.json \
+            --readiness-json /tmp/mobile-release-readiness.json \
             --profile "$profile" \
             --channel "$channel" \
             --model-id fusion-v0.1 \

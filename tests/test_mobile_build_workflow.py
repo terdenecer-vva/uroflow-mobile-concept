@@ -40,6 +40,14 @@ def test_mobile_build_workflow_uploads_readiness_before_local_failure() -> None:
     assert "mobile-release-readiness artifact" in steps[fail_index]["run"]
 
 
+def test_mobile_build_workflow_embeds_readiness_summary_in_release_manifest() -> None:
+    payload = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
+    steps = payload["jobs"]["preflight"]["steps"]
+    manifest_step = next(step for step in steps if step.get("name") == "Build release manifest")
+
+    assert "--readiness-json /tmp/mobile-release-readiness.json" in manifest_step["run"]
+
+
 def test_mobile_build_workflow_summary_reports_invalid_external_items() -> None:
     payload = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
     steps = payload["jobs"]["preflight"]["steps"]

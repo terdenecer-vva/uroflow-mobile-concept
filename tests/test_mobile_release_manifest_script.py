@@ -30,6 +30,7 @@ def _write_png(path: Path, width: int, height: int) -> None:
 def test_build_mobile_release_manifest_script(tmp_path: Path) -> None:
     app_json = tmp_path / "app.json"
     output = tmp_path / "manifest.json"
+    readiness_json = tmp_path / "readiness.json"
     assets = tmp_path / "assets"
     metadata_path = tmp_path / "src" / "config" / "releaseMetadata.ts"
     app_config_path = tmp_path / "src" / "config" / "appConfig.ts"
@@ -137,6 +138,65 @@ def test_build_mobile_release_manifest_script(tmp_path: Path) -> None:
         ),
         encoding="utf-8",
     )
+    readiness_json.write_text(
+        json.dumps(
+            {
+                "status": "ready_except_external_credentials",
+                "local_checks_status": "pass",
+                "external_readiness_status": "blocked",
+                "authenticated_eas_status": "blocked",
+                "authenticated_eas_blockers": ["expo_token", "eas_project_identity"],
+                "clinical_hub_live_api_status": "missing",
+                "local_checks": [
+                    {
+                        "id": "runtime_config_privacy_by_default",
+                        "status": "pass",
+                        "severity": "error",
+                        "evidence": "secret-free evidence",
+                    },
+                    {
+                        "id": "preview_android_apk",
+                        "status": "pass",
+                        "severity": "warning",
+                        "evidence": "warning evidence",
+                    },
+                ],
+                "external_items": [
+                    {
+                        "id": "expo_token",
+                        "status": "missing",
+                        "evidence": "EXPO_TOKEN environment variable is not set",
+                    },
+                    {
+                        "id": "eas_project_identity",
+                        "status": "missing",
+                        "evidence": "EAS_PROJECT_ID is not set",
+                    },
+                    {
+                        "id": "clinical_hub_live_api",
+                        "status": "missing",
+                        "evidence": "CLINICAL_HUB_URL and/or CLINICAL_HUB_API_KEY are not set",
+                    },
+                ],
+                "manual_external_items": [
+                    {
+                        "id": "apple_developer_account",
+                        "status": "manual_required",
+                    },
+                    {
+                        "id": "google_play_account",
+                        "status": "manual_required",
+                    },
+                ],
+                "next_actions": [
+                    {"id": "configure_expo_token"},
+                    {"id": "configure_eas_project_identity"},
+                    {"id": "configure_clinical_hub_live_api"},
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
 
     script_path = Path("scripts/build_mobile_release_manifest.py")
     subprocess.run(
@@ -147,6 +207,8 @@ def test_build_mobile_release_manifest_script(tmp_path: Path) -> None:
             str(app_json),
             "--output",
             str(output),
+            "--readiness-json",
+            str(readiness_json),
             "--profile",
             "preview",
             "--channel",
@@ -218,5 +280,34 @@ def test_build_mobile_release_manifest_script(tmp_path: Path) -> None:
     }
     assert "audio_rms_dbfs" in feature_manifest["feature_keys"]
     assert "runtime_quality.high_motion_ratio" in feature_manifest["feature_keys"]
+    assert payload["readiness"] == {
+        "source_path": str(readiness_json),
+        "status": "ready_except_external_credentials",
+        "local_checks_status": "pass",
+        "external_readiness_status": "blocked",
+        "authenticated_eas_status": "blocked",
+        "authenticated_eas_blockers": ["expo_token", "eas_project_identity"],
+        "clinical_hub_live_api_status": "missing",
+        "local_check_counts": {"pass": 2},
+        "failed_local_checks": [],
+        "warning_local_checks": ["preview_android_apk"],
+        "external_items": [
+            {"id": "expo_token", "status": "missing"},
+            {"id": "eas_project_identity", "status": "missing"},
+            {"id": "clinical_hub_live_api", "status": "missing"},
+        ],
+        "manual_external_items": [
+            {"id": "apple_developer_account", "status": "manual_required"},
+            {"id": "google_play_account", "status": "manual_required"},
+        ],
+        "next_action_ids": [
+            "configure_expo_token",
+            "configure_eas_project_identity",
+            "configure_clinical_hub_live_api",
+        ],
+    }
+    serialized_manifest = json.dumps(payload)
+    assert "secret-free evidence" not in serialized_manifest
+    assert "EXPO_TOKEN environment variable is not set" not in serialized_manifest
     assert payload["algorithm"]["model_id"] == "fusion-v0.1"
     assert payload["algorithm"]["capture_schema_version"] == "ios_capture_v1"
