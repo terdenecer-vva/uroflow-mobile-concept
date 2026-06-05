@@ -143,6 +143,35 @@ def test_analyze_capture_session_marks_repeat_for_motion_and_roi_issues() -> Non
     assert any("high_motion_ratio_above_threshold" in reason for reason in analysis.quality.reasons)
 
 
+def test_analyze_capture_session_marks_repeat_for_runtime_timeline_gap() -> None:
+    payload = _base_payload()
+    payload["analysis"] = {
+        "runtime_timeline": {
+            "clock_source": "elapsed_wall_clock_ms",
+            "sample_count": 9,
+            "duration_s": 8.0,
+            "median_sample_step_s": 1.0,
+            "max_sample_gap_s": 3.0,
+            "max_sample_gap_ratio": 3.0,
+            "monotonic": True,
+            "gap_warning": True,
+        },
+    }
+
+    analysis = analyze_capture_session(
+        payload,
+        config=CaptureSessionConfig(
+            ml_per_mm_override=10.0,
+            max_level_noise_mm=4.0,
+            event_min_audio_delta_db=8.0,
+        ),
+    )
+
+    assert analysis.quality.status == "repeat"
+    assert analysis.quality.runtime_timeline_gap_warning is True
+    assert "runtime_timeline_gap_warning" in analysis.quality.reasons
+
+
 def test_analyze_capture_session_raises_for_invalid_payload() -> None:
     payload = _base_payload()
     samples = payload["samples"]

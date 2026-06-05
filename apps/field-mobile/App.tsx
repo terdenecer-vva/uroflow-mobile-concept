@@ -151,6 +151,7 @@ export default function App() {
   const [captureRoiValidRatio, setCaptureRoiValidRatio] = useState(0);
   const [captureLowConfidenceRatio, setCaptureLowConfidenceRatio] = useState(0);
   const [captureHighMotionRatio, setCaptureHighMotionRatio] = useState(0);
+  const [captureTimingGapWarning, setCaptureTimingGapWarning] = useState(false);
   const [runtimeFlowSeries, setRuntimeFlowSeries] = useState<RuntimeFlowPoint[]>([]);
   const [cameraPreviewReady, setCameraPreviewReady] = useState(false);
   const [roiLocked, setRoiLocked] = useState(false);
@@ -482,6 +483,7 @@ export default function App() {
       setCaptureRoiValidRatio(stopResult.quality.roiValidRatio);
       setCaptureLowConfidenceRatio(stopResult.quality.lowConfidenceRatio);
       setCaptureHighMotionRatio(stopResult.quality.highMotionRatio);
+      setCaptureTimingGapWarning(stopResult.quality.timingGapWarning);
       setRuntimeFlowSeries(stopResult.flowSeries);
       setDeviceModel(stopResult.deviceModel);
       if (!manualAppMetricsOverride) {
@@ -513,12 +515,13 @@ export default function App() {
             roi_valid_ratio: stopResult.quality.roiValidRatio,
             low_confidence_ratio: stopResult.quality.lowConfidenceRatio,
             high_motion_ratio: stopResult.quality.highMotionRatio,
+            timing_gap_warning: stopResult.quality.timingGapWarning,
           },
         },
       });
       setRuntimeCaptureContractPayload(contractPayload as unknown as Record<string, unknown>);
       setCaptureStatus(
-        `Capture stopped. samples=${stopResult.sampleCount}, quality=${stopResult.quality.qualityStatus}, score=${stopResult.quality.qualityScore.toFixed(1)}, high_motion_ratio=${stopResult.quality.highMotionRatio.toFixed(3)}`,
+        `Capture stopped. samples=${stopResult.sampleCount}, quality=${stopResult.quality.qualityStatus}, score=${stopResult.quality.qualityScore.toFixed(1)}, high_motion_ratio=${stopResult.quality.highMotionRatio.toFixed(3)}, timing_gap_warning=${stopResult.quality.timingGapWarning ? "yes" : "no"}`,
       );
       if (stopResult.derived.eventStartTs != null && stopResult.derived.eventEndTs != null) {
         const runtimeNote =
@@ -867,6 +870,7 @@ export default function App() {
           captureHighMotionRatio={captureHighMotionRatio}
           captureLowConfidenceRatio={captureLowConfidenceRatio}
           captureRoiValidRatio={captureRoiValidRatio}
+          captureTimingGapWarning={captureTimingGapWarning}
           captureRunning={captureRunning}
           captureSampleCount={captureSampleCount}
           captureStatus={captureStatus}

@@ -134,6 +134,14 @@ def _validate_analysis(
         return
 
     runtime_timeline = analysis.get("runtime_timeline")
+    runtime_quality = analysis.get("runtime_quality")
+    if (
+        isinstance(runtime_quality, dict)
+        and "timing_gap_warning" in runtime_quality
+        and not isinstance(runtime_quality.get("timing_gap_warning"), bool)
+    ):
+        errors.append("analysis.runtime_quality.timing_gap_warning must be boolean")
+
     if runtime_timeline is None:
         return
     if not isinstance(runtime_timeline, dict):

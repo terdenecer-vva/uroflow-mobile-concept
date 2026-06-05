@@ -192,6 +192,7 @@ def _capture_contract_evidence(
             "roi_valid",
             "runtime_flow_series.flow_ml_s",
             "runtime_quality.high_motion_ratio",
+            "runtime_quality.timing_gap_warning",
             "runtime_timeline.clock_source",
             "runtime_timeline.duration_s",
             "runtime_timeline.gap_warning",
@@ -210,6 +211,12 @@ def _capture_contract_evidence(
         and "runtime_quality.high_motion_ratio" not in feature_keys
     ):
         feature_keys.append("runtime_quality.high_motion_ratio")
+    if (
+        "runtime_quality" in source
+        and "timing_gap_warning" in source
+        and "runtime_quality.timing_gap_warning" not in feature_keys
+    ):
+        feature_keys.append("runtime_quality.timing_gap_warning")
     if "runtime_timeline" in source:
         for timeline_key in (
             "clock_source",

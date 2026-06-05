@@ -10,7 +10,7 @@ import {
 import { Accelerometer } from "expo-sensors";
 import { Camera } from "expo-camera";
 import * as Device from "expo-device";
-import type { CaptureContractSample } from "./buildCaptureContract";
+import { deriveRuntimeTimeline, type CaptureContractSample } from "./buildCaptureContract";
 import {
   calculateAverageMotionNorm,
   clamp,
@@ -209,6 +209,7 @@ export class RuntimeCaptureSession {
     }
 
     const avgMotionNorm = calculateAverageMotionNorm(this.samples);
+    const runtimeTimeline = deriveRuntimeTimeline(this.samples);
     const derived = deriveRuntimeCaptureMetrics({
       samples: this.samples,
       flowSeries: this.flowSeries,
@@ -217,6 +218,7 @@ export class RuntimeCaptureSession {
     const quality = scoreRuntimeCaptureQuality({
       samples: this.samples,
       averageMotionNorm: avgMotionNorm,
+      timingGapWarning: runtimeTimeline.gap_warning,
     });
 
     return {

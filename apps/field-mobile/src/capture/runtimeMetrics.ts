@@ -22,6 +22,7 @@ export type RuntimeCaptureQuality = {
   roiValidRatio: number;
   lowConfidenceRatio: number;
   highMotionRatio: number;
+  timingGapWarning: boolean;
 };
 
 export type RuntimeFlowPoint = {
@@ -226,6 +227,7 @@ export function deriveRuntimeCaptureMetrics(input: {
 export function scoreRuntimeCaptureQuality(input: {
   samples: CaptureContractSample[];
   averageMotionNorm: number;
+  timingGapWarning?: boolean;
 }): RuntimeCaptureQuality {
   const sampleCount = Math.max(1, input.samples.length);
   const roiValidCount = input.samples.filter((sample) => sample.roi_valid).length;
@@ -243,6 +245,9 @@ export function scoreRuntimeCaptureQuality(input: {
   score -= clamp((1 - roiValidRatio) * 70, 0, 50);
   score -= clamp(lowConfidenceRatio * 40, 0, 25);
   score -= clamp(highMotionRatio * 50, 0, 30);
+  if (input.timingGapWarning === true) {
+    score -= 15;
+  }
   score = clamp(score, 0, 100);
 
   let qualityStatus: RuntimeCaptureQuality["qualityStatus"] = "valid";
@@ -256,6 +261,9 @@ export function scoreRuntimeCaptureQuality(input: {
   ) {
     qualityStatus = "repeat";
   }
+  if (input.timingGapWarning === true && qualityStatus === "valid") {
+    qualityStatus = "repeat";
+  }
 
   return {
     qualityScore: round4(score),
@@ -263,5 +271,6 @@ export function scoreRuntimeCaptureQuality(input: {
     roiValidRatio: round4(roiValidRatio),
     lowConfidenceRatio: round4(lowConfidenceRatio),
     highMotionRatio: round4(highMotionRatio),
+    timingGapWarning: input.timingGapWarning === true,
   };
 }

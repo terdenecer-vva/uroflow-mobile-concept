@@ -46,6 +46,7 @@ class CaptureSessionConfig:
     max_low_depth_confidence_ratio: float = 0.25
     high_motion_threshold: float = 0.2
     max_high_motion_ratio: float = 0.15
+    runtime_timeline_gap_penalty: float = 15.0
     audio_clip_dbfs: float = -3.0
     max_audio_clipping_ratio: float = 0.05
     min_representative_volume_ml: float = 150.0
@@ -65,6 +66,7 @@ class CaptureSessionQuality:
     roi_valid_ratio: float
     low_depth_confidence_ratio: float
     high_motion_ratio: float
+    runtime_timeline_gap_warning: bool
     motion_coverage_ratio: float
     audio_clipping_ratio: float
     audio_coverage_ratio: float
@@ -164,6 +166,16 @@ def _resolve_min_depth_confidence(payload: dict[str, Any], default_value: float)
     return candidate
 
 
+def _runtime_timeline_gap_warning(payload: dict[str, Any]) -> bool:
+    analysis = payload.get("analysis")
+    if not isinstance(analysis, dict):
+        return False
+    runtime_timeline = analysis.get("runtime_timeline")
+    if not isinstance(runtime_timeline, dict):
+        return False
+    return runtime_timeline.get("gap_warning") is True
+
+
 def _slice_fusion_result(
     fusion_result: FusionEstimationResult,
     indices: list[int],
@@ -210,6 +222,7 @@ def _compute_quality(
     event_detection: EventDetectionResult,
     validation: CaptureValidationReport,
     samples: list[dict[str, Any]],
+    runtime_timeline_gap_warning: bool,
     config: CaptureSessionConfig,
 ) -> CaptureSessionQuality:
     if config.reject_quality_score >= config.valid_quality_score:
@@ -257,6 +270,10 @@ def _compute_quality(
             "high_motion_ratio_above_threshold"
             f"({high_motion_ratio:.3f} > {config.max_high_motion_ratio:.3f})"
         )
+
+    if runtime_timeline_gap_warning:
+        score -= max(0.0, config.runtime_timeline_gap_penalty)
+        reasons.append("runtime_timeline_gap_warning")
 
     if audio_clipping_ratio > config.max_audio_clipping_ratio:
         excess = (audio_clipping_ratio - config.max_audio_clipping_ratio) / max(
@@ -321,6 +338,8 @@ def _compute_quality(
 
     if not event_detection.detected and status == "valid":
         status = "repeat"
+    if runtime_timeline_gap_warning and status == "valid":
+        status = "repeat"
 
     if not reasons:
         reasons.append("quality_within_limits")
@@ -332,6 +351,7 @@ def _compute_quality(
         roi_valid_ratio=validation.roi_valid_ratio,
         low_depth_confidence_ratio=validation.low_depth_confidence_ratio,
         high_motion_ratio=high_motion_ratio,
+        runtime_timeline_gap_warning=runtime_timeline_gap_warning,
         motion_coverage_ratio=motion_coverage_ratio,
         audio_clipping_ratio=audio_clipping_ratio,
         audio_coverage_ratio=audio_coverage_ratio,
@@ -390,6 +410,7 @@ def analyze_capture_session(
     samples = payload.get("samples", [])
     if not isinstance(samples, list):
         raise ValueError("samples must be an array")
+    runtime_timeline_gap_warning = _runtime_timeline_gap_warning(payload)
 
     roi_valid = [bool(sample["roi_valid"]) for sample in samples]
     audio_rms_dbfs = _extract_audio_series(samples)
@@ -434,6 +455,7 @@ def analyze_capture_session(
         event_detection=event_detection,
         validation=validation,
         samples=samples,
+        runtime_timeline_gap_warning=runtime_timeline_gap_warning,
         config=cfg,
     )
 

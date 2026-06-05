@@ -146,6 +146,8 @@ def test_mobile_release_readiness_reports_external_blockers(tmp_path: Path) -> N
         "runtime_motion_quality_gate_unit_tests_present",
         "runtime_timeline_analysis_sources",
         "runtime_timeline_analysis_unit_tests_present",
+        "runtime_timeline_quality_gate_sources",
+        "runtime_timeline_quality_gate_unit_tests_present",
         "release_metadata_capture_schema_version",
         "release_metadata_model_id",
         "release_metadata_module",

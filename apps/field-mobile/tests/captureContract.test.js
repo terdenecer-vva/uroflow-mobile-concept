@@ -228,6 +228,7 @@ test("buildCaptureContractPayloadFromSamples sanitizes runtime analysis", () => 
         roi_valid_ratio: 2,
         low_confidence_ratio: -1,
         high_motion_ratio: 1.5,
+        timing_gap_warning: true,
       },
     },
   });
@@ -248,6 +249,7 @@ test("buildCaptureContractPayloadFromSamples sanitizes runtime analysis", () => 
     roi_valid_ratio: 1,
     low_confidence_ratio: 0,
     high_motion_ratio: 1,
+    timing_gap_warning: true,
   });
   assertDerivativesOnlyFeatureManifest(payload, "runtime-audio-imu-camera-proxy");
   assert.equal(
@@ -256,6 +258,10 @@ test("buildCaptureContractPayloadFromSamples sanitizes runtime analysis", () => 
   );
   assert.equal(
     payload.feature_manifest.feature_keys.includes("runtime_quality.high_motion_ratio"),
+    true,
+  );
+  assert.equal(
+    payload.feature_manifest.feature_keys.includes("runtime_quality.timing_gap_warning"),
     true,
   );
 });

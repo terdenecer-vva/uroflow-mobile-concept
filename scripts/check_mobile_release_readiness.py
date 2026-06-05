@@ -814,6 +814,8 @@ def build_readiness_report(
     repo_root = package_json.resolve().parent.parent.parent
     backend_capture_contract_path = repo_root / "src" / "uroflow_mobile" / "capture_contract.py"
     backend_capture_tests_path = repo_root / "tests" / "test_capture_contract.py"
+    backend_session_path = repo_root / "src" / "uroflow_mobile" / "session.py"
+    backend_session_tests_path = repo_root / "tests" / "test_session.py"
     mobile_device_smoke_template_path = (
         repo_root / "docs" / "mobile-device-smoke-log-template-v0.1.json"
     )
@@ -882,6 +884,8 @@ def build_readiness_report(
     capture_tests_source = _read_file_text(capture_tests_path)
     backend_capture_contract_source = _read_file_text(backend_capture_contract_path)
     backend_capture_tests_source = _read_file_text(backend_capture_tests_path)
+    backend_session_source = _read_file_text(backend_session_path)
+    backend_session_tests_source = _read_file_text(backend_session_tests_path)
     runtime_metrics_source = _read_file_text(runtime_metrics_source_path)
     runtime_metrics_tests_source = _read_file_text(runtime_metrics_tests_path)
     mobile_device_smoke_template_source = _read_file_text(mobile_device_smoke_template_path)
@@ -1229,6 +1233,36 @@ def build_readiness_report(
         and "rejects_invalid_runtime_timeline" in backend_capture_tests_source
         and "elapsed_wall_clock_ms" in backend_capture_tests_source,
         f"paths={[str(capture_tests_path), str(backend_capture_tests_path)]}",
+    )
+    _check(
+        checks,
+        "runtime_timeline_quality_gate_sources",
+        "timingGapWarning" in runtime_metrics_source
+        and "timing_gap_warning" in capture_contract_source
+        and "timing_gap_warning" in app_ts_source
+        and "runtime_timeline_gap_warning" in backend_session_source
+        and "analysis.runtime_quality.timing_gap_warning must be boolean"
+        in backend_capture_contract_source,
+        (
+            f"runtime_metrics={runtime_metrics_source_path}, "
+            f"capture_contract={capture_contract_source_path}, "
+            f"backend_session={backend_session_path}"
+        ),
+    )
+    runtime_timeline_quality_test_paths = [
+        str(runtime_metrics_tests_path),
+        str(capture_tests_path),
+        str(backend_capture_tests_path),
+        str(backend_session_tests_path),
+    ]
+    _check(
+        checks,
+        "runtime_timeline_quality_gate_unit_tests_present",
+        "repeats timing-gap captures" in runtime_metrics_tests_source
+        and "runtime_quality.timing_gap_warning" in capture_tests_source
+        and "rejects_invalid_runtime_quality_timing_gap" in backend_capture_tests_source
+        and "marks_repeat_for_runtime_timeline_gap" in backend_session_tests_source,
+        f"paths={runtime_timeline_quality_test_paths}",
     )
     _check(
         checks,

@@ -96,7 +96,8 @@ Notes:
 Notes:
 - Runtime capture currently logs sampled audio metering + motion, and derives proxy level traces.
 - Camera preview + ROI lock state are included in runtime quality gating.
-- Runtime quality scoring includes `roi_valid_ratio`, `low_confidence_ratio`, and `high_motion_ratio`.
+- Runtime quality scoring includes `roi_valid_ratio`, `low_confidence_ratio`,
+  `high_motion_ratio`, and `timing_gap_warning`; timing gaps force at least `repeat`.
 - Runtime contract analysis includes `runtime_timeline` so Clinical Hub evidence can flag
   timing gaps caused by foreground stalls or device load.
 - Physical-device smoke logs must copy `capture_payload.analysis.runtime_timeline` and
