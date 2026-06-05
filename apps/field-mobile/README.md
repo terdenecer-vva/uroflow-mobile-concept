@@ -13,7 +13,8 @@ Cross-platform mobile client (Expo React Native) for collecting paired measureme
 - Coverage ratio is color-coded against target 90% (`>=90%` green, `<90%` red)
 - Offline pending queue with manual sync (`Sync Queue`)
 - Offline pending queue stores both endpoint jobs: `paired-measurements` and `capture-packages`
-- Retry policy: non-retryable API errors are not re-queued
+- Retry policy: network/transient and Clinical Hub auth/permission failures stay queued for retry
+  after credential repair; validation/conflict errors are not re-queued
 - Pending items store request header context (`x-api-key`, `x-site-id`, `x-actor-role`, `x-operator-id`)
 - Pending retries reuse a stable `x-request-id` per endpoint job to reduce duplicate risk after timeout/retry
 - Sync reuses stored header context per item (prevents wrong-site replay after settings change)

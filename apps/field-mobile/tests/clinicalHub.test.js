@@ -136,6 +136,36 @@ test("attemptSubmitEndpoint marks validation responses non-retryable", async () 
   }
 });
 
+test("attemptSubmitEndpoint keeps auth failures retryable for queued clinical payloads", async () => {
+  const originalFetch = global.fetch;
+  try {
+    global.fetch = async () => new Response("bad api key", { status: 401 });
+
+    const result = await clinicalHub.attemptSubmitEndpoint({
+      apiBaseUrl: "https://clinical.example.test",
+      requestTimeoutMs: "15000",
+      endpoint: "paired_measurements",
+      endpointPayload: buildPayload(),
+      headerContext: {
+        api_key: "expired-key",
+        actor_role: "operator",
+        site_id: "SITE-001",
+        operator_id: "OP-001",
+        request_id: "REQ-AUTH",
+      },
+    });
+
+    assert.deepEqual(result, {
+      ok: false,
+      statusCode: 401,
+      body: "bad api key",
+      retryable: true,
+    });
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
 test("attemptSubmitEndpoint keeps network failures retryable", async () => {
   const originalFetch = global.fetch;
   try {

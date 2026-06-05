@@ -22,6 +22,8 @@ Implemented now:
 - Mobile API response, submit exception outcome, and runtime exception redaction gates for raw body, PHI-like subject/site/operator IDs, and secret-like error details.
 - Mobile release readiness gate for single-region data residency policy (`us`, no cross-region sync, region-matched Clinical Hub required).
 - Pending queue auto-sync on connectivity restore via NetInfo, with interval/AppState fallback.
+- Pending sync retry policy keeps network/transient and Clinical Hub auth/permission failures
+  queued for credential repair while dropping validation/conflict errors.
 - Deterministic mobile sync smoke covering queued paired+capture replay after network restore.
 - Mobile Build release notes artifact and manifest traceability for operator-facing build handoff.
 - Physical-device smoke evidence JSON template and validator for iOS+Android release handoff.
@@ -95,8 +97,8 @@ DoD:
 - Measurement marked `repeat/reject` when capture quality fails thresholds.
 
 ## B2: Sync and resilience
-1. Extend offline queue to support both `paired-measurements` and `capture-packages` as independent jobs.
-2. Add idempotent retry policies per endpoint and per status code.
+1. Extend offline queue to support both `paired-measurements` and `capture-packages` as independent jobs. Status: implemented.
+2. Add idempotent retry policies per endpoint and per status code. Status: implemented for network/transient retry, Clinical Hub auth/permission credential-repair retry, and validation/conflict non-retryable handling.
 3. Add background sync trigger on connectivity restore. Status: implemented for foreground app connectivity restore via NetInfo, plus interval and AppState fallback; OS background task scheduling remains out of scope until native/background execution policy is chosen.
 
 DoD:

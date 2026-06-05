@@ -342,6 +342,34 @@ test("buildPendingSyncAttempt keeps retryable failures queued with attempt metad
   assert.equal(attempt.attemptedItem.last_error, "server_or_client_response");
 });
 
+test("buildPendingSyncAttempt keeps auth failures queued for credential repair", () => {
+  const attempt = pending.buildPendingSyncAttempt({
+    item: buildPendingSubmission({
+      endpoint: "capture_packages",
+      payload: buildCapturePackagePayload("SYNC-AUTH"),
+    }),
+    headerContext: {
+      api_key: "fixed-later",
+      actor_role: "operator",
+      site_id: "SITE-CURRENT",
+      operator_id: "OP-CURRENT",
+      request_id: "REQ-AUTH",
+    },
+    result: {
+      ok: false,
+      statusCode: 403,
+      body: "Forbidden: site scope mismatch for operator_id=OP-001",
+      retryable: true,
+    },
+    attemptedAtIso: "2026-06-04T01:02:03.000Z",
+  });
+
+  assert.equal(attempt.outcome, "retryable");
+  assert.equal(attempt.attemptedItem.attempt_count, 1);
+  assert.equal(attempt.attemptedItem.last_status_code, 403);
+  assert.equal(attempt.attemptedItem.last_error, "auth_or_permission");
+});
+
 test("buildPendingSyncAttempt drops non-retryable failed paired submissions", () => {
   const attempt = pending.buildPendingSyncAttempt({
     item: buildPendingSubmission(),

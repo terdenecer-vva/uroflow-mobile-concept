@@ -68,6 +68,21 @@ export function classifyRetryable(statusCode: number | null): boolean {
   return statusCode === 408 || statusCode === 425 || statusCode === 429;
 }
 
+export function classifyEndpointRetryable(
+  endpoint: PendingEndpoint,
+  statusCode: number | null,
+): boolean {
+  if (classifyRetryable(statusCode)) {
+    return true;
+  }
+
+  if (endpoint === "paired_measurements" || endpoint === "capture_packages") {
+    return statusCode === 401 || statusCode === 403;
+  }
+
+  return false;
+}
+
 const SAFE_PENDING_ERROR_CATEGORIES = new Set([
   "network_or_timeout",
   "auth_or_permission",

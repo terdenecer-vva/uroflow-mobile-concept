@@ -135,6 +135,8 @@ def test_mobile_release_readiness_reports_external_blockers(tmp_path: Path) -> N
         "mobile_store_rollout_handoff_validator_sources",
         "mobile_store_rollout_handoff_validator_unit_tests_present",
         "pending_submission_storage_unit_tests_present",
+        "pending_sync_auth_retry_policy_sources",
+        "pending_sync_auth_retry_policy_unit_tests_present",
         "pending_sync_connectivity_restore_sources",
         "pending_sync_connectivity_restore_unit_tests_present",
         "pending_sync_queue_unit_tests_present",
