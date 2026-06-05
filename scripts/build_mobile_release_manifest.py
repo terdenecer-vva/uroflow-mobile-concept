@@ -48,7 +48,7 @@ def _get_plugin_options(plugins: list[Any], plugin_name: str) -> dict[str, Any]:
 
 
 def _read_ts_string_constant(source: str, name: str) -> str | None:
-    pattern = re.compile(rf"export\s+const\s+{re.escape(name)}\s*=\s*[\"']([^\"']+)[\"']")
+    pattern = re.compile(rf"export\s+const\s+{re.escape(name)}\s*=\s*[\"']([^\"']*)[\"']")
     match = pattern.search(source)
     return match.group(1) if match else None
 
@@ -70,6 +70,17 @@ def _release_metadata(app_json: Path) -> dict[str, str | None]:
         "capture_schema_version": _read_ts_string_constant(
             source, "APP_CAPTURE_SCHEMA_VERSION"
         ),
+    }
+
+
+def _app_settings_defaults(app_json: Path) -> dict[str, str | None]:
+    path = app_json.parent / "src" / "storage" / "appSettingsStorage.ts"
+    if not path.is_file():
+        return {"path": str(path), "default_api_base_url": None}
+    source = path.read_text(encoding="utf-8")
+    return {
+        "path": str(path),
+        "default_api_base_url": _read_ts_string_constant(source, "DEFAULT_API_BASE_URL"),
     }
 
 
@@ -95,6 +106,7 @@ def main() -> int:
     android = expo.get("android", {})
     splash = _get_plugin_options(plugins, "expo-splash-screen")
     release_metadata = _release_metadata(args.app_json)
+    app_settings_defaults = _app_settings_defaults(args.app_json)
     android_adaptive_icon = android.get("adaptiveIcon", {})
 
     manifest = {
@@ -135,6 +147,7 @@ def main() -> int:
             "workflow": os.environ.get("GITHUB_WORKFLOW", "local"),
         },
         "runtime_release_metadata": release_metadata,
+        "runtime_defaults": app_settings_defaults,
         "algorithm": {
             "model_id": args.model_id,
             "capture_schema_version": args.schema_version,

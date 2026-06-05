@@ -24,10 +24,24 @@ function buildPayload() {
 }
 
 test("buildBaseUrl and endpointPath normalize Clinical Hub targets", () => {
-  assert.equal(clinicalHub.buildBaseUrl("https://clinical.example.test/"), "https://clinical.example.test");
+  assert.equal(
+    clinicalHub.buildBaseUrl(" https://clinical.example.test/// "),
+    "https://clinical.example.test",
+  );
   assert.equal(clinicalHub.buildBaseUrl("https://clinical.example.test"), "https://clinical.example.test");
   assert.equal(clinicalHub.endpointPath("paired_measurements"), "/api/v1/paired-measurements");
   assert.equal(clinicalHub.endpointPath("capture_packages"), "/api/v1/capture-packages");
+});
+
+test("isConfiguredApiBaseUrl requires explicit http or https Clinical Hub URL", () => {
+  assert.equal(clinicalHub.isConfiguredApiBaseUrl(""), false);
+  assert.equal(clinicalHub.isConfiguredApiBaseUrl("clinical.example.test"), false);
+  assert.equal(clinicalHub.isConfiguredApiBaseUrl("https://clinical.example.test"), true);
+  assert.equal(clinicalHub.isConfiguredApiBaseUrl("http://192.168.1.20:8000"), true);
+  assert.equal(
+    clinicalHub.buildMissingApiBaseUrlMessage(),
+    "Configure Clinical Hub API Base URL before testing, submitting, or syncing.",
+  );
 });
 
 test("attemptSubmitEndpoint posts serialized payloads with request headers", async () => {

@@ -83,6 +83,7 @@ def test_mobile_release_readiness_reports_external_blockers(tmp_path: Path) -> N
         "audio_microphone_permission",
         "clinical_hub_api_unit_tests_present",
         "capture_package_payload_unit_tests_present",
+        "default_api_base_url_not_localhost",
         "eas_cli_version_declared",
         "eas_production_auto_increment",
         "eas_profile_channels",
@@ -232,6 +233,35 @@ def test_mobile_release_readiness_fails_release_metadata_version_mismatch(
     assert payload["local_checks_status"] == "fail"
     assert check["status"] == "fail"
     assert "release_metadata.app_version='9.9.9'" in check["evidence"]
+
+
+def test_mobile_release_readiness_fails_localhost_default_api_url(tmp_path: Path) -> None:
+    mutated_app_json = tmp_path / "app.json"
+    app_settings_path = tmp_path / "src" / "storage" / "appSettingsStorage.ts"
+    app_settings_path.parent.mkdir(parents=True)
+    app_payload = json.loads(APP_JSON.read_text(encoding="utf-8"))
+    mutated_app_json.write_text(json.dumps(app_payload), encoding="utf-8")
+    app_settings_path.write_text(
+        'export const DEFAULT_API_BASE_URL = "http://127.0.0.1:8000";\n',
+        encoding="utf-8",
+    )
+
+    payload = _run_readiness_with_paths(
+        tmp_path / "readiness.json",
+        env={"PATH": os.environ.get("PATH", "")},
+        app_json=mutated_app_json,
+        check=False,
+    )
+
+    check = next(
+        item
+        for item in payload["local_checks"]
+        if item["id"] == "default_api_base_url_not_localhost"
+    )
+    assert payload["status"] == "not_ready"
+    assert payload["local_checks_status"] == "fail"
+    assert check["status"] == "fail"
+    assert "http://127.0.0.1:8000" in check["evidence"]
 
 
 def test_mobile_release_readiness_passes_authenticated_preflight_env(tmp_path: Path) -> None:

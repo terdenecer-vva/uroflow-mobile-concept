@@ -43,7 +43,17 @@ export function ApiConnectionSection({
   return (
     <>
       <Text style={styles.sectionTitle}>API</Text>
-      <LabeledInput label="API Base URL" value={apiBaseUrl} onChangeText={onApiBaseUrlChange} />
+      <LabeledInput
+        label="API Base URL"
+        value={apiBaseUrl}
+        onChangeText={onApiBaseUrlChange}
+        placeholder="https://<clinical-hub-host>"
+      />
+      {!apiBaseUrl.trim() ? (
+        <Text style={styles.helperText}>
+          Configure the Clinical Hub URL before Test API, Submit, or Sync Queue.
+        </Text>
+      ) : null}
       <LabeledInput
         label="API Key (x-api-key)"
         value={apiKey}

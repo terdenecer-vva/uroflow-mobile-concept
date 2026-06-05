@@ -42,7 +42,7 @@ def _is_six_digit_hex_color(value: Any) -> bool:
 
 
 def _read_ts_string_constant(source: str, name: str) -> str | None:
-    pattern = re.compile(rf"export\s+const\s+{re.escape(name)}\s*=\s*[\"']([^\"']+)[\"']")
+    pattern = re.compile(rf"export\s+const\s+{re.escape(name)}\s*=\s*[\"']([^\"']*)[\"']")
     match = pattern.search(source)
     return match.group(1) if match else None
 
@@ -65,6 +65,23 @@ def _load_release_metadata(app_json: Path) -> dict[str, str | None]:
             source, "APP_CAPTURE_SCHEMA_VERSION"
         ),
     }
+
+
+def _load_app_settings_defaults(app_json: Path) -> dict[str, str | None]:
+    path = app_json.parent / "src" / "storage" / "appSettingsStorage.ts"
+    if not path.is_file():
+        return {"path": str(path), "default_api_base_url": None}
+    source = path.read_text(encoding="utf-8")
+    return {
+        "path": str(path),
+        "default_api_base_url": _read_ts_string_constant(source, "DEFAULT_API_BASE_URL"),
+    }
+
+
+def _is_localhost_url(value: str | None) -> bool:
+    if value is None:
+        return False
+    return bool(re.match(r"^https?://(localhost|127\.0\.0\.1|0\.0\.0\.0)([:/]|$)", value))
 
 
 def _has_plugin(plugins: list[Any], plugin_name: str) -> bool:
@@ -227,6 +244,7 @@ def build_readiness_report(
     package_payload = _load_json(package_json)
     lock_payload = _load_json(package_lock)
     release_metadata = _load_release_metadata(app_json)
+    app_settings_defaults = _load_app_settings_defaults(app_json)
 
     expo = app_payload.get("expo", {})
     plugins = expo.get("plugins", [])
@@ -288,6 +306,16 @@ def build_readiness_report(
         "release_metadata_capture_schema_version",
         release_metadata.get("capture_schema_version") == "ios_capture_v1",
         f"capture_schema_version={release_metadata.get('capture_schema_version')!r}",
+    )
+    _check(
+        checks,
+        "default_api_base_url_not_localhost",
+        app_settings_defaults.get("default_api_base_url") is not None
+        and not _is_localhost_url(app_settings_defaults.get("default_api_base_url")),
+        (
+            f"path={app_settings_defaults.get('path')}, "
+            f"default_api_base_url={app_settings_defaults.get('default_api_base_url')!r}"
+        ),
     )
     app_icon_path = _asset_path(app_json, expo.get("icon"))
     app_icon_dimensions = _png_dimensions(app_icon_path)

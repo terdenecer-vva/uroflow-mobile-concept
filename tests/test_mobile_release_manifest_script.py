@@ -32,8 +32,10 @@ def test_build_mobile_release_manifest_script(tmp_path: Path) -> None:
     output = tmp_path / "manifest.json"
     assets = tmp_path / "assets"
     metadata_path = tmp_path / "src" / "config" / "releaseMetadata.ts"
+    app_settings_path = tmp_path / "src" / "storage" / "appSettingsStorage.ts"
     assets.mkdir()
     metadata_path.parent.mkdir(parents=True)
+    app_settings_path.parent.mkdir(parents=True)
     _write_png(assets / "icon.png", 1024, 1024)
     _write_png(assets / "adaptive-icon.png", 1024, 1024)
     _write_png(assets / "splash.png", 1024, 1024)
@@ -85,6 +87,10 @@ def test_build_mobile_release_manifest_script(tmp_path: Path) -> None:
         ),
         encoding="utf-8",
     )
+    app_settings_path.write_text(
+        'export const DEFAULT_API_BASE_URL = "";\n',
+        encoding="utf-8",
+    )
 
     script_path = Path("scripts/build_mobile_release_manifest.py")
     subprocess.run(
@@ -133,5 +139,6 @@ def test_build_mobile_release_manifest_script(tmp_path: Path) -> None:
     assert payload["runtime_release_metadata"]["app_version"] == "0.1.0"
     assert payload["runtime_release_metadata"]["model_id"] == "fusion-v0.1"
     assert payload["runtime_release_metadata"]["capture_schema_version"] == "ios_capture_v1"
+    assert payload["runtime_defaults"]["default_api_base_url"] == ""
     assert payload["algorithm"]["model_id"] == "fusion-v0.1"
     assert payload["algorithm"]["capture_schema_version"] == "ios_capture_v1"

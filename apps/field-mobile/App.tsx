@@ -10,8 +10,10 @@ import { StatusBar } from "expo-status-bar";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import {
   attemptSubmitEndpoint,
+  buildMissingApiBaseUrlMessage,
   buildRequestHeaders,
   fetchWithTimeout,
+  isConfiguredApiBaseUrl,
 } from "./src/api/clinicalHub";
 import {
   buildApiCheckFailedMessage,
@@ -47,6 +49,7 @@ import {
   loadAppSettings,
   saveAppSettings,
 } from "./src/storage/appStorage";
+import { DEFAULT_API_BASE_URL } from "./src/storage/appSettingsStorage";
 import {
   buildNonRetryableUploadMessage,
   buildQueuedCapturePackageMessage,
@@ -79,7 +82,7 @@ export default function App() {
   const defaultPlatform = Platform.OS === "ios" ? "ios" : "android";
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
 
-  const [apiBaseUrl, setApiBaseUrl] = useState("http://127.0.0.1:8000");
+  const [apiBaseUrl, setApiBaseUrl] = useState(DEFAULT_API_BASE_URL);
   const [apiKey, setApiKey] = useState("");
   const [actorRole, setActorRole] = useState("operator");
   const [requestTimeoutMs, setRequestTimeoutMs] = useState(DEFAULT_REQUEST_TIMEOUT_MS);
@@ -497,6 +500,12 @@ export default function App() {
   }
 
   async function testApiConnection(): Promise<void> {
+    if (!isConfiguredApiBaseUrl(apiBaseUrl)) {
+      const message = buildMissingApiBaseUrlMessage();
+      setLastResponse(message);
+      Alert.alert("API URL required", message);
+      return;
+    }
     const authContextUrl = buildAuthContextUrl(apiBaseUrl);
     try {
       const response = await fetchWithTimeout(
@@ -544,7 +553,20 @@ export default function App() {
   }
 
   function validateRequired(): string | null {
+    if (!isConfiguredApiBaseUrl(apiBaseUrl)) {
+      return buildMissingApiBaseUrlMessage();
+    }
     return validatePairedPayloadForSubmission(payload, { captureRunning });
+  }
+
+  async function syncPendingQueueWithConfiguredApi(): Promise<void> {
+    if (!isConfiguredApiBaseUrl(apiBaseUrl)) {
+      const message = buildMissingApiBaseUrlMessage();
+      setLastResponse(message);
+      Alert.alert("API URL required", message);
+      return;
+    }
+    await syncPendingSubmissions();
   }
 
   async function submitPayload() {
@@ -676,6 +698,11 @@ export default function App() {
   }
 
   async function loadComparisonSummary() {
+    if (!isConfiguredApiBaseUrl(apiBaseUrl)) {
+      setSummary(null);
+      setSummaryError(buildMissingApiBaseUrlMessage());
+      return;
+    }
     const url = buildComparisonSummaryUrl({
       apiBaseUrl,
       siteId,
@@ -711,6 +738,11 @@ export default function App() {
   }
 
   async function loadCaptureCoverageSummary() {
+    if (!isConfiguredApiBaseUrl(apiBaseUrl)) {
+      setCoverageSummary(null);
+      setCoverageError(buildMissingApiBaseUrlMessage());
+      return;
+    }
     const url = buildCaptureCoverageSummaryUrl({
       apiBaseUrl,
       siteId,
@@ -773,7 +805,7 @@ export default function App() {
           onActorRoleChange={setActorRole}
           onRequestTimeoutMsChange={setRequestTimeoutMs}
           onTestApiConnection={testApiConnection}
-          onSyncPendingSubmissions={syncPendingSubmissions}
+          onSyncPendingSubmissions={syncPendingQueueWithConfiguredApi}
           onClearPendingSubmissions={clearPendingSubmissions}
         />
 
