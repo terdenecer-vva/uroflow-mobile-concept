@@ -61,6 +61,7 @@ def test_mobile_release_readiness_reports_external_blockers(tmp_path: Path) -> N
     assert all(item["status"] == "pass" for item in payload["local_checks"])
     local_check_ids = {item["id"] for item in payload["local_checks"]}
     assert {
+        "app_settings_storage_unit_tests_present",
         "unit_test_script",
         "validate_ci_runs_unit_tests",
         "unit_test_runner_script",

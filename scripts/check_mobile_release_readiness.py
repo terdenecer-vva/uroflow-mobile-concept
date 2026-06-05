@@ -270,6 +270,7 @@ def build_readiness_report(
     test_unit_script = scripts.get("test:unit", "")
     unit_runner_path = mobile_root / "scripts" / "run-unit-tests.sh"
     helper_tests_path = mobile_root / "tests" / "appHelpers.test.js"
+    app_settings_storage_tests_path = mobile_root / "tests" / "appSettingsStorage.test.js"
     capture_tests_path = mobile_root / "tests" / "captureContract.test.js"
     roi_signal_tests_path = mobile_root / "tests" / "roiSignalEstimator.test.js"
     runtime_metrics_tests_path = mobile_root / "tests" / "runtimeMetrics.test.js"
@@ -300,6 +301,12 @@ def build_readiness_report(
         "mobile_helper_unit_tests_present",
         helper_tests_path.is_file(),
         f"path={helper_tests_path}",
+    )
+    _check(
+        checks,
+        "app_settings_storage_unit_tests_present",
+        app_settings_storage_tests_path.is_file(),
+        f"path={app_settings_storage_tests_path}",
     )
     _check(
         checks,
