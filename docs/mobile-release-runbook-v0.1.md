@@ -60,7 +60,7 @@ Workflow generates artifact `mobile-release-manifest` containing:
 
 Workflow also generates artifact `mobile-release-readiness` containing:
 - git SHA/ref/run-id/workflow traceability,
-- local mobile readiness checks (`app.json`, `eas.json`, runtime release metadata/config/defaults, endpoint set/data residency/debug gates, pending sync connectivity restore, deterministic mobile E2E sync smoke, runtime motion quality gates, derivatives-only feature/media manifest gates, package scripts, lockfile, pinned tooling, API response + submit exception + runtime exception PHI redaction, unit-test coverage wiring),
+- local mobile readiness checks (`app.json`, `eas.json`, runtime release metadata/config/defaults, endpoint set/data residency/debug gates, pending sync connectivity restore, deterministic mobile E2E sync smoke, physical-device smoke log template/validator, runtime motion quality gates, derivatives-only feature/media manifest gates, package scripts, lockfile, pinned tooling, API response + submit exception + runtime exception PHI redaction, unit-test coverage wiring),
 - external credential state without secret values,
 - authenticated EAS readiness status and specific EAS blockers,
 - live Clinical Hub API readiness status (`present`, `missing`, or `invalid`),
@@ -92,6 +92,16 @@ python3 scripts/check_mobile_release_readiness.py \
   --package-json apps/field-mobile/package.json \
   --package-lock apps/field-mobile/package-lock.json \
   --output /tmp/mobile-release-readiness.json
+```
+
+Physical-device smoke log validation:
+
+```bash
+cp docs/mobile-device-smoke-log-template-v0.1.json /tmp/mobile-device-smoke-log.json
+# Fill in real iPhone + Android device evidence, manifest SHA, and per-check notes.
+python3 scripts/validate_mobile_device_smoke_log.py \
+  /tmp/mobile-device-smoke-log.json \
+  --output /tmp/mobile-device-smoke-summary.json
 ```
 
 External handoff commands, using placeholders only:
@@ -133,6 +143,7 @@ Android:
 2. Mobile release readiness JSON.
 3. Build links (iOS + Android).
 4. Smoke test log with device model and OS version.
-5. Clinical Hub sample export (paired + capture package rows).
+5. Validated smoke summary JSON from `scripts/validate_mobile_device_smoke_log.py`.
+6. Clinical Hub sample export (paired + capture package rows).
    - For `capture-packages`, archive `capture_payload.feature_manifest` and confirm `derivatives_only=true`, `raw_media.store_raw_video=false`, `raw_media.store_raw_audio=false`, `raw_media.upload_raw_video=false`, and `raw_media.upload_raw_audio=false`.
-6. Go/No-Go note for pilot usage.
+7. Go/No-Go note for pilot usage.

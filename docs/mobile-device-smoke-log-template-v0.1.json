@@ -1,0 +1,137 @@
+{
+  "schema_version": "mobile_device_smoke_log_v0.1",
+  "tested_at_utc": "2026-06-05T20:00:00Z",
+  "release": {
+    "git_sha": "03010a484968c04d0ebd4f604cc3069211ed24d0",
+    "app_version": "0.1.0",
+    "build_profile": "preview",
+    "build_channel": "preview",
+    "mobile_release_manifest_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "operator": {
+    "tester_id": "TESTER-001",
+    "site_id": "SITE-001"
+  },
+  "devices": [
+    {
+      "platform": "ios",
+      "device_model": "iPhone 15",
+      "os_version": "iOS 18.3",
+      "install_source": "TestFlight or EAS preview link",
+      "app_build": "1",
+      "network_profile": "clinic_wifi",
+      "checks": [
+        {
+          "id": "app_launch",
+          "status": "pass",
+          "evidence": "App opens to field entry screen."
+        },
+        {
+          "id": "api_connection_check",
+          "status": "pass",
+          "evidence": "Test API returns auth context for site/operator."
+        },
+        {
+          "id": "capture_start_stop",
+          "status": "pass",
+          "evidence": "Start Capture and Stop Capture complete without runtime exception."
+        },
+        {
+          "id": "contract_payload_ready",
+          "status": "pass",
+          "evidence": "Contract payload shows ready after Stop Capture."
+        },
+        {
+          "id": "paired_measurement_submit",
+          "status": "pass",
+          "evidence": "Paired measurement POST succeeds or is queued during offline leg."
+        },
+        {
+          "id": "capture_package_submit",
+          "status": "pass",
+          "evidence": "Capture package POST succeeds or is queued during offline leg."
+        },
+        {
+          "id": "offline_queue_retains_jobs",
+          "status": "pass",
+          "evidence": "Airplane-mode submit retains paired+capture pending jobs."
+        },
+        {
+          "id": "connectivity_restore_sync",
+          "status": "pass",
+          "evidence": "Returning online drains paired+capture queue without duplicates."
+        },
+        {
+          "id": "raw_media_disabled",
+          "status": "pass",
+          "evidence": "Capture payload raw_media flags remain false and derivatives_only is true."
+        },
+        {
+          "id": "device_logs_reviewed_no_phi",
+          "status": "pass",
+          "evidence": "Device logs reviewed; no subject/site/operator IDs, API keys, or raw response bodies observed."
+        }
+      ]
+    },
+    {
+      "platform": "android",
+      "device_model": "Pixel 8",
+      "os_version": "Android 15",
+      "install_source": "Play Internal Testing or EAS preview APK",
+      "app_build": "1",
+      "network_profile": "clinic_wifi",
+      "checks": [
+        {
+          "id": "app_launch",
+          "status": "pass",
+          "evidence": "App opens to field entry screen."
+        },
+        {
+          "id": "api_connection_check",
+          "status": "pass",
+          "evidence": "Test API returns auth context for site/operator."
+        },
+        {
+          "id": "capture_start_stop",
+          "status": "pass",
+          "evidence": "Start Capture and Stop Capture complete without runtime exception."
+        },
+        {
+          "id": "contract_payload_ready",
+          "status": "pass",
+          "evidence": "Contract payload shows ready after Stop Capture."
+        },
+        {
+          "id": "paired_measurement_submit",
+          "status": "pass",
+          "evidence": "Paired measurement POST succeeds or is queued during offline leg."
+        },
+        {
+          "id": "capture_package_submit",
+          "status": "pass",
+          "evidence": "Capture package POST succeeds or is queued during offline leg."
+        },
+        {
+          "id": "offline_queue_retains_jobs",
+          "status": "pass",
+          "evidence": "Airplane-mode submit retains paired+capture pending jobs."
+        },
+        {
+          "id": "connectivity_restore_sync",
+          "status": "pass",
+          "evidence": "Returning online drains paired+capture queue without duplicates."
+        },
+        {
+          "id": "raw_media_disabled",
+          "status": "pass",
+          "evidence": "Capture payload raw_media flags remain false and derivatives_only is true."
+        },
+        {
+          "id": "device_logs_reviewed_no_phi",
+          "status": "pass",
+          "evidence": "Device logs reviewed; no subject/site/operator IDs, API keys, or raw response bodies observed."
+        }
+      ]
+    }
+  ]
+}

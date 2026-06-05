@@ -94,6 +94,19 @@ Per subject/attempt:
 7. If network failed, ensure queue item exists and run `Sync Queue` later.
 8. For retry/audit troubleshooting, match the pending item `request_id` to Clinical Hub request logs.
 
+For release handoff, copy `docs/mobile-device-smoke-log-template-v0.1.json`, fill one
+iPhone and one Android run, then validate it:
+
+```bash
+python3 scripts/validate_mobile_device_smoke_log.py \
+  /tmp/mobile-device-smoke-log.json \
+  --output /tmp/mobile-device-smoke-summary.json
+```
+
+The validator requires all mandatory smoke checks to pass on both platforms, including
+offline queue retention, connectivity-restore sync, raw media disabled, and device-log
+review for PHI/secret leakage.
+
 ## 6. Daily Export For Analysis
 
 Paired records:
@@ -185,6 +198,7 @@ GitHub Actions automation:
 ## 9. Exit Criteria For v0.1 Pilot
 
 - App installed and operating on iOS and Android.
+- Validated iOS+Android smoke log summary archived.
 - At least 100 paired attempts collected.
 - At least 90% of paired rows have capture package linkage (`has_capture_package=1` in joined export).
 - Method-comparison summary generated from production pilot DB.
