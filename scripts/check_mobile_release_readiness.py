@@ -774,6 +774,12 @@ def build_readiness_report(
     mobile_store_rollout_validator_tests_path = (
         repo_root / "tests" / "test_mobile_store_rollout_handoff.py"
     )
+    mobile_release_bundle_verifier_path = (
+        repo_root / "scripts" / "verify_mobile_release_bundle.py"
+    )
+    mobile_release_bundle_verifier_tests_path = (
+        repo_root / "tests" / "test_mobile_release_bundle_verifier.py"
+    )
     paired_payload_tests_path = mobile_root / "tests" / "pairedPayload.test.js"
     roi_signal_tests_path = mobile_root / "tests" / "roiSignalEstimator.test.js"
     runtime_metrics_source_path = mobile_root / "src" / "capture" / "runtimeMetrics.ts"
@@ -817,6 +823,12 @@ def build_readiness_report(
     )
     mobile_store_rollout_validator_tests_source = _read_file_text(
         mobile_store_rollout_validator_tests_path
+    )
+    mobile_release_bundle_verifier_source = _read_file_text(
+        mobile_release_bundle_verifier_path
+    )
+    mobile_release_bundle_verifier_tests_source = _read_file_text(
+        mobile_release_bundle_verifier_tests_path
     )
     _check(
         checks,
@@ -1111,6 +1123,38 @@ def build_readiness_report(
         "mobile_store_rollout_handoff_validator_unit_tests_present",
         all(mobile_store_rollout_validator_test_requirements.values()),
         f"requirements={mobile_store_rollout_validator_test_requirements!r}",
+    )
+    mobile_release_bundle_verifier_requirements = {
+        "verifier_file": mobile_release_bundle_verifier_path.is_file(),
+        "traceability_validation": "TRACEABILITY_FIELDS"
+        in mobile_release_bundle_verifier_source,
+        "readiness_count_validation": "local_check_counts"
+        in mobile_release_bundle_verifier_source,
+        "store_handoff_digest_validation": "mobile_release_manifest_sha256"
+        in mobile_release_bundle_verifier_source,
+        "expected_run_validation": "expect_run_id" in mobile_release_bundle_verifier_source,
+    }
+    _check(
+        checks,
+        "mobile_release_bundle_verifier_sources",
+        all(mobile_release_bundle_verifier_requirements.values()),
+        f"requirements={mobile_release_bundle_verifier_requirements!r}",
+    )
+    mobile_release_bundle_verifier_test_requirements = {
+        "valid_bundle_test": "test_mobile_release_bundle_verifier_accepts_consistent_bundle"
+        in mobile_release_bundle_verifier_tests_source,
+        "handoff_digest_mismatch_test": "rejects_handoff_digest_mismatch"
+        in mobile_release_bundle_verifier_tests_source,
+        "readiness_count_mismatch_test": "rejects_readiness_count_mismatch"
+        in mobile_release_bundle_verifier_tests_source,
+        "expected_git_sha_mismatch_test": "rejects_expected_git_sha_mismatch"
+        in mobile_release_bundle_verifier_tests_source,
+    }
+    _check(
+        checks,
+        "mobile_release_bundle_verifier_unit_tests_present",
+        all(mobile_release_bundle_verifier_test_requirements.values()),
+        f"requirements={mobile_release_bundle_verifier_test_requirements!r}",
     )
     _check(
         checks,

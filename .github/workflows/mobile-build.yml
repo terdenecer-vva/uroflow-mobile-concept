@@ -41,7 +41,9 @@ on:
       - "scripts/check_mobile_release_readiness.py"
       - "scripts/validate_mobile_device_smoke_log.py"
       - "scripts/validate_mobile_store_rollout_handoff.py"
+      - "scripts/verify_mobile_release_bundle.py"
       - "tests/test_mobile_device_smoke_log.py"
+      - "tests/test_mobile_release_bundle_verifier.py"
       - "tests/test_mobile_store_rollout_handoff.py"
       - ".github/workflows/mobile-build.yml"
   pull_request:
@@ -53,7 +55,9 @@ on:
       - "scripts/check_mobile_release_readiness.py"
       - "scripts/validate_mobile_device_smoke_log.py"
       - "scripts/validate_mobile_store_rollout_handoff.py"
+      - "scripts/verify_mobile_release_bundle.py"
       - "tests/test_mobile_device_smoke_log.py"
+      - "tests/test_mobile_release_bundle_verifier.py"
       - "tests/test_mobile_store_rollout_handoff.py"
       - ".github/workflows/mobile-build.yml"
 
@@ -214,6 +218,7 @@ jobs:
               "",
               "- Download `mobile-release-manifest`.",
               "- Download `mobile-release-readiness`.",
+              "- Download `mobile-release-bundle-verification`.",
               "- Download `mobile-store-rollout-handoff` and fill in TestFlight/Play evidence after external account setup.",
               "- Archive iOS/Android EAS build links when authenticated EAS build runs.",
               "- Archive physical-device smoke log with device model and OS version.",
@@ -304,6 +309,20 @@ jobs:
             /tmp/mobile-store-rollout-handoff.json \
             --output /tmp/mobile-store-rollout-handoff-summary.json
 
+      - name: Verify release artifact bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 ../../scripts/verify_mobile_release_bundle.py \
+            --manifest-json /tmp/mobile-release-manifest.json \
+            --readiness-json /tmp/mobile-release-readiness.json \
+            --release-notes /tmp/mobile-release-notes.md \
+            --store-rollout-handoff-json /tmp/mobile-store-rollout-handoff.json \
+            --store-rollout-summary-json /tmp/mobile-store-rollout-handoff-summary.json \
+            --expect-git-sha "$GITHUB_SHA" \
+            --expect-run-id "$GITHUB_RUN_ID" \
+            --output /tmp/mobile-release-bundle-verification.json
+
       - name: Upload release notes
         uses: actions/upload-artifact@v7
         with:
@@ -321,6 +340,12 @@ jobs:
         with:
           name: mobile-release-readiness
           path: /tmp/mobile-release-readiness.json
+
+      - name: Upload release bundle verification
+        uses: actions/upload-artifact@v7
+        with:
+          name: mobile-release-bundle-verification
+          path: /tmp/mobile-release-bundle-verification.json
 
       - name: Upload store rollout handoff
         uses: actions/upload-artifact@v7
