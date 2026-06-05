@@ -853,6 +853,19 @@ def build_readiness_report(
     mobile_release_bundle_verifier_tests_path = (
         repo_root / "tests" / "test_mobile_release_bundle_verifier.py"
     )
+    clinical_hub_backend_path = repo_root / "src" / "uroflow_mobile" / "clinical_hub.py"
+    clinical_hub_nightly_snapshot_builder_path = (
+        repo_root / "scripts" / "build_clinical_hub_nightly_snapshot.py"
+    )
+    clinical_hub_report_poster_path = (
+        repo_root / "scripts" / "post_pilot_reports_to_clinical_hub.py"
+    )
+    clinical_hub_nightly_snapshot_tests_path = (
+        repo_root / "tests" / "test_clinical_hub_nightly_snapshot.py"
+    )
+    clinical_hub_backend_tests_path = repo_root / "tests" / "test_clinical_hub.py"
+    clinical_hub_contract_tests_path = repo_root / "tests" / "test_clinical_hub_contract.py"
+    ci_workflow_path = repo_root / ".github" / "workflows" / "ci.yml"
     paired_payload_tests_path = mobile_root / "tests" / "pairedPayload.test.js"
     roi_signal_tests_path = mobile_root / "tests" / "roiSignalEstimator.test.js"
     runtime_metrics_source_path = mobile_root / "src" / "capture" / "runtimeMetrics.ts"
@@ -922,6 +935,17 @@ def build_readiness_report(
     mobile_release_bundle_verifier_tests_source = _read_file_text(
         mobile_release_bundle_verifier_tests_path
     )
+    clinical_hub_backend_source = _read_file_text(clinical_hub_backend_path)
+    clinical_hub_nightly_snapshot_builder_source = _read_file_text(
+        clinical_hub_nightly_snapshot_builder_path
+    )
+    clinical_hub_report_poster_source = _read_file_text(clinical_hub_report_poster_path)
+    clinical_hub_nightly_snapshot_tests_source = _read_file_text(
+        clinical_hub_nightly_snapshot_tests_path
+    )
+    clinical_hub_backend_tests_source = _read_file_text(clinical_hub_backend_tests_path)
+    clinical_hub_contract_tests_source = _read_file_text(clinical_hub_contract_tests_path)
+    ci_workflow_source = _read_file_text(ci_workflow_path)
     _check(
         checks,
         "unit_test_script",
@@ -1568,6 +1592,47 @@ def build_readiness_report(
         "mobile_release_bundle_verifier_unit_tests_present",
         all(mobile_release_bundle_verifier_test_requirements.values()),
         f"requirements={mobile_release_bundle_verifier_test_requirements!r}",
+    )
+    clinical_hub_nightly_snapshot_requirements = {
+        "builder_file": clinical_hub_nightly_snapshot_builder_path.is_file(),
+        "builder_schema": "clinical_hub_nightly_snapshot_v1"
+        in clinical_hub_nightly_snapshot_builder_source,
+        "builder_outputs_method_summary": "method_comparison_summary.json"
+        in clinical_hub_nightly_snapshot_builder_source,
+        "builder_outputs_gate_summary": "gate_summary.json"
+        in clinical_hub_nightly_snapshot_builder_source,
+        "builder_records_sha256": "sha256" in clinical_hub_nightly_snapshot_builder_source,
+        "poster_accepts_method_summary": "method_comparison_summary"
+        in clinical_hub_report_poster_source
+        and "method_comparison_summary_json" in clinical_hub_report_poster_source,
+        "backend_accepts_method_summary": "method_comparison_summary"
+        in clinical_hub_backend_source,
+        "ci_fetches_live_comparison_summary": "/api/v1/comparison-summary"
+        in ci_workflow_source
+        and "--method-comparison-summary-json" in ci_workflow_source,
+    }
+    _check(
+        checks,
+        "clinical_hub_nightly_snapshot_sources",
+        all(clinical_hub_nightly_snapshot_requirements.values()),
+        f"requirements={clinical_hub_nightly_snapshot_requirements!r}",
+    )
+    clinical_hub_nightly_snapshot_test_requirements = {
+        "snapshot_test_file": clinical_hub_nightly_snapshot_tests_path.is_file(),
+        "builder_output_test": "outputs_comparison_gate_and_manifest"
+        in clinical_hub_nightly_snapshot_tests_source,
+        "poster_collector_test": "collector_accepts_method_comparison_summary"
+        in clinical_hub_nightly_snapshot_tests_source,
+        "backend_report_type_test": (
+            "method_comparison_summary" in clinical_hub_backend_tests_source
+        ),
+        "openapi_contract_test": "method_comparison_summary" in clinical_hub_contract_tests_source,
+    }
+    _check(
+        checks,
+        "clinical_hub_nightly_snapshot_unit_tests_present",
+        all(clinical_hub_nightly_snapshot_test_requirements.values()),
+        f"requirements={clinical_hub_nightly_snapshot_test_requirements!r}",
     )
     _check(
         checks,

@@ -59,3 +59,5 @@ def test_clinical_hub_openapi_contract_contains_core_schemas(tmp_path: Path) -> 
     assert "session" in paired_required
     assert "app" in paired_required
     assert "reference" in paired_required
+    pilot_report_schema = schemas["PilotAutomationReportCreate"]
+    assert "method_comparison_summary" in str(pilot_report_schema)

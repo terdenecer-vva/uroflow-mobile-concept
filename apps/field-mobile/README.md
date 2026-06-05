@@ -176,6 +176,7 @@ secret blockers. The artifact has separate machine-readable gates:
   privacy-by-default switches, single-region data residency policy, Expo Device identity defaults,
   Clinical Hub preflight guard,
   Clinical Hub runtime trace headers,
+  Clinical Hub nightly comparison/gate snapshot upload wiring,
   in-app release identity evidence,
   runtime capture preflight guard, runtime motion quality gates, raw audio temp-file cleanup,
   derivatives-only feature/media manifest gates, pending sync connectivity-restore trigger,

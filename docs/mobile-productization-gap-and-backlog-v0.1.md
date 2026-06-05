@@ -123,7 +123,10 @@ DoD:
 ## B4: Quality and validation readiness
 1. Add unit tests for capture payload generation and local validation. Status: implemented for paired payload, capture package payload, capture contract generation, ROI signal, runtime metrics, and backend capture contract validation.
 2. Add E2E mobile smoke tests (session create -> submit -> queue -> sync). Status: implemented as deterministic repository-level paired+capture queue replay after network restore, plus a validated iOS+Android physical-device smoke log schema/template; real physical-device/live Clinical Hub smoke evidence still required.
-3. Export nightly comparison summary and gate snapshot to Clinical Hub.
+3. Export nightly comparison summary and gate snapshot to Clinical Hub. Status: implemented
+   as an offline snapshot builder with SHA-256 manifest, a first-class
+   `method_comparison_summary` Clinical Hub report type, and optional CI upload when live
+   `CLINICAL_HUB_URL`/`CLINICAL_HUB_API_KEY` secrets are configured.
 
 DoD:
 - Mobile regression suite blocks broken payload changes.

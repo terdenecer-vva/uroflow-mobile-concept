@@ -33,6 +33,12 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--tfl-summary-json")
     parser.add_argument("--drift-summary-json")
     parser.add_argument("--gate-summary-json")
+    parser.add_argument(
+        "--method-comparison-summary-json",
+        "--comparison-summary-json",
+        dest="method_comparison_summary_json",
+        help="Nightly method-comparison summary JSON from /api/v1/comparison-summary.",
+    )
     return parser.parse_args()
 
 
@@ -50,6 +56,7 @@ def _collect_reports(args: argparse.Namespace) -> list[ReportInput]:
         ("tfl_summary", args.tfl_summary_json),
         ("drift_summary", args.drift_summary_json),
         ("gate_summary", args.gate_summary_json),
+        ("method_comparison_summary", args.method_comparison_summary_json),
     ]
     reports: list[ReportInput] = []
     for report_type, raw_path in candidates:

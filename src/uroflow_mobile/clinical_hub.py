@@ -25,6 +25,7 @@ PILOT_REPORT_TYPE = Literal[
     "tfl_summary",
     "drift_summary",
     "gate_summary",
+    "method_comparison_summary",
 ]
 _CROSS_SITE_ALLOWED_ROLES = {"data_manager", "admin"}
 _DEFAULT_EXPECTED_DATA_RESIDENCY_REGION = "us"

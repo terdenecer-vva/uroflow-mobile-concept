@@ -220,7 +220,8 @@ PYTHONPATH=src python -m uroflow_mobile.cli export-capture-coverage-summary \
   --fail-on-hard-gates
 ```
 
-Экспорт pilot automation reports (`qa_summary`, `g1_eval`, `tfl_summary`, `drift_summary`):
+Экспорт pilot automation reports (`qa_summary`, `g1_eval`, `tfl_summary`,
+`drift_summary`, `gate_summary`, `method_comparison_summary`):
 
 ```bash
 PYTHONPATH=src python -m uroflow_mobile.cli export-pilot-automation-reports \
@@ -235,6 +236,22 @@ PYTHONPATH=src python -m uroflow_mobile.cli summarize-paired-measurements \
   --db-path data/clinical_hub.db \
   --quality-status valid \
   --output-json data/method_comparison_summary.json
+```
+
+Nightly snapshot для Clinical Hub report upload: строит `method_comparison_summary.json`,
+нормализует `gate_summary.json` и пишет manifest с SHA-256 digest-ами payload-файлов.
+
+```bash
+PYTHONPATH=src python scripts/build_clinical_hub_nightly_snapshot.py \
+  --db-path data/clinical_hub.db \
+  --gate-summary-json data/gate_summary.json \
+  --output-dir data/clinical_hub_nightly_snapshot \
+  --report-date 2026-02-25 \
+  --site-id SITE-001 \
+  --quality-status valid \
+  --package-version v2.8 \
+  --model-id fusion-v0.3 \
+  --dataset-id pilot-nightly-20260225
 ```
 
 REST endpoint для дашборда пилота:
@@ -305,6 +322,8 @@ GET /api/v1/pilot-automation-reports.csv
   `scripts/post_pilot_reports_to_clinical_hub.py`;
 - шаг выполняется только если заданы секреты
   `CLINICAL_HUB_URL` и `CLINICAL_HUB_API_KEY`;
+- перед upload workflow снимает live `/api/v1/comparison-summary` и сохраняет его как
+  `method_comparison_summary` report вместе с `gate_summary`;
 - `site_id` берётся из GitHub variable `CLINICAL_HUB_SITE_ID` (fallback: `CI-SMOKE`).
 
 Audit endpoint:
