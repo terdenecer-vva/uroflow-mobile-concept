@@ -10,10 +10,17 @@ import { StatusBar } from "expo-status-bar";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import {
   attemptSubmitEndpoint,
-  buildBaseUrl,
   buildRequestHeaders,
   fetchWithTimeout,
 } from "./src/api/clinicalHub";
+import {
+  buildApiCheckFailedMessage,
+  buildAuthContextCheckFailedMessage,
+  buildAuthContextOkMessage,
+  buildAuthContextUrl,
+  buildHealthCheckFailedMessage,
+  buildHealthUrl,
+} from "./src/api/connectionCheck";
 import {
   buildCaptureCoverageSummaryUrl,
   buildComparisonSummaryUrl,
@@ -489,8 +496,7 @@ export default function App() {
   }
 
   async function testApiConnection(): Promise<void> {
-    const baseUrl = buildBaseUrl(apiBaseUrl);
-    const authContextUrl = `${baseUrl}/api/v1/auth-context`;
+    const authContextUrl = buildAuthContextUrl(apiBaseUrl);
     try {
       const response = await fetchWithTimeout(
         authContextUrl,
@@ -502,7 +508,7 @@ export default function App() {
       );
       if (response.status === 404) {
         const healthResponse = await fetchWithTimeout(
-          `${baseUrl}/health`,
+          buildHealthUrl(apiBaseUrl),
           {
             method: "GET",
             headers: buildRequestHeaders(false, createCurrentRequestHeaderContext()),
@@ -510,7 +516,7 @@ export default function App() {
           requestTimeoutMs,
         );
         if (!healthResponse.ok) {
-          setLastResponse(`Health check failed: HTTP ${healthResponse.status}`);
+          setLastResponse(buildHealthCheckFailedMessage(healthResponse.status));
           Alert.alert("API check failed", `HTTP ${healthResponse.status}`);
           return;
         }
@@ -520,21 +526,18 @@ export default function App() {
       }
       if (!response.ok) {
         const body = await response.text();
-        setLastResponse(`Auth-context check failed: HTTP ${response.status} ${body}`);
+        setLastResponse(buildAuthContextCheckFailedMessage(response.status, body));
         Alert.alert("API check failed", `HTTP ${response.status}`);
         return;
       }
       const body = await response.text();
       const authContext = JSON.parse(body) as AuthContextResponse;
-      const message =
-        `Auth context OK: auth=${authContext.auth_result}, ` +
-        `role=${authContext.actor_role ?? "n/a"}, ` +
-        `site=${authContext.actor_site_id ?? "n/a"}`;
+      const message = buildAuthContextOkMessage(authContext);
       setLastResponse(message);
       Alert.alert("API reachable", message);
     } catch (error) {
       const message = String(error);
-      setLastResponse(`API check failed: ${message}`);
+      setLastResponse(buildApiCheckFailedMessage(error));
       Alert.alert("API check failed", message);
     }
   }

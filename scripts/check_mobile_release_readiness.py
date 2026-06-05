@@ -272,6 +272,7 @@ def build_readiness_report(
     helper_tests_path = mobile_root / "tests" / "appHelpers.test.js"
     app_settings_storage_tests_path = mobile_root / "tests" / "appSettingsStorage.test.js"
     clinical_hub_api_tests_path = mobile_root / "tests" / "clinicalHub.test.js"
+    connection_check_tests_path = mobile_root / "tests" / "connectionCheck.test.js"
     capture_package_payload_tests_path = mobile_root / "tests" / "capturePackagePayload.test.js"
     capture_tests_path = mobile_root / "tests" / "captureContract.test.js"
     paired_payload_tests_path = mobile_root / "tests" / "pairedPayload.test.js"
@@ -318,6 +319,12 @@ def build_readiness_report(
         "clinical_hub_api_unit_tests_present",
         clinical_hub_api_tests_path.is_file(),
         f"path={clinical_hub_api_tests_path}",
+    )
+    _check(
+        checks,
+        "connection_check_unit_tests_present",
+        connection_check_tests_path.is_file(),
+        f"path={connection_check_tests_path}",
     )
     _check(
         checks,
