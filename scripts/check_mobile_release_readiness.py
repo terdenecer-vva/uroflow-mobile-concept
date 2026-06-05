@@ -47,6 +47,15 @@ def _check(
     )
 
 
+def _build_traceability(env: dict[str, str]) -> dict[str, str]:
+    return {
+        "git_sha": env.get("GITHUB_SHA", "local"),
+        "git_ref": env.get("GITHUB_REF", "local"),
+        "git_run_id": env.get("GITHUB_RUN_ID", "local"),
+        "workflow": env.get("GITHUB_WORKFLOW", "local"),
+    }
+
+
 def _build_next_actions(
     external_items: list[dict[str, Any]],
     manual_external_items: list[dict[str, Any]],
@@ -404,6 +413,7 @@ def build_readiness_report(
 
     return {
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+        "traceability": _build_traceability(env),
         "status": status,
         "local_checks_status": "pass" if not local_failures else "fail",
         "external_readiness_status": "pass" if not external_missing else "blocked",

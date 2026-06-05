@@ -49,6 +49,7 @@ Workflow generates artifact `mobile-release-manifest` containing:
 - selected build profile/channel.
 
 Workflow also generates artifact `mobile-release-readiness` containing:
+- git SHA/ref/run-id/workflow traceability,
 - local mobile readiness checks (`app.json`, `eas.json`, package scripts, lockfile, pinned tooling, unit-test coverage wiring),
 - external credential state without secret values,
 - authenticated EAS readiness status and specific EAS blockers,

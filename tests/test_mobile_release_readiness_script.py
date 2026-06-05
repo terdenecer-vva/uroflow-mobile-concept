@@ -47,6 +47,12 @@ def test_mobile_release_readiness_reports_external_blockers(tmp_path: Path) -> N
     assert payload["authenticated_eas_status"] == "blocked"
     assert payload["authenticated_eas_blockers"] == ["expo_token", "eas_project_identity"]
     assert payload["clinical_hub_live_api_status"] == "missing"
+    assert payload["traceability"] == {
+        "git_ref": "local",
+        "git_run_id": "local",
+        "git_sha": "local",
+        "workflow": "local",
+    }
     assert {item["id"] for item in payload["external_items"] if item["status"] == "missing"} == {
         "clinical_hub_live_api",
         "eas_project_identity",
@@ -86,6 +92,10 @@ def test_mobile_release_readiness_passes_authenticated_preflight_env(tmp_path: P
             "CLINICAL_HUB_URL": "https://clinical.example.test",
             "EAS_PROJECT_ID": "00000000-0000-0000-0000-000000000000",
             "EXPO_TOKEN": "test-token",
+            "GITHUB_REF": "refs/heads/main",
+            "GITHUB_RUN_ID": "123456",
+            "GITHUB_SHA": "abc123",
+            "GITHUB_WORKFLOW": "Mobile Build",
         },
     )
 
@@ -95,6 +105,12 @@ def test_mobile_release_readiness_passes_authenticated_preflight_env(tmp_path: P
     assert payload["authenticated_eas_status"] == "pass"
     assert payload["authenticated_eas_blockers"] == []
     assert payload["clinical_hub_live_api_status"] == "present"
+    assert payload["traceability"] == {
+        "git_ref": "refs/heads/main",
+        "git_run_id": "123456",
+        "git_sha": "abc123",
+        "workflow": "Mobile Build",
+    }
     assert all(item["status"] == "present" for item in payload["external_items"])
     assert {item["status"] for item in payload["manual_external_items"]} == {"manual_required"}
     assert {item["id"] for item in payload["next_actions"]} == {
