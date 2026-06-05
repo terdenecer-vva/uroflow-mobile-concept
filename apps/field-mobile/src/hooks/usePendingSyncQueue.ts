@@ -1,12 +1,14 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Alert, AppState } from "react-native";
 import NetInfo from "@react-native-community/netinfo";
 
 import {
   attemptSubmitEndpoint,
-  buildMissingApiBaseUrlMessage,
-  isConfiguredApiBaseUrl,
 } from "../api/clinicalHub";
+import {
+  buildClinicalHubPreflight,
+  isClinicalHubPreflightActionAllowed,
+} from "../api/clinicalHubPreflight";
 import {
   loadPendingSubmissions,
   savePendingSubmissions,
@@ -46,7 +48,11 @@ export function usePendingSyncQueue({
   const syncInFlightRef = useRef(false);
   const autoSyncIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const networkReachableRef = useRef<boolean | null>(null);
-  const apiConfigured = isConfiguredApiBaseUrl(apiBaseUrl);
+  const clinicalHubPreflight = useMemo(
+    () => buildClinicalHubPreflight(apiBaseUrl),
+    [apiBaseUrl],
+  );
+  const apiConfigured = isClinicalHubPreflightActionAllowed(clinicalHubPreflight);
 
   const persistPendingQueue = useCallback(async (queue: PendingSubmission[]): Promise<void> => {
     await savePendingSubmissions(queue);
@@ -88,11 +94,11 @@ export function usePendingSyncQueue({
   const syncPendingSubmissions = useCallback(
     async (showAlert = true): Promise<void> => {
       if (!apiConfigured) {
-        const message = buildMissingApiBaseUrlMessage();
+        const message = clinicalHubPreflight.message;
         setSyncStatusMessage(message);
         onLastResponse(message);
         if (showAlert) {
-          Alert.alert("API URL required", message);
+          Alert.alert("API preflight blocked", message);
         }
         return;
       }
@@ -137,6 +143,7 @@ export function usePendingSyncQueue({
     [
       apiConfigured,
       apiBaseUrl,
+      clinicalHubPreflight.message,
       onLastResponse,
       persistPendingQueue,
       requestHeaderContext,
@@ -181,7 +188,7 @@ export function usePendingSyncQueue({
         autoSyncIntervalRef.current = null;
       }
       if (settingsHydrated && pendingQueue.length > 0 && !apiConfigured) {
-        setSyncStatusMessage(buildMissingApiBaseUrlMessage());
+        setSyncStatusMessage(clinicalHubPreflight.message);
       }
       return;
     }
@@ -200,7 +207,13 @@ export function usePendingSyncQueue({
         autoSyncIntervalRef.current = null;
       }
     };
-  }, [apiConfigured, pendingQueue.length, settingsHydrated, syncPendingSubmissions]);
+  }, [
+    apiConfigured,
+    clinicalHubPreflight.message,
+    pendingQueue.length,
+    settingsHydrated,
+    syncPendingSubmissions,
+  ]);
 
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener((state) => {

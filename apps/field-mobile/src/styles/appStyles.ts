@@ -24,6 +24,37 @@ export const styles = StyleSheet.create({
     fontSize: 12,
     color: "#334155",
   },
+  preflightBox: {
+    marginTop: 2,
+    marginBottom: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    padding: 8,
+  },
+  preflightPassBox: {
+    borderColor: "#86efac",
+    backgroundColor: "#f0fdf4",
+  },
+  preflightWarningBox: {
+    borderColor: "#fbbf24",
+    backgroundColor: "#fffbeb",
+  },
+  preflightBlockedBox: {
+    borderColor: "#fca5a5",
+    backgroundColor: "#fef2f2",
+  },
+  preflightText: {
+    fontSize: 12,
+  },
+  preflightPassText: {
+    color: "#166534",
+  },
+  preflightWarningText: {
+    color: "#92400e",
+  },
+  preflightBlockedText: {
+    color: "#991b1b",
+  },
   releaseIdentityBox: {
     marginBottom: 8,
     borderWidth: 1,

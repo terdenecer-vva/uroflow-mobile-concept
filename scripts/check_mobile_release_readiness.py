@@ -746,7 +746,13 @@ def build_readiness_report(
         mobile_root / "src" / "components" / "ReleaseIdentitySection.tsx"
     )
     clinical_hub_source_path = mobile_root / "src" / "api" / "clinicalHub.ts"
+    clinical_hub_preflight_source_path = (
+        mobile_root / "src" / "api" / "clinicalHubPreflight.ts"
+    )
     connection_check_source_path = mobile_root / "src" / "api" / "connectionCheck.ts"
+    api_connection_section_path = (
+        mobile_root / "src" / "components" / "ApiConnectionSection.tsx"
+    )
     pending_sync_queue_source_path = mobile_root / "src" / "utils" / "pendingSyncQueue.ts"
     pending_sync_hook_source_path = mobile_root / "src" / "hooks" / "usePendingSyncQueue.ts"
     pending_storage_source_path = mobile_root / "src" / "storage" / "pendingSubmissionStorage.ts"
@@ -754,6 +760,9 @@ def build_readiness_report(
     helper_tests_path = mobile_root / "tests" / "appHelpers.test.js"
     app_settings_storage_tests_path = mobile_root / "tests" / "appSettingsStorage.test.js"
     clinical_hub_api_tests_path = mobile_root / "tests" / "clinicalHub.test.js"
+    clinical_hub_preflight_tests_path = (
+        mobile_root / "tests" / "clinicalHubPreflight.test.js"
+    )
     connection_check_tests_path = mobile_root / "tests" / "connectionCheck.test.js"
     capture_package_payload_tests_path = mobile_root / "tests" / "capturePackagePayload.test.js"
     capture_contract_source_path = mobile_root / "src" / "capture" / "buildCaptureContract.ts"
@@ -805,7 +814,9 @@ def build_readiness_report(
     release_identity_source = _read_file_text(release_identity_source_path)
     release_identity_component_source = _read_file_text(release_identity_component_path)
     clinical_hub_source = _read_file_text(clinical_hub_source_path)
+    clinical_hub_preflight_source = _read_file_text(clinical_hub_preflight_source_path)
     connection_check_source = _read_file_text(connection_check_source_path)
+    api_connection_section_source = _read_file_text(api_connection_section_path)
     pending_sync_queue_source = _read_file_text(pending_sync_queue_source_path)
     pending_sync_hook_source = _read_file_text(pending_sync_hook_source_path)
     pending_storage_source = _read_file_text(pending_storage_source_path)
@@ -816,6 +827,9 @@ def build_readiness_report(
     release_identity_tests_path = mobile_root / "tests" / "releaseIdentity.test.js"
     release_identity_tests_source = _read_file_text(release_identity_tests_path)
     clinical_hub_tests_source = _read_file_text(clinical_hub_api_tests_path)
+    clinical_hub_preflight_tests_source = _read_file_text(
+        clinical_hub_preflight_tests_path
+    )
     connection_check_tests_source = _read_file_text(connection_check_tests_path)
     pending_sync_queue_tests_source = _read_file_text(pending_sync_queue_tests_path)
     pending_submission_storage_tests_source = _read_file_text(
@@ -955,6 +969,50 @@ def build_readiness_report(
         "clinical_hub_api_unit_tests_present",
         clinical_hub_api_tests_path.is_file(),
         f"path={clinical_hub_api_tests_path}",
+    )
+    clinical_hub_preflight_requirements = {
+        "source_file": clinical_hub_preflight_source_path.is_file(),
+        "uses_data_residency_policy": (
+            "APP_DATA_RESIDENCY_REGION" in clinical_hub_preflight_source
+            and "APP_REQUIRE_REGION_MATCHED_CLINICAL_HUB"
+            in clinical_hub_preflight_source
+            and "APP_ALLOW_CROSS_REGION_SYNC" in clinical_hub_preflight_source
+        ),
+        "blocked_status": '"blocked"' in clinical_hub_preflight_source,
+        "region_mismatch_guard": "region_mismatch" in clinical_hub_preflight_source,
+        "app_uses_preflight": (
+            "buildClinicalHubPreflight" in app_ts_source
+            and "isClinicalHubPreflightActionAllowed" in app_ts_source
+        ),
+        "hook_uses_preflight": (
+            "buildClinicalHubPreflight" in pending_sync_hook_source
+            and "isClinicalHubPreflightActionAllowed" in pending_sync_hook_source
+        ),
+        "ui_displays_preflight": "clinicalHubPreflightMessage"
+        in api_connection_section_source,
+        "unit_runner_compiles_preflight": "src/api/clinicalHubPreflight.ts"
+        in unit_runner_source,
+    }
+    _check(
+        checks,
+        "clinical_hub_preflight_sources",
+        all(clinical_hub_preflight_requirements.values()),
+        f"requirements={clinical_hub_preflight_requirements!r}",
+    )
+    clinical_hub_preflight_test_requirements = {
+        "unit_test_file": clinical_hub_preflight_tests_path.is_file(),
+        "missing_url_test": "blocks missing Clinical Hub URL"
+        in clinical_hub_preflight_tests_source,
+        "local_smoke_warning_test": "allows local Clinical Hub smoke URLs with warning"
+        in clinical_hub_preflight_tests_source,
+        "cross_region_test": "blocks obvious cross-region Clinical Hub URLs"
+        in clinical_hub_preflight_tests_source,
+    }
+    _check(
+        checks,
+        "clinical_hub_preflight_unit_tests_present",
+        all(clinical_hub_preflight_test_requirements.values()),
+        f"requirements={clinical_hub_preflight_test_requirements!r}",
     )
     _check(
         checks,

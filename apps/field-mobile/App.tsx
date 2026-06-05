@@ -11,11 +11,13 @@ import { CameraView, useCameraPermissions } from "expo-camera";
 import * as Device from "expo-device";
 import {
   attemptSubmitEndpoint,
-  buildMissingApiBaseUrlMessage,
   buildRequestHeaders,
   fetchWithTimeout,
-  isConfiguredApiBaseUrl,
 } from "./src/api/clinicalHub";
+import {
+  buildClinicalHubPreflight,
+  isClinicalHubPreflightActionAllowed,
+} from "./src/api/clinicalHubPreflight";
 import {
   buildApiCheckFailedMessage,
   buildAuthContextCheckFailedMessage,
@@ -176,6 +178,10 @@ export default function App() {
   const requestHeaderContext = useMemo<RequestHeaderContext>(
     () => buildHeaderContextFromValues(apiKey, actorRole, siteId, operatorId),
     [actorRole, apiKey, operatorId, siteId],
+  );
+  const clinicalHubPreflight = useMemo(
+    () => buildClinicalHubPreflight(apiBaseUrl),
+    [apiBaseUrl],
   );
 
   const {
@@ -518,10 +524,10 @@ export default function App() {
   }
 
   async function testApiConnection(): Promise<void> {
-    if (!isConfiguredApiBaseUrl(apiBaseUrl)) {
-      const message = buildMissingApiBaseUrlMessage();
+    if (!isClinicalHubPreflightActionAllowed(clinicalHubPreflight)) {
+      const message = clinicalHubPreflight.message;
       setLastResponse(message);
-      Alert.alert("API URL required", message);
+      Alert.alert("API preflight blocked", message);
       return;
     }
     const authContextUrl = buildAuthContextUrl(apiBaseUrl);
@@ -571,17 +577,17 @@ export default function App() {
   }
 
   function validateRequired(): string | null {
-    if (!isConfiguredApiBaseUrl(apiBaseUrl)) {
-      return buildMissingApiBaseUrlMessage();
+    if (!isClinicalHubPreflightActionAllowed(clinicalHubPreflight)) {
+      return clinicalHubPreflight.message;
     }
     return validatePairedPayloadForSubmission(payload, { captureRunning });
   }
 
   async function syncPendingQueueWithConfiguredApi(): Promise<void> {
-    if (!isConfiguredApiBaseUrl(apiBaseUrl)) {
-      const message = buildMissingApiBaseUrlMessage();
+    if (!isClinicalHubPreflightActionAllowed(clinicalHubPreflight)) {
+      const message = clinicalHubPreflight.message;
       setLastResponse(message);
-      Alert.alert("API URL required", message);
+      Alert.alert("API preflight blocked", message);
       return;
     }
     await syncPendingSubmissions();
@@ -718,9 +724,9 @@ export default function App() {
   }
 
   async function loadComparisonSummary() {
-    if (!isConfiguredApiBaseUrl(apiBaseUrl)) {
+    if (!isClinicalHubPreflightActionAllowed(clinicalHubPreflight)) {
       setSummary(null);
-      setSummaryError(buildMissingApiBaseUrlMessage());
+      setSummaryError(clinicalHubPreflight.message);
       return;
     }
     const url = buildComparisonSummaryUrl({
@@ -758,9 +764,9 @@ export default function App() {
   }
 
   async function loadCaptureCoverageSummary() {
-    if (!isConfiguredApiBaseUrl(apiBaseUrl)) {
+    if (!isClinicalHubPreflightActionAllowed(clinicalHubPreflight)) {
       setCoverageSummary(null);
-      setCoverageError(buildMissingApiBaseUrlMessage());
+      setCoverageError(clinicalHubPreflight.message);
       return;
     }
     const url = buildCaptureCoverageSummaryUrl({
@@ -824,6 +830,8 @@ export default function App() {
           apiKey={apiKey}
           actorRole={actorRole}
           requestTimeoutMs={requestTimeoutMs}
+          clinicalHubPreflightMessage={clinicalHubPreflight.message}
+          clinicalHubPreflightStatus={clinicalHubPreflight.status}
           pendingQueue={pendingQueue}
           syncingPending={syncingPending}
           syncStatusMessage={syncStatusMessage}
