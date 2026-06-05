@@ -9,6 +9,7 @@ tsc --ignoreConfig \
   src/utils/appHelpers.ts \
   src/utils/pendingSyncQueue.ts \
   src/utils/submitOutcome.ts \
+  src/config/releaseMetadata.ts \
   src/storage/appSettingsStorage.ts \
   src/storage/pendingSubmissionStorage.ts \
   src/payload/capturePackagePayload.ts \

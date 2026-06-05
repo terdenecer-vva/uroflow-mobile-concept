@@ -107,6 +107,10 @@ def test_mobile_release_readiness_reports_external_blockers(tmp_path: Path) -> N
         "pending_sync_queue_unit_tests_present",
         "roi_signal_unit_tests_present",
         "runtime_metrics_unit_tests_present",
+        "release_metadata_capture_schema_version",
+        "release_metadata_model_id",
+        "release_metadata_module",
+        "release_metadata_version_matches_expo",
         "summary_requests_unit_tests_present",
         "submit_outcome_unit_tests_present",
     }.issubset(local_check_ids)
@@ -191,6 +195,43 @@ def test_mobile_release_readiness_fails_local_version_mismatch(tmp_path: Path) -
     assert payload["local_checks_status"] == "fail"
     assert check["status"] == "fail"
     assert "expo.version='9.9.9'" in check["evidence"]
+
+
+def test_mobile_release_readiness_fails_release_metadata_version_mismatch(
+    tmp_path: Path,
+) -> None:
+    mutated_app_json = tmp_path / "app.json"
+    metadata_path = tmp_path / "src" / "config" / "releaseMetadata.ts"
+    metadata_path.parent.mkdir(parents=True)
+    app_payload = json.loads(APP_JSON.read_text(encoding="utf-8"))
+    mutated_app_json.write_text(json.dumps(app_payload), encoding="utf-8")
+    metadata_path.write_text(
+        "\n".join(
+            [
+                'export const APP_RELEASE_VERSION = "9.9.9";',
+                'export const APP_MODEL_ID = "fusion-v0.1";',
+                'export const APP_CAPTURE_SCHEMA_VERSION = "ios_capture_v1";',
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    payload = _run_readiness_with_paths(
+        tmp_path / "readiness.json",
+        env={"PATH": os.environ.get("PATH", "")},
+        app_json=mutated_app_json,
+        check=False,
+    )
+
+    check = next(
+        item
+        for item in payload["local_checks"]
+        if item["id"] == "release_metadata_version_matches_expo"
+    )
+    assert payload["status"] == "not_ready"
+    assert payload["local_checks_status"] == "fail"
+    assert check["status"] == "fail"
+    assert "release_metadata.app_version='9.9.9'" in check["evidence"]
 
 
 def test_mobile_release_readiness_passes_authenticated_preflight_env(tmp_path: Path) -> None:

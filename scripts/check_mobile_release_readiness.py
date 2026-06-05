@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -38,6 +39,32 @@ def _is_six_digit_hex_color(value: Any) -> bool:
         and value.startswith("#")
         and all(character in "0123456789abcdefABCDEF" for character in value[1:])
     )
+
+
+def _read_ts_string_constant(source: str, name: str) -> str | None:
+    pattern = re.compile(rf"export\s+const\s+{re.escape(name)}\s*=\s*[\"']([^\"']+)[\"']")
+    match = pattern.search(source)
+    return match.group(1) if match else None
+
+
+def _load_release_metadata(app_json: Path) -> dict[str, str | None]:
+    path = app_json.parent / "src" / "config" / "releaseMetadata.ts"
+    if not path.is_file():
+        return {
+            "path": str(path),
+            "app_version": None,
+            "model_id": None,
+            "capture_schema_version": None,
+        }
+    source = path.read_text(encoding="utf-8")
+    return {
+        "path": str(path),
+        "app_version": _read_ts_string_constant(source, "APP_RELEASE_VERSION"),
+        "model_id": _read_ts_string_constant(source, "APP_MODEL_ID"),
+        "capture_schema_version": _read_ts_string_constant(
+            source, "APP_CAPTURE_SCHEMA_VERSION"
+        ),
+    }
 
 
 def _has_plugin(plugins: list[Any], plugin_name: str) -> bool:
@@ -199,6 +226,7 @@ def build_readiness_report(
     eas_payload = _load_json(eas_json)
     package_payload = _load_json(package_json)
     lock_payload = _load_json(package_lock)
+    release_metadata = _load_release_metadata(app_json)
 
     expo = app_payload.get("expo", {})
     plugins = expo.get("plugins", [])
@@ -226,6 +254,41 @@ def build_readiness_report(
     _check(checks, "expo_name", bool(expo.get("name")), f"name={expo.get('name')!r}")
     _check(checks, "expo_slug", bool(expo.get("slug")), f"slug={expo.get('slug')!r}")
     _check(checks, "expo_version", bool(expo.get("version")), f"version={expo.get('version')!r}")
+    _check(
+        checks,
+        "release_metadata_module",
+        bool(release_metadata.get("app_version"))
+        and bool(release_metadata.get("model_id"))
+        and bool(release_metadata.get("capture_schema_version")),
+        (
+            f"path={release_metadata.get('path')}, "
+            f"app_version={release_metadata.get('app_version')!r}, "
+            f"model_id={release_metadata.get('model_id')!r}, "
+            f"capture_schema_version={release_metadata.get('capture_schema_version')!r}"
+        ),
+    )
+    _check(
+        checks,
+        "release_metadata_version_matches_expo",
+        release_metadata.get("app_version") == expo.get("version"),
+        (
+            f"release_metadata.app_version={release_metadata.get('app_version')!r}, "
+            f"expo.version={expo.get('version')!r}"
+        ),
+    )
+    _check(
+        checks,
+        "release_metadata_model_id",
+        isinstance(release_metadata.get("model_id"), str)
+        and bool(str(release_metadata.get("model_id")).strip()),
+        f"model_id={release_metadata.get('model_id')!r}",
+    )
+    _check(
+        checks,
+        "release_metadata_capture_schema_version",
+        release_metadata.get("capture_schema_version") == "ios_capture_v1",
+        f"capture_schema_version={release_metadata.get('capture_schema_version')!r}",
+    )
     app_icon_path = _asset_path(app_json, expo.get("icon"))
     app_icon_dimensions = _png_dimensions(app_icon_path)
     _check(

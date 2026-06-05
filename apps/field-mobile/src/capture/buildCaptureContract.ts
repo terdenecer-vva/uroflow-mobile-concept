@@ -1,3 +1,8 @@
+import {
+  APP_CAPTURE_SCHEMA_VERSION,
+  APP_RELEASE_VERSION,
+} from "../config/releaseMetadata";
+
 export type CaptureContractSample = {
   t_s: number;
   depth_level_mm: number | null;
@@ -26,7 +31,7 @@ export type CaptureContractAnalysis = {
 };
 
 export type CaptureContractPayload = {
-  schema_version: "ios_capture_v1";
+  schema_version: typeof APP_CAPTURE_SCHEMA_VERSION;
   session: {
     session_id: string;
     sync_id: string | null;
@@ -246,10 +251,10 @@ export function buildCaptureContractPayload(
   input: BuildCaptureContractInput,
 ): CaptureContractPayload {
   const model = input.deviceModel?.trim() || "unknown-device";
-  const appVersion = input.appVersion?.trim() || "0.1.0";
+  const appVersion = input.appVersion?.trim() || APP_RELEASE_VERSION;
 
   return {
-    schema_version: "ios_capture_v1",
+    schema_version: APP_CAPTURE_SCHEMA_VERSION,
     session: {
       session_id: input.sessionId,
       sync_id: input.syncId,
@@ -281,7 +286,7 @@ export function buildCaptureContractPayloadFromSamples(
   input: BuildCaptureContractFromSamplesInput,
 ): CaptureContractPayload {
   const model = input.deviceModel?.trim() || "unknown-device";
-  const appVersion = input.appVersion?.trim() || "0.1.0";
+  const appVersion = input.appVersion?.trim() || APP_RELEASE_VERSION;
   const source = input.sourceLabel?.trim();
   let safeSamples: CaptureContractSample[] = sanitizeRuntimeSamples(input.samples);
   if (safeSamples.length === 0) {
@@ -317,7 +322,7 @@ export function buildCaptureContractPayloadFromSamples(
   const analysis = sanitizeAnalysis(input.analysis);
 
   const payload: CaptureContractPayload = {
-    schema_version: "ios_capture_v1",
+    schema_version: APP_CAPTURE_SCHEMA_VERSION,
     session: {
       session_id: input.sessionId,
       sync_id: input.syncId,

@@ -5,6 +5,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -46,6 +47,32 @@ def _get_plugin_options(plugins: list[Any], plugin_name: str) -> dict[str, Any]:
     return {}
 
 
+def _read_ts_string_constant(source: str, name: str) -> str | None:
+    pattern = re.compile(rf"export\s+const\s+{re.escape(name)}\s*=\s*[\"']([^\"']+)[\"']")
+    match = pattern.search(source)
+    return match.group(1) if match else None
+
+
+def _release_metadata(app_json: Path) -> dict[str, str | None]:
+    path = app_json.parent / "src" / "config" / "releaseMetadata.ts"
+    if not path.is_file():
+        return {
+            "path": str(path),
+            "app_version": None,
+            "model_id": None,
+            "capture_schema_version": None,
+        }
+    source = path.read_text(encoding="utf-8")
+    return {
+        "path": str(path),
+        "app_version": _read_ts_string_constant(source, "APP_RELEASE_VERSION"),
+        "model_id": _read_ts_string_constant(source, "APP_MODEL_ID"),
+        "capture_schema_version": _read_ts_string_constant(
+            source, "APP_CAPTURE_SCHEMA_VERSION"
+        ),
+    }
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Build mobile release manifest for pilot traceability."
@@ -67,6 +94,7 @@ def main() -> int:
     ios = expo.get("ios", {})
     android = expo.get("android", {})
     splash = _get_plugin_options(plugins, "expo-splash-screen")
+    release_metadata = _release_metadata(args.app_json)
     android_adaptive_icon = android.get("adaptiveIcon", {})
 
     manifest = {
@@ -106,6 +134,7 @@ def main() -> int:
             "git_run_id": os.environ.get("GITHUB_RUN_ID", "local"),
             "workflow": os.environ.get("GITHUB_WORKFLOW", "local"),
         },
+        "runtime_release_metadata": release_metadata,
         "algorithm": {
             "model_id": args.model_id,
             "capture_schema_version": args.schema_version,
