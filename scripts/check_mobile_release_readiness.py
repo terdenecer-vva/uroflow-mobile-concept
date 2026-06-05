@@ -266,11 +266,12 @@ def _build_next_actions(
             "status": "manual_required",
             "owner": "account_admin",
             "action": (
-                "Provision Apple Developer access, signing certificates/profiles, and TestFlight "
-                "distribution permissions."
+                "Provision Apple Developer access, App Store Connect app record, signing "
+                "certificates/profiles, and TestFlight distribution permissions."
             ),
             "verification": (
-                "Trigger a signed iOS EAS build and confirm TestFlight upload readiness."
+                "Trigger a signed iOS EAS build, then submit the latest production build and "
+                "confirm TestFlight upload readiness."
             ),
             "secret_names": [],
             "variable_names": [],
@@ -283,14 +284,14 @@ def _build_next_actions(
             "status": "manual_required",
             "owner": "account_admin",
             "action": (
-                "Provision Google Play Console access, Android signing, and internal testing track "
-                "permissions."
+                "Provision Google Play Console access, Android signing, Play API service account, "
+                "EAS file secret GOOGLE_SERVICE_ACCOUNT, and internal testing track permissions."
             ),
             "verification": (
-                "Trigger a signed Android EAS build and confirm Play Internal Testing upload "
-                "readiness."
+                "Trigger a signed Android EAS build, then submit the latest production build and "
+                "confirm Play Internal Testing upload readiness."
             ),
-            "secret_names": [],
+            "secret_names": ["GOOGLE_SERVICE_ACCOUNT"],
             "variable_names": [],
             "file_paths": [],
             "doc": "docs/mobile-release-runbook-v0.1.md",

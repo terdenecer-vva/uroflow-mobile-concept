@@ -161,6 +161,21 @@ def test_mobile_release_readiness_reports_external_blockers(tmp_path: Path) -> N
     )
     assert expo_action["secret_names"] == ["EXPO_TOKEN"]
     assert expo_action["verification"]
+    apple_action = next(
+        item
+        for item in payload["next_actions"]
+        if item["id"] == "provision_apple_developer_account"
+    )
+    assert "App Store Connect app record" in apple_action["action"]
+    assert "latest production build" in apple_action["verification"]
+    google_action = next(
+        item
+        for item in payload["next_actions"]
+        if item["id"] == "provision_google_play_account"
+    )
+    assert "GOOGLE_SERVICE_ACCOUNT" in google_action["action"]
+    assert google_action["secret_names"] == ["GOOGLE_SERVICE_ACCOUNT"]
+    assert "latest production build" in google_action["verification"]
 
 
 def test_mobile_release_readiness_fails_missing_app_icon(tmp_path: Path) -> None:
