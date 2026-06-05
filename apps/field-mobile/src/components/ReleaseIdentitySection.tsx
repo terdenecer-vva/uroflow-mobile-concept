@@ -27,6 +27,10 @@ export function ReleaseIdentitySection({
     snapshot.payloadStatus === "aligned"
       ? styles.releaseIdentityGoodText
       : styles.releaseIdentityWarningText;
+  const guardStatusStyle =
+    snapshot.releaseGuardStatus === "pass"
+      ? styles.releaseIdentityGoodText
+      : styles.releaseIdentityWarningText;
 
   return (
     <View style={styles.releaseIdentityBox}>
@@ -40,6 +44,10 @@ export function ReleaseIdentitySection({
         Payload traceability: {snapshot.payloadStatus}
       </Text>
       <Text style={styles.releaseIdentityText}>{snapshot.payloadEvidence}</Text>
+      <Text style={[styles.releaseIdentityText, guardStatusStyle]}>
+        Startup release guard: {snapshot.releaseGuardStatus}
+      </Text>
+      <Text style={styles.releaseIdentityText}>{snapshot.releaseGuardEvidence}</Text>
       <Text style={styles.helperText}>{snapshot.artifactTraceabilityNote}</Text>
     </View>
   );

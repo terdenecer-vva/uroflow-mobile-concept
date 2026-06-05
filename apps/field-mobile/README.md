@@ -35,6 +35,8 @@ Cross-platform mobile client (Expo React Native) for collecting paired measureme
 - `Start Capture` is blocked until camera permission, camera preview readiness, ROI lock,
   and at least one valid ROI frame are confirmed.
 - In-app `Release Identity` panel shows canonical app version, model/schema, runtime config, privacy/data-residency flags, platform, and payload traceability alignment.
+- Runtime release guard blocks capture/API/submit/sync actions when model ID, capture schema,
+  endpoint set, privacy, data-residency, or debug-gate configuration is incompatible.
 - If runtime capture was not started, app falls back to scaffold contract payload
 - `Stop Capture` auto-fills app metrics (`Qmax/Qavg/Vvoid/FlowTime/TQmax`) and quality status/score from runtime-derived proxies
 - Runtime block shows `roi_valid_ratio` and `low_confidence_ratio` quality flags
@@ -145,7 +147,7 @@ When backend is configured with API key policy map (`--api-key-map-json`), set i
 
 CI:
 - `.github/workflows/mobile-ci.yml` runs `npm run validate:ci` for `apps/field-mobile/**` changes.
-- `validate:ci` covers TypeScript, Clinical Hub API client/connection check/summary requests + mobile helper/API + runtime config + submit outcome + paired/capture-package payload + capture-contract + ROI signal + runtime metric + pending queue + deterministic sync smoke + storage unit tests, Expo Doctor, production dependency audit, and iOS/Android Expo exports.
+- `validate:ci` covers TypeScript, Clinical Hub API client/connection check/summary requests + mobile helper/API + runtime config/release guard + submit outcome + paired/capture-package payload + capture-contract + ROI signal + runtime metric + pending queue + deterministic sync smoke + storage unit tests, Expo Doctor, production dependency audit, and iOS/Android Expo exports.
 - `.github/workflows/mobile-build.yml` runs release preflight for mobile app/release-script changes and provides manual EAS build/submit triggers (`workflow_dispatch`) with inputs:
   - `build_profile` (`preview` / `development` / `production`)
   - `build_platform` (`all` / `ios` / `android`)
@@ -178,6 +180,7 @@ secret blockers. The artifact has separate machine-readable gates:
   Clinical Hub runtime trace headers,
   Clinical Hub nightly comparison/gate snapshot upload wiring,
   pilot gate report mobile build/schema traceability,
+  runtime release guard,
   in-app release identity evidence,
   runtime capture preflight guard, runtime motion quality gates, raw audio temp-file cleanup,
   derivatives-only feature/media manifest gates, pending sync connectivity-restore trigger,

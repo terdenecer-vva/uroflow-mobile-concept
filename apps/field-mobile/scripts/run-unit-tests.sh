@@ -13,6 +13,7 @@ tsc --ignoreConfig \
   src/utils/submitOutcome.ts \
   src/config/appConfig.ts \
   src/config/releaseMetadata.ts \
+  src/config/runtimeReleaseGuard.ts \
   src/storage/appSettingsStorage.ts \
   src/storage/pendingSubmissionStorage.ts \
   src/payload/capturePackagePayload.ts \

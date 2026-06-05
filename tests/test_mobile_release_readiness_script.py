@@ -151,6 +151,8 @@ def test_mobile_release_readiness_reports_external_blockers(tmp_path: Path) -> N
         "runtime_capture_preflight_unit_tests_present",
         "runtime_motion_quality_gate_sources",
         "runtime_motion_quality_gate_unit_tests_present",
+        "runtime_release_guard_sources",
+        "runtime_release_guard_unit_tests_present",
         "runtime_raw_media_temp_cleanup_sources",
         "runtime_raw_media_temp_cleanup_unit_tests_present",
         "runtime_timeline_analysis_sources",
