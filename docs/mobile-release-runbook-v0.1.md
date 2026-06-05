@@ -51,7 +51,7 @@ Workflow generates artifact `mobile-release-manifest` containing:
 - runtime release metadata from `apps/field-mobile/src/config/releaseMetadata.ts` for app version, model ID, and capture schema version,
 - runtime app config from `apps/field-mobile/src/config/appConfig.ts` for pilot mode, Clinical Hub v1 endpoint set, default capture mode, privacy-by-default switches, single-region data residency policy, and disabled debug gates,
 - Clinical Hub preflight guard evidence proving the app blocks missing/unsupported URLs and obvious cross-region Hub targets before Test API, Submit, or Sync Queue,
-- Clinical Hub request trace header evidence proving app/model/schema, runtime mode, endpoint set, and data-residency policy are sent as non-secret `x-uroflow-*` headers on API checks, submissions, summaries, and sync replay,
+- Clinical Hub request trace header evidence proving app/model/schema, runtime mode, endpoint set, and data-residency policy are sent as non-secret `x-uroflow-*` headers on API checks, submissions, summaries, and sync replay; backend audit stores these headers and rejects explicit region/runtime/endpoint mismatches,
 - runtime quality evidence for ROI validity, low-confidence depth ratio, and high-motion IMU artifact ratio in `capture_payload.analysis.runtime_quality`,
 - source-backed derivatives-only feature/media manifest evidence in `capture_contract.feature_manifest`, including manifest version, feature keys, `sample_count` source, `raw_media.*=false`, and `privacy.media_scope=roi_derivatives_only`,
 - readiness gate summary in `readiness`, including local/external/EAS/Clinical Hub statuses, local check counts, failed check IDs, external blocker statuses, and next-action IDs without secret values or detailed evidence strings,
@@ -182,7 +182,7 @@ python3 scripts/validate_mobile_store_rollout_handoff.py \
 1. App starts and opens settings screen.
 2. `Release Identity` shows app version, model/schema, runtime mode, endpoint set, privacy/data-residency flags, and `Payload traceability: aligned`.
 3. API block shows Clinical Hub preflight status; missing URL is blocked, local/LAN smoke URL is warning-only, and live URL is confirmed against the configured region policy.
-4. Clinical Hub request logs include non-secret `x-uroflow-*` release/runtime/data-residency trace headers.
+4. Clinical Hub request logs include non-secret `x-uroflow-*` release/runtime/data-residency trace headers, and backend contract tests reject a deliberate mismatched region header.
 5. `Device Model` is auto-filled from the physical device model or a platform fallback, and matches the smoke-log device entry after any field correction.
 6. `Start Capture` and `Stop Capture` work on real device.
 7. `Contract payload: ready` after stop.

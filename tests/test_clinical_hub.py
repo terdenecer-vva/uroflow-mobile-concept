@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import json
 from io import StringIO
 from pathlib import Path
 
@@ -543,6 +544,67 @@ def test_clinical_hub_api_key_and_audit_export(tmp_path: Path) -> None:
 
     assert len(rows) >= 2
     assert any(row["status_code"] == "401" for row in rows)
+
+
+def test_clinical_hub_runtime_trace_headers_are_audited_and_enforced(
+    tmp_path: Path,
+) -> None:
+    db_path = tmp_path / "clinical_hub_runtime_trace.db"
+    app = create_clinical_hub_app(db_path)
+    trace_headers = {
+        "x-uroflow-app-version": "0.1.0",
+        "x-uroflow-model-id": "fusion-v0.1",
+        "x-uroflow-capture-schema-version": "ios_capture_v1",
+        "x-uroflow-runtime-mode": "pilot",
+        "x-uroflow-endpoint-set": "clinical_hub_v1",
+        "x-uroflow-data-residency-region": "us",
+        "x-uroflow-data-residency-boundary": "single_region",
+        "x-uroflow-region-match-required": "true",
+    }
+
+    with TestClient(app) as client:
+        created = client.post(
+            "/api/v1/paired-measurements",
+            json=_payload(session_id="session-trace-001", sync_id="sync-trace-001"),
+            headers=trace_headers,
+        )
+        assert created.status_code == 201
+
+        rejected = client.post(
+            "/api/v1/paired-measurements",
+            json=_payload(session_id="session-trace-002", sync_id="sync-trace-002"),
+            headers={**trace_headers, "x-uroflow-data-residency-region": "eu"},
+        )
+        assert rejected.status_code == 400
+        assert "expected us, got eu" in rejected.json()["detail"]
+
+        audit_events = client.get("/api/v1/audit-events")
+        assert audit_events.status_code == 200
+        events = audit_events.json()
+
+    accepted_details = [
+        json.loads(item["detail_json"])
+        for item in events
+        if item["sync_id"] == "sync-trace-001" and item["status_code"] == 201
+    ]
+    assert accepted_details
+    assert (
+        accepted_details[0]["runtime_trace_headers"]["x-uroflow-data-residency-region"]
+        == "us"
+    )
+    assert accepted_details[0]["expected_runtime_trace"]["endpoint_set"] == "clinical_hub_v1"
+
+    rejected_details = [
+        json.loads(item["detail_json"])
+        for item in events
+        if item["sync_id"] == "sync-trace-002" and item["status_code"] == 400
+    ]
+    assert rejected_details
+    assert rejected_details[0]["reason"] == "runtime_trace_policy_mismatch"
+    assert (
+        rejected_details[0]["runtime_trace_headers"]["x-uroflow-data-residency-region"]
+        == "eu"
+    )
 
 
 def test_pilot_automation_reports_crud_and_csv_export(tmp_path: Path) -> None:

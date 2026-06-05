@@ -440,6 +440,8 @@ npm run start:device
 только как предупреждение для smoke-тестов.
 Все Clinical Hub запросы также несут runtime trace headers (`x-uroflow-*`) с app/model/schema,
 endpoint-set и data-residency политикой без секретных значений.
+Clinical Hub audit trail сохраняет эти trace headers и отклоняет запросы с явно
+несовпадающим `x-uroflow-data-residency-region`, endpoint-set или runtime-mode.
 
 ## Интеграция Project Package v2.8
 
