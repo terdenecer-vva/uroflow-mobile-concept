@@ -13,6 +13,24 @@ def _load_json(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def _asset_path(app_json: Path, raw_path: Any) -> Path | None:
+    if not isinstance(raw_path, str) or not raw_path.strip():
+        return None
+    candidate = Path(raw_path)
+    if not candidate.is_absolute():
+        candidate = app_json.parent / candidate
+    return candidate
+
+
+def _png_dimensions(path: Path | None) -> tuple[int, int] | None:
+    if path is None or not path.is_file():
+        return None
+    header = path.read_bytes()[:24]
+    if len(header) < 24 or header[:8] != b"\x89PNG\r\n\x1a\n" or header[12:16] != b"IHDR":
+        return None
+    return int.from_bytes(header[16:20], "big"), int.from_bytes(header[20:24], "big")
+
+
 def _has_plugin(plugins: list[Any], plugin_name: str) -> bool:
     for plugin in plugins:
         if plugin == plugin_name:
@@ -177,6 +195,7 @@ def build_readiness_report(
     plugins = expo.get("plugins", [])
     ios = expo.get("ios", {})
     android = expo.get("android", {})
+    android_adaptive_icon = android.get("adaptiveIcon", {})
     scripts = package_payload.get("scripts", {})
     root_lock = lock_payload.get("packages", {}).get("", {})
     eas_build = eas_payload.get("build", {})
@@ -197,6 +216,16 @@ def build_readiness_report(
     _check(checks, "expo_name", bool(expo.get("name")), f"name={expo.get('name')!r}")
     _check(checks, "expo_slug", bool(expo.get("slug")), f"slug={expo.get('slug')!r}")
     _check(checks, "expo_version", bool(expo.get("version")), f"version={expo.get('version')!r}")
+    app_icon_path = _asset_path(app_json, expo.get("icon"))
+    app_icon_dimensions = _png_dimensions(app_icon_path)
+    _check(
+        checks,
+        "app_icon_png_asset",
+        app_icon_dimensions is not None
+        and app_icon_dimensions[0] == app_icon_dimensions[1]
+        and app_icon_dimensions[0] >= 1024,
+        f"icon={expo.get('icon')!r}, dimensions={app_icon_dimensions!r}",
+    )
     _check(
         checks,
         "app_version_matches_package_version",
@@ -280,6 +309,29 @@ def build_readiness_report(
         set(android.get("permissions", [])) == {"CAMERA", "RECORD_AUDIO"},
         f"permissions={android.get('permissions', [])!r}",
         severity="warning",
+    )
+    android_adaptive_icon_path = _asset_path(
+        app_json, android_adaptive_icon.get("foregroundImage")
+    )
+    android_adaptive_icon_dimensions = _png_dimensions(android_adaptive_icon_path)
+    _check(
+        checks,
+        "android_adaptive_icon_png_asset",
+        android_adaptive_icon_dimensions is not None
+        and android_adaptive_icon_dimensions[0] == android_adaptive_icon_dimensions[1]
+        and android_adaptive_icon_dimensions[0] >= 1024,
+        (
+            f"foregroundImage={android_adaptive_icon.get('foregroundImage')!r}, "
+            f"dimensions={android_adaptive_icon_dimensions!r}"
+        ),
+    )
+    _check(
+        checks,
+        "android_adaptive_icon_background_color",
+        isinstance(android_adaptive_icon.get("backgroundColor"), str)
+        and android_adaptive_icon.get("backgroundColor", "").startswith("#")
+        and len(android_adaptive_icon.get("backgroundColor", "")) == 7,
+        f"backgroundColor={android_adaptive_icon.get('backgroundColor')!r}",
     )
     _check(
         checks,

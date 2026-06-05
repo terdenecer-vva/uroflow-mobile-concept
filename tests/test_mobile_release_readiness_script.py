@@ -74,7 +74,10 @@ def test_mobile_release_readiness_reports_external_blockers(tmp_path: Path) -> N
     assert all(item["status"] == "pass" for item in payload["local_checks"])
     local_check_ids = {item["id"] for item in payload["local_checks"]}
     assert {
+        "android_adaptive_icon_background_color",
+        "android_adaptive_icon_png_asset",
         "android_runtime_permissions_minimal",
+        "app_icon_png_asset",
         "app_version_matches_package_version",
         "app_settings_storage_unit_tests_present",
         "audio_microphone_permission",
@@ -113,6 +116,26 @@ def test_mobile_release_readiness_reports_external_blockers(tmp_path: Path) -> N
     )
     assert expo_action["secret_names"] == ["EXPO_TOKEN"]
     assert expo_action["verification"]
+
+
+def test_mobile_release_readiness_fails_missing_app_icon(tmp_path: Path) -> None:
+    mutated_app_json = tmp_path / "app.json"
+    app_payload = json.loads(APP_JSON.read_text(encoding="utf-8"))
+    app_payload["expo"]["icon"] = "./assets/missing-icon.png"
+    mutated_app_json.write_text(json.dumps(app_payload), encoding="utf-8")
+
+    payload = _run_readiness_with_paths(
+        tmp_path / "readiness.json",
+        env={"PATH": os.environ.get("PATH", "")},
+        app_json=mutated_app_json,
+        check=False,
+    )
+
+    check = next(item for item in payload["local_checks"] if item["id"] == "app_icon_png_asset")
+    assert payload["status"] == "not_ready"
+    assert payload["local_checks_status"] == "fail"
+    assert check["status"] == "fail"
+    assert "missing-icon.png" in check["evidence"]
 
 
 def test_mobile_release_readiness_fails_local_version_mismatch(tmp_path: Path) -> None:
