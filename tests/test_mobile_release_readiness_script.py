@@ -110,6 +110,8 @@ def test_mobile_release_readiness_reports_external_blockers(tmp_path: Path) -> N
         "mobile_helper_unit_tests_present",
         "mobile_api_response_redaction_sources",
         "mobile_api_response_redaction_unit_tests_present",
+        "mobile_feature_media_manifest_sources",
+        "mobile_feature_media_manifest_unit_tests_present",
         "connection_check_unit_tests_present",
         "capture_contract_unit_tests_present",
         "pending_submission_storage_unit_tests_present",

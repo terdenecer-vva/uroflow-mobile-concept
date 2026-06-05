@@ -5,6 +5,26 @@ const test = require("node:test");
 const buildDir = process.env.MOBILE_UNIT_BUILD_DIR ?? "/tmp/uroflow-field-mobile-unit";
 const capture = require(path.join(buildDir, "capture/buildCaptureContract.js"));
 
+function assertDerivativesOnlyFeatureManifest(payload, source) {
+  assert.equal(payload.feature_manifest.version, "mobile_feature_manifest_v0.1");
+  assert.equal(payload.feature_manifest.source, source);
+  assert.equal(payload.feature_manifest.derivatives_only, true);
+  assert.equal(payload.feature_manifest.sample_count, payload.samples.length);
+  assert.deepEqual(payload.feature_manifest.raw_media, {
+    store_raw_video: false,
+    store_raw_audio: false,
+    upload_raw_video: false,
+    upload_raw_audio: false,
+  });
+  assert.deepEqual(payload.feature_manifest.privacy, {
+    roi_only: true,
+    media_scope: "roi_derivatives_only",
+  });
+  assert.equal(payload.feature_manifest.feature_keys.includes("audio_rms_dbfs"), true);
+  assert.equal(payload.feature_manifest.feature_keys.includes("motion_norm"), true);
+  assert.equal(payload.feature_manifest.feature_keys.includes("roi_valid"), true);
+}
+
 test("buildCaptureContractPayload creates privacy-preserving scaffold payloads", () => {
   const payload = capture.buildCaptureContractPayload({
     sessionId: "SESSION-001",
@@ -34,6 +54,7 @@ test("buildCaptureContractPayload creates privacy-preserving scaffold payloads",
   assert.ok(payload.samples.length >= 8);
   assert.equal(payload.samples.every((sample) => sample.roi_valid === true), true);
   assert.equal(payload.samples.every((sample) => sample.t_s >= 0), true);
+  assertDerivativesOnlyFeatureManifest(payload, "mobile_scaffold");
 });
 
 test("buildCaptureContractPayloadFromSamples creates fallback samples for empty runtime input", () => {
@@ -61,6 +82,7 @@ test("buildCaptureContractPayloadFromSamples creates fallback samples for empty 
     [0, 0.5],
   );
   assert.equal(payload.analysis, undefined);
+  assertDerivativesOnlyFeatureManifest(payload, "runtime-audio-imu");
 });
 
 test("buildCaptureContractPayloadFromSamples duplicates one-sample runtime captures safely", () => {
@@ -218,4 +240,13 @@ test("buildCaptureContractPayloadFromSamples sanitizes runtime analysis", () => 
     low_confidence_ratio: 0,
     high_motion_ratio: 1,
   });
+  assertDerivativesOnlyFeatureManifest(payload, "runtime-audio-imu-camera-proxy");
+  assert.equal(
+    payload.feature_manifest.feature_keys.includes("runtime_flow_series.flow_ml_s"),
+    true,
+  );
+  assert.equal(
+    payload.feature_manifest.feature_keys.includes("runtime_quality.high_motion_ratio"),
+    true,
+  );
 });

@@ -11,6 +11,7 @@ Implemented now:
 - Pilot automation and release gates (`v4.2`) in repository.
 - App-level runtime config for pilot mode, Clinical Hub v1 endpoint set, default capture mode, privacy-by-default switches, and disabled debug gates.
 - Runtime capture quality gates for ROI validity, low-confidence depth, and high-motion IMU artifacts.
+- Derivatives-only feature/media manifest in mobile `ios_capture_v1` payloads, with backend validation that raw media storage/upload flags remain disabled.
 
 Not yet implemented:
 - Real sensor capture pipeline (camera/audio/IMU/depth).
@@ -27,7 +28,7 @@ Not yet implemented:
 ### G2. Data contract gap
 - Capture contract can use live runtime samples, with scaffold fallback still available.
 - `capture-packages` are queued for offline retry, but device-level E2E replay evidence still needs to be archived.
-- No direct upload of feature bundles/media manifests.
+- Mobile payloads include a derivatives-only feature/media manifest; native-grade feature bundles and device-level media-manifest replay evidence still need physical-device archival.
 
 ### G3. Security/privacy gap
 - Secure storage introduced for API key, but no media encryption path yet.
@@ -61,6 +62,7 @@ DoD:
 2. Record audio envelope + ROI motion/texture + IMU jitter over unified timeline.
 3. Build live `ios_capture_v1` payload from runtime samples.
 4. Add quality pre-checks before submit (`roi_valid_ratio`, motion threshold, depth confidence ratio). Status: implemented in runtime payload scoring; needs physical-device threshold calibration.
+5. Add feature/media manifest for derived mobile capture features. Status: implemented as derivatives-only manifest with raw media disabled in payload and backend validator.
 
 DoD:
 - Single-button record flow works on physical iPhone and Android.

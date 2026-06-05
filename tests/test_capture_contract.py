@@ -41,6 +41,35 @@ def _valid_payload() -> dict[str, object]:
     }
 
 
+def _valid_feature_manifest(sample_count: int = 3) -> dict[str, object]:
+    return {
+        "version": "mobile_feature_manifest_v0.1",
+        "source": "runtime-audio-imu",
+        "derivatives_only": True,
+        "sample_count": sample_count,
+        "feature_keys": [
+            "audio_rms_dbfs",
+            "depth_confidence",
+            "depth_level_mm",
+            "motion_norm",
+            "rgb_level_mm",
+            "roi_valid",
+            "runtime_quality.high_motion_ratio",
+            "t_s",
+        ],
+        "raw_media": {
+            "store_raw_video": False,
+            "store_raw_audio": False,
+            "upload_raw_video": False,
+            "upload_raw_audio": False,
+        },
+        "privacy": {
+            "roi_only": True,
+            "media_scope": "roi_derivatives_only",
+        },
+    }
+
+
 def test_validate_capture_payload_accepts_valid_shape() -> None:
     report = validate_capture_payload(_valid_payload())
 
@@ -105,3 +134,28 @@ def test_validate_capture_payload_allows_optional_analysis_block() -> None:
 
     assert report.valid is True
     assert report.errors == []
+
+
+def test_validate_capture_payload_allows_derivatives_only_feature_manifest() -> None:
+    payload = _valid_payload()
+    payload["feature_manifest"] = _valid_feature_manifest()
+
+    report = validate_capture_payload(payload)
+
+    assert report.valid is True
+    assert report.errors == []
+
+
+def test_validate_capture_payload_rejects_feature_manifest_raw_media_upload() -> None:
+    payload = _valid_payload()
+    manifest = _valid_feature_manifest(sample_count=2)
+    manifest["derivatives_only"] = False
+    manifest["raw_media"]["upload_raw_audio"] = True  # type: ignore[index]
+    payload["feature_manifest"] = manifest
+
+    report = validate_capture_payload(payload)
+
+    assert report.valid is False
+    assert "feature_manifest.derivatives_only must be true" in report.errors
+    assert "feature_manifest.sample_count must match samples length" in report.errors
+    assert "feature_manifest.raw_media.upload_raw_audio must be false" in report.errors

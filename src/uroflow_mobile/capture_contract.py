@@ -7,6 +7,7 @@ from typing import Any
 
 SUPPORTED_CAPTURE_MODES = {"water_impact", "jet_in_air", "porcelain_wall"}
 SCHEMA_VERSION = "ios_capture_v1"
+FEATURE_MANIFEST_VERSION = "mobile_feature_manifest_v0.1"
 
 
 @dataclass(frozen=True)
@@ -41,6 +42,71 @@ def _parse_started_at(value: Any) -> bool:
     except ValueError:
         return False
     return True
+
+
+def _validate_feature_manifest(
+    manifest: Any,
+    *,
+    sample_count: int,
+    errors: list[str],
+) -> None:
+    if manifest is None:
+        return
+    if not isinstance(manifest, dict):
+        errors.append("feature_manifest must be an object when provided")
+        return
+
+    if manifest.get("version") != FEATURE_MANIFEST_VERSION:
+        errors.append(f"feature_manifest.version must be '{FEATURE_MANIFEST_VERSION}'")
+
+    source = manifest.get("source")
+    if not isinstance(source, str) or not source.strip():
+        errors.append("feature_manifest.source must be a non-empty string")
+
+    if manifest.get("derivatives_only") is not True:
+        errors.append("feature_manifest.derivatives_only must be true")
+
+    manifest_sample_count = manifest.get("sample_count")
+    if not isinstance(manifest_sample_count, int) or isinstance(
+        manifest_sample_count, bool
+    ):
+        errors.append("feature_manifest.sample_count must be an integer")
+    elif manifest_sample_count != sample_count:
+        errors.append("feature_manifest.sample_count must match samples length")
+
+    feature_keys = manifest.get("feature_keys")
+    if not isinstance(feature_keys, list) or not feature_keys:
+        errors.append("feature_manifest.feature_keys must be a non-empty array")
+    else:
+        for index, feature_key in enumerate(feature_keys):
+            if not isinstance(feature_key, str) or not feature_key.strip():
+                errors.append(
+                    f"feature_manifest.feature_keys[{index}] must be a non-empty string"
+                )
+
+    raw_media = manifest.get("raw_media")
+    if not isinstance(raw_media, dict):
+        errors.append("feature_manifest.raw_media must be an object")
+    else:
+        for flag in (
+            "store_raw_video",
+            "store_raw_audio",
+            "upload_raw_video",
+            "upload_raw_audio",
+        ):
+            if raw_media.get(flag) is not False:
+                errors.append(f"feature_manifest.raw_media.{flag} must be false")
+
+    privacy = manifest.get("privacy")
+    if not isinstance(privacy, dict):
+        errors.append("feature_manifest.privacy must be an object")
+    else:
+        if privacy.get("roi_only") is not True:
+            errors.append("feature_manifest.privacy.roi_only must be true")
+        if privacy.get("media_scope") != "roi_derivatives_only":
+            errors.append(
+                "feature_manifest.privacy.media_scope must be 'roi_derivatives_only'"
+            )
 
 
 def validate_capture_payload(payload: dict[str, Any]) -> CaptureValidationReport:
@@ -158,6 +224,12 @@ def validate_capture_payload(payload: dict[str, Any]) -> CaptureValidationReport
         warnings.append("ROI valid ratio < 0.85; likely repeat measurement")
     if sample_count and low_conf_ratio > 0.25:
         warnings.append("Low depth confidence ratio > 0.25; fallback reliance expected")
+
+    _validate_feature_manifest(
+        payload.get("feature_manifest"),
+        sample_count=sample_count,
+        errors=errors,
+    )
 
     return CaptureValidationReport(
         valid=not errors,
