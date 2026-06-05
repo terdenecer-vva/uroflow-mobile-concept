@@ -42,6 +42,52 @@ def test_cli_evaluate_gates_passes_for_g0(tmp_path: Path) -> None:
     payload = json.loads(output_json.read_text(encoding="utf-8"))
     assert payload["overall_passed"] is True
     assert payload["evaluated_gates"] == ["G0"]
+    assert payload["traceability"]["schema_version"] == "gate_summary_traceability_v0.1"
+
+
+def test_cli_evaluate_gates_embeds_mobile_traceability(tmp_path: Path) -> None:
+    metrics_path = tmp_path / "metrics_traceability.json"
+    output_json = tmp_path / "gate_summary_traceability.json"
+    metrics_path.write_text(
+        json.dumps(_g0_metrics(), ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+    exit_code = cli_main(
+        [
+            "evaluate-gates",
+            str(metrics_path),
+            "--gates",
+            "G0",
+            "--output-json",
+            str(output_json),
+            "--trace-git-sha",
+            "abc123",
+            "--trace-workflow-run-id",
+            "98765",
+            "--trace-workflow-name",
+            "CI",
+            "--trace-mobile-build-id",
+            "github_actions:98765",
+            "--trace-app-json",
+            "apps/field-mobile/app.json",
+            "--trace-release-metadata-ts",
+            "apps/field-mobile/src/config/releaseMetadata.ts",
+        ]
+    )
+
+    assert exit_code == 0
+    payload = json.loads(output_json.read_text(encoding="utf-8"))
+    assert payload["traceability"] == {
+        "schema_version": "gate_summary_traceability_v0.1",
+        "git_sha": "abc123",
+        "workflow_run_id": "98765",
+        "workflow_name": "CI",
+        "mobile_build_id": "github_actions:98765",
+        "app_version": "0.1.0",
+        "model_id": "fusion-v0.1",
+        "capture_schema_version": "ios_capture_v1",
+    }
 
 
 def test_cli_evaluate_gates_fails_when_rule_not_met(tmp_path: Path) -> None:

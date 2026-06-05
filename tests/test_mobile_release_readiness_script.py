@@ -143,6 +143,8 @@ def test_mobile_release_readiness_reports_external_blockers(tmp_path: Path) -> N
         "pending_sync_connectivity_restore_sources",
         "pending_sync_connectivity_restore_unit_tests_present",
         "pending_sync_queue_unit_tests_present",
+        "pilot_gate_traceability_sources",
+        "pilot_gate_traceability_unit_tests_present",
         "roi_signal_unit_tests_present",
         "runtime_metrics_unit_tests_present",
         "runtime_capture_preflight_sources",

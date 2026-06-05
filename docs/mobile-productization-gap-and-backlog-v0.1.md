@@ -130,7 +130,9 @@ DoD:
 
 DoD:
 - Mobile regression suite blocks broken payload changes.
-- Pilot gate report includes mobile build ID and schema version.
+- Pilot gate report includes mobile build ID and schema version. Status: implemented via
+  `gate_summary_traceability_v0.1` in `evaluate-gates` output and wired in
+  `pilot-automation-smoke`.
 
 ## 4) Immediate next PRs
 

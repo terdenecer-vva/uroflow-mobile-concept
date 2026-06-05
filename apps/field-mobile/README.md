@@ -177,6 +177,7 @@ secret blockers. The artifact has separate machine-readable gates:
   Clinical Hub preflight guard,
   Clinical Hub runtime trace headers,
   Clinical Hub nightly comparison/gate snapshot upload wiring,
+  pilot gate report mobile build/schema traceability,
   in-app release identity evidence,
   runtime capture preflight guard, runtime motion quality gates, raw audio temp-file cleanup,
   derivatives-only feature/media manifest gates, pending sync connectivity-restore trigger,

@@ -6,6 +6,7 @@ import hashlib
 import json
 import math
 import os
+import re
 from pathlib import Path
 
 from .capture_contract import (
@@ -107,6 +108,43 @@ def _validation_to_dict(report: CaptureValidationReport) -> dict[str, object]:
         "roi_valid_ratio": report.roi_valid_ratio,
         "low_depth_confidence_ratio": report.low_depth_confidence_ratio,
     }
+
+
+def _read_ts_string_constant(source: str, name: str) -> str | None:
+    pattern = re.compile(rf"export\s+const\s+{re.escape(name)}\s*=\s*[\"']([^\"']*)[\"']")
+    match = pattern.search(source)
+    return match.group(1) if match else None
+
+
+def _load_mobile_release_metadata(path: Path | None) -> dict[str, str | None]:
+    if path is None or not path.is_file():
+        return {
+            "app_version": None,
+            "model_id": None,
+            "capture_schema_version": None,
+        }
+    source = path.read_text(encoding="utf-8")
+    return {
+        "app_version": _read_ts_string_constant(source, "APP_RELEASE_VERSION"),
+        "model_id": _read_ts_string_constant(source, "APP_MODEL_ID"),
+        "capture_schema_version": _read_ts_string_constant(
+            source,
+            "APP_CAPTURE_SCHEMA_VERSION",
+        ),
+    }
+
+
+def _load_expo_app_version(path: Path | None) -> str | None:
+    if path is None or not path.is_file():
+        return None
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        return None
+    expo = payload.get("expo")
+    if not isinstance(expo, dict):
+        return None
+    version = expo.get("version")
+    return version if isinstance(version, str) and version else None
 
 
 def _session_quality_to_dict(quality: CaptureSessionQuality) -> dict[str, object]:
@@ -529,6 +567,39 @@ def _build_parser() -> argparse.ArgumentParser:
     evaluate_gates.add_argument(
         "--output-json",
         help="Path for output gate summary JSON. Default: <metrics_stem>_gate_summary.json",
+    )
+    evaluate_gates.add_argument("--trace-git-sha", help="Git SHA for gate report traceability.")
+    evaluate_gates.add_argument(
+        "--trace-workflow-run-id",
+        help="Workflow run ID for gate report traceability.",
+    )
+    evaluate_gates.add_argument(
+        "--trace-workflow-name",
+        help="Workflow name for gate report traceability.",
+    )
+    evaluate_gates.add_argument(
+        "--trace-mobile-build-id",
+        help="Mobile build/run identifier linked to this gate report.",
+    )
+    evaluate_gates.add_argument(
+        "--trace-app-version",
+        help="Mobile app version linked to this gate report.",
+    )
+    evaluate_gates.add_argument(
+        "--trace-model-id",
+        help="Model ID linked to this gate report.",
+    )
+    evaluate_gates.add_argument(
+        "--trace-capture-schema-version",
+        help="Capture schema version linked to this gate report.",
+    )
+    evaluate_gates.add_argument(
+        "--trace-app-json",
+        help="Optional Expo app.json path used to backfill app version.",
+    )
+    evaluate_gates.add_argument(
+        "--trace-release-metadata-ts",
+        help="Optional releaseMetadata.ts path used to backfill app/model/schema traceability.",
     )
 
     build_gate_metrics_cmd = subparsers.add_parser(
@@ -1224,6 +1295,36 @@ def _load_metrics_payload(payload: object) -> dict[str, object]:
     return payload
 
 
+def _build_gate_report_traceability(args: argparse.Namespace) -> dict[str, str | None]:
+    release_metadata = _load_mobile_release_metadata(
+        Path(args.trace_release_metadata_ts) if args.trace_release_metadata_ts else None
+    )
+    app_version = (
+        args.trace_app_version
+        or release_metadata.get("app_version")
+        or _load_expo_app_version(Path(args.trace_app_json) if args.trace_app_json else None)
+    )
+    workflow_run_id = args.trace_workflow_run_id or os.environ.get("GITHUB_RUN_ID") or "local"
+    mobile_build_id = (
+        args.trace_mobile_build_id
+        or os.environ.get("MOBILE_BUILD_ID")
+        or (f"github_actions:{workflow_run_id}" if workflow_run_id != "local" else "local")
+    )
+    return {
+        "schema_version": "gate_summary_traceability_v0.1",
+        "git_sha": args.trace_git_sha or os.environ.get("GITHUB_SHA") or "local",
+        "workflow_run_id": workflow_run_id,
+        "workflow_name": args.trace_workflow_name or os.environ.get("GITHUB_WORKFLOW") or "local",
+        "mobile_build_id": mobile_build_id,
+        "app_version": app_version,
+        "model_id": args.trace_model_id or release_metadata.get("model_id"),
+        "capture_schema_version": (
+            args.trace_capture_schema_version
+            or release_metadata.get("capture_schema_version")
+        ),
+    }
+
+
 def _handle_evaluate_gates(args: argparse.Namespace) -> int:
     metrics_path = Path(args.metrics_json)
     if not metrics_path.exists():
@@ -1247,6 +1348,7 @@ def _handle_evaluate_gates(args: argparse.Namespace) -> int:
     summary = evaluate_release_gates(metrics=metrics, config=config, gates=selected_gates)
     payload = gate_summary_to_dict(summary)
     payload["metrics_path"] = str(metrics_path)
+    payload["traceability"] = _build_gate_report_traceability(args)
     if config_path is not None:
         payload["config_path"] = str(config_path)
 

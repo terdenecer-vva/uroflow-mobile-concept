@@ -866,6 +866,9 @@ def build_readiness_report(
     clinical_hub_backend_tests_path = repo_root / "tests" / "test_clinical_hub.py"
     clinical_hub_contract_tests_path = repo_root / "tests" / "test_clinical_hub_contract.py"
     ci_workflow_path = repo_root / ".github" / "workflows" / "ci.yml"
+    cli_path = repo_root / "src" / "uroflow_mobile" / "cli.py"
+    cli_gates_tests_path = repo_root / "tests" / "test_cli_gates.py"
+    ci_workflow_tests_path = repo_root / "tests" / "test_ci_workflow.py"
     paired_payload_tests_path = mobile_root / "tests" / "pairedPayload.test.js"
     roi_signal_tests_path = mobile_root / "tests" / "roiSignalEstimator.test.js"
     runtime_metrics_source_path = mobile_root / "src" / "capture" / "runtimeMetrics.ts"
@@ -946,6 +949,9 @@ def build_readiness_report(
     clinical_hub_backend_tests_source = _read_file_text(clinical_hub_backend_tests_path)
     clinical_hub_contract_tests_source = _read_file_text(clinical_hub_contract_tests_path)
     ci_workflow_source = _read_file_text(ci_workflow_path)
+    cli_source = _read_file_text(cli_path)
+    cli_gates_tests_source = _read_file_text(cli_gates_tests_path)
+    ci_workflow_tests_source = _read_file_text(ci_workflow_tests_path)
     _check(
         checks,
         "unit_test_script",
@@ -1633,6 +1639,38 @@ def build_readiness_report(
         "clinical_hub_nightly_snapshot_unit_tests_present",
         all(clinical_hub_nightly_snapshot_test_requirements.values()),
         f"requirements={clinical_hub_nightly_snapshot_test_requirements!r}",
+    )
+    pilot_gate_traceability_requirements = {
+        "cli_traceability_schema": "gate_summary_traceability_v0.1" in cli_source,
+        "cli_mobile_build_id_arg": "--trace-mobile-build-id" in cli_source,
+        "cli_release_metadata_arg": "--trace-release-metadata-ts" in cli_source,
+        "cli_capture_schema_trace": "capture_schema_version" in cli_source,
+        "ci_passes_git_sha": "--trace-git-sha \"$GITHUB_SHA\"" in ci_workflow_source,
+        "ci_passes_mobile_build_id": "--trace-mobile-build-id"
+        in ci_workflow_source
+        and "github_actions:${GITHUB_RUN_ID}" in ci_workflow_source,
+        "ci_passes_release_metadata": "--trace-release-metadata-ts"
+        in ci_workflow_source
+        and "apps/field-mobile/src/config/releaseMetadata.ts" in ci_workflow_source,
+    }
+    _check(
+        checks,
+        "pilot_gate_traceability_sources",
+        all(pilot_gate_traceability_requirements.values()),
+        f"requirements={pilot_gate_traceability_requirements!r}",
+    )
+    pilot_gate_traceability_test_requirements = {
+        "cli_traceability_test": "embeds_mobile_traceability" in cli_gates_tests_source,
+        "ci_workflow_test": "gate_summary_includes_mobile_traceability"
+        in ci_workflow_tests_source,
+        "schema_assertion": "gate_summary_traceability_v0.1" in cli_gates_tests_source,
+        "capture_schema_assertion": "ios_capture_v1" in cli_gates_tests_source,
+    }
+    _check(
+        checks,
+        "pilot_gate_traceability_unit_tests_present",
+        all(pilot_gate_traceability_test_requirements.values()),
+        f"requirements={pilot_gate_traceability_test_requirements!r}",
     )
     _check(
         checks,

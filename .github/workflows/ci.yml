@@ -308,7 +308,13 @@ jobs:
             /tmp/pilot_automation_smoke/gate_metrics.json \
             --config-json docs/project-package-v2.8/gates-config-v2.8.json \
             --gates G0 \
-            --output-json /tmp/pilot_automation_smoke/gate_summary.json
+            --output-json /tmp/pilot_automation_smoke/gate_summary.json \
+            --trace-git-sha "$GITHUB_SHA" \
+            --trace-workflow-run-id "$GITHUB_RUN_ID" \
+            --trace-workflow-name "$GITHUB_WORKFLOW" \
+            --trace-mobile-build-id "github_actions:${GITHUB_RUN_ID}" \
+            --trace-app-json apps/field-mobile/app.json \
+            --trace-release-metadata-ts apps/field-mobile/src/config/releaseMetadata.ts
 
       - name: Push pilot reports to Clinical Hub (optional)
         env:
