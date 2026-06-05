@@ -17,6 +17,10 @@ test("app runtime config defines pilot endpoints, privacy defaults, and debug ga
   assert.equal(appConfig.APP_STORE_RAW_VIDEO, false);
   assert.equal(appConfig.APP_STORE_RAW_AUDIO, false);
   assert.equal(appConfig.APP_ROI_ONLY, true);
+  assert.equal(appConfig.APP_DATA_RESIDENCY_REGION, "us");
+  assert.equal(appConfig.APP_DATA_RESIDENCY_BOUNDARY, "single_region");
+  assert.equal(appConfig.APP_ALLOW_CROSS_REGION_SYNC, false);
+  assert.equal(appConfig.APP_REQUIRE_REGION_MATCHED_CLINICAL_HUB, true);
   assert.equal(appConfig.APP_ALLOW_DEBUG_CONTROLS, false);
   assert.equal(appConfig.APP_ALLOW_RAW_RESPONSE_DETAILS, false);
   assert.equal(appConfig.APP_ENABLE_VERBOSE_LOGGING, false);
@@ -29,6 +33,12 @@ test("app runtime config defines pilot endpoints, privacy defaults, and debug ga
     storeRawAudio: false,
     roiOnly: true,
   });
+  assert.deepEqual(appConfig.APP_DATA_RESIDENCY_POLICY, {
+    region: "us",
+    boundary: "single_region",
+    allowCrossRegionSync: false,
+    requireRegionMatchedClinicalHub: true,
+  });
   assert.deepEqual(appConfig.APP_DEBUG_GATES, {
     allowDebugControls: false,
     allowRawResponseDetails: false,
@@ -40,6 +50,7 @@ test("app runtime config defines pilot endpoints, privacy defaults, and debug ga
     endpointPaths: appConfig.APP_ENDPOINT_PATHS,
     defaultCaptureMode: "water_impact",
     privacyPolicy: appConfig.APP_PRIVACY_POLICY,
+    dataResidencyPolicy: appConfig.APP_DATA_RESIDENCY_POLICY,
     debugGates: appConfig.APP_DEBUG_GATES,
   });
 });

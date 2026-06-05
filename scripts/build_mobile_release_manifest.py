@@ -100,6 +100,10 @@ def _app_runtime_config(app_json: Path) -> dict[str, str | bool | None]:
             "store_raw_video": None,
             "store_raw_audio": None,
             "roi_only": None,
+            "data_residency_region": None,
+            "data_residency_boundary": None,
+            "allow_cross_region_sync": None,
+            "require_region_matched_clinical_hub": None,
             "allow_debug_controls": None,
             "allow_raw_response_details": None,
             "enable_verbose_logging": None,
@@ -119,6 +123,16 @@ def _app_runtime_config(app_json: Path) -> dict[str, str | bool | None]:
         "store_raw_video": _read_ts_boolean_constant(source, "APP_STORE_RAW_VIDEO"),
         "store_raw_audio": _read_ts_boolean_constant(source, "APP_STORE_RAW_AUDIO"),
         "roi_only": _read_ts_boolean_constant(source, "APP_ROI_ONLY"),
+        "data_residency_region": _read_ts_string_constant(source, "APP_DATA_RESIDENCY_REGION"),
+        "data_residency_boundary": _read_ts_string_constant(
+            source, "APP_DATA_RESIDENCY_BOUNDARY"
+        ),
+        "allow_cross_region_sync": _read_ts_boolean_constant(
+            source, "APP_ALLOW_CROSS_REGION_SYNC"
+        ),
+        "require_region_matched_clinical_hub": _read_ts_boolean_constant(
+            source, "APP_REQUIRE_REGION_MATCHED_CLINICAL_HUB"
+        ),
         "allow_debug_controls": _read_ts_boolean_constant(source, "APP_ALLOW_DEBUG_CONTROLS"),
         "allow_raw_response_details": _read_ts_boolean_constant(
             source, "APP_ALLOW_RAW_RESPONSE_DETAILS"

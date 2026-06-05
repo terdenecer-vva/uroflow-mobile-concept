@@ -88,6 +88,10 @@ def _load_app_runtime_config(app_json: Path) -> dict[str, str | bool | None]:
             "store_raw_video": None,
             "store_raw_audio": None,
             "roi_only": None,
+            "data_residency_region": None,
+            "data_residency_boundary": None,
+            "allow_cross_region_sync": None,
+            "require_region_matched_clinical_hub": None,
             "allow_debug_controls": None,
             "allow_raw_response_details": None,
             "enable_verbose_logging": None,
@@ -107,6 +111,16 @@ def _load_app_runtime_config(app_json: Path) -> dict[str, str | bool | None]:
         "store_raw_video": _read_ts_boolean_constant(source, "APP_STORE_RAW_VIDEO"),
         "store_raw_audio": _read_ts_boolean_constant(source, "APP_STORE_RAW_AUDIO"),
         "roi_only": _read_ts_boolean_constant(source, "APP_ROI_ONLY"),
+        "data_residency_region": _read_ts_string_constant(source, "APP_DATA_RESIDENCY_REGION"),
+        "data_residency_boundary": _read_ts_string_constant(
+            source, "APP_DATA_RESIDENCY_BOUNDARY"
+        ),
+        "allow_cross_region_sync": _read_ts_boolean_constant(
+            source, "APP_ALLOW_CROSS_REGION_SYNC"
+        ),
+        "require_region_matched_clinical_hub": _read_ts_boolean_constant(
+            source, "APP_REQUIRE_REGION_MATCHED_CLINICAL_HUB"
+        ),
         "allow_debug_controls": _read_ts_boolean_constant(source, "APP_ALLOW_DEBUG_CONTROLS"),
         "allow_raw_response_details": _read_ts_boolean_constant(
             source, "APP_ALLOW_RAW_RESPONSE_DETAILS"
@@ -381,6 +395,10 @@ def build_readiness_report(
         and app_runtime_config.get("store_raw_video") is not None
         and app_runtime_config.get("store_raw_audio") is not None
         and app_runtime_config.get("roi_only") is not None
+        and bool(app_runtime_config.get("data_residency_region"))
+        and bool(app_runtime_config.get("data_residency_boundary"))
+        and app_runtime_config.get("allow_cross_region_sync") is not None
+        and app_runtime_config.get("require_region_matched_clinical_hub") is not None
         and app_runtime_config.get("allow_debug_controls") is not None
         and app_runtime_config.get("allow_raw_response_details") is not None
         and app_runtime_config.get("enable_verbose_logging") is not None,
@@ -396,6 +414,14 @@ def build_readiness_report(
             f"store_raw_video={app_runtime_config.get('store_raw_video')!r}, "
             f"store_raw_audio={app_runtime_config.get('store_raw_audio')!r}, "
             f"roi_only={app_runtime_config.get('roi_only')!r}, "
+            "data_residency_region="
+            f"{app_runtime_config.get('data_residency_region')!r}, "
+            "data_residency_boundary="
+            f"{app_runtime_config.get('data_residency_boundary')!r}, "
+            "allow_cross_region_sync="
+            f"{app_runtime_config.get('allow_cross_region_sync')!r}, "
+            "require_region_matched_clinical_hub="
+            f"{app_runtime_config.get('require_region_matched_clinical_hub')!r}, "
             f"allow_debug_controls={app_runtime_config.get('allow_debug_controls')!r}, "
             "allow_raw_response_details="
             f"{app_runtime_config.get('allow_raw_response_details')!r}, "
@@ -434,6 +460,24 @@ def build_readiness_report(
             f"store_raw_video={app_runtime_config.get('store_raw_video')!r}, "
             f"store_raw_audio={app_runtime_config.get('store_raw_audio')!r}, "
             f"roi_only={app_runtime_config.get('roi_only')!r}"
+        ),
+    )
+    _check(
+        checks,
+        "runtime_config_data_residency_policy",
+        app_runtime_config.get("data_residency_region") == "us"
+        and app_runtime_config.get("data_residency_boundary") == "single_region"
+        and app_runtime_config.get("allow_cross_region_sync") is False
+        and app_runtime_config.get("require_region_matched_clinical_hub") is True,
+        (
+            "data_residency_region="
+            f"{app_runtime_config.get('data_residency_region')!r}, "
+            "data_residency_boundary="
+            f"{app_runtime_config.get('data_residency_boundary')!r}, "
+            "allow_cross_region_sync="
+            f"{app_runtime_config.get('allow_cross_region_sync')!r}, "
+            "require_region_matched_clinical_hub="
+            f"{app_runtime_config.get('require_region_matched_clinical_hub')!r}"
         ),
     )
     _check(
