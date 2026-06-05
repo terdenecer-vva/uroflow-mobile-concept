@@ -55,10 +55,23 @@ test("classifyRetryable separates transient and non-retryable statuses", () => {
 
 test("summarizePendingError redacts raw response bodies into safe categories", () => {
   assert.equal(helpers.summarizePendingError(null), null);
+  assert.equal(helpers.summarizePendingError("validation"), "validation");
   assert.equal(helpers.summarizePendingError("AbortError: request timed out"), "network_or_timeout");
   assert.equal(helpers.summarizePendingError("Unauthorized: bad API key"), "auth_or_permission");
   assert.equal(helpers.summarizePendingError("Validation error: field required"), "validation");
+  assert.equal(helpers.summarizePendingError("Invalid capture payload"), "validation");
   assert.equal(helpers.summarizePendingError("HTTP 503 upstream unavailable"), "server_or_client_response");
+});
+
+test("formatSafeResponseProblem preserves status without leaking raw response bodies", () => {
+  assert.equal(
+    helpers.formatSafeResponseProblem(422, "Validation error: patient_name=Jane"),
+    "HTTP 422 validation",
+  );
+  assert.equal(
+    helpers.formatSafeResponseProblem(null, "TypeError: failed to fetch", "NETWORK"),
+    "NETWORK network_or_timeout",
+  );
 });
 
 test("buildHeaderContextFromValues normalizes operator context and preserves request id", () => {

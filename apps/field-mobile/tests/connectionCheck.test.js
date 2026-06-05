@@ -16,14 +16,14 @@ test("connection check URL builders normalize API base URL", () => {
   );
 });
 
-test("connection check failure messages preserve HTTP status and body", () => {
+test("connection check failure messages preserve HTTP status without raw body", () => {
   assert.equal(
     connectionCheck.buildHealthCheckFailedMessage(503),
     "Health check failed: HTTP 503",
   );
   assert.equal(
-    connectionCheck.buildAuthContextCheckFailedMessage(403, "forbidden"),
-    "Auth-context check failed: HTTP 403 forbidden",
+    connectionCheck.buildAuthContextCheckFailedMessage(403, "forbidden for operator OP-001"),
+    "Auth-context check failed: HTTP 403 auth_or_permission",
   );
 });
 
@@ -40,9 +40,9 @@ test("buildAuthContextOkMessage summarizes actor context with n/a fallbacks", ()
   );
 });
 
-test("buildApiCheckFailedMessage stringifies thrown errors", () => {
+test("buildApiCheckFailedMessage redacts thrown error details", () => {
   assert.equal(
     connectionCheck.buildApiCheckFailedMessage(new Error("network down")),
-    "API check failed: Error: network down",
+    "API check failed: NETWORK network_or_timeout",
   );
 });

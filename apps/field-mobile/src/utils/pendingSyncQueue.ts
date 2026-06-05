@@ -3,6 +3,7 @@ import type {
   RequestHeaderContext,
   SubmitAttemptResult,
 } from "../types";
+import { summarizePendingError } from "./appHelpers";
 
 export const MAX_PENDING_SYNC_BATCH_SIZE = 10;
 
@@ -65,7 +66,9 @@ export function buildPendingSyncAttempt(options: {
     attempt_count: attemptCount + 1,
     last_attempt_at: options.attemptedAtIso,
     last_status_code: options.result.statusCode,
-    last_error: options.result.ok ? null : options.result.body,
+    last_error: options.result.ok
+      ? null
+      : summarizePendingError(options.result.body) ?? "server_or_client_response",
   };
 
   if (options.result.ok) {

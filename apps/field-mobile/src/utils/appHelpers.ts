@@ -68,11 +68,21 @@ export function classifyRetryable(statusCode: number | null): boolean {
   return statusCode === 408 || statusCode === 425 || statusCode === 429;
 }
 
+const SAFE_PENDING_ERROR_CATEGORIES = new Set([
+  "network_or_timeout",
+  "auth_or_permission",
+  "validation",
+  "server_or_client_response",
+]);
+
 export function summarizePendingError(error: string | null): string | null {
   if (!error) {
     return null;
   }
   const normalized = error.toLowerCase();
+  if (SAFE_PENDING_ERROR_CATEGORIES.has(normalized)) {
+    return normalized;
+  }
   if (
     normalized.includes("abort") ||
     normalized.includes("network") ||
@@ -90,12 +100,22 @@ export function summarizePendingError(error: string | null): string | null {
   }
   if (
     normalized.includes("validation") ||
+    normalized.includes("invalid") ||
     normalized.includes("field required") ||
     normalized.includes("unprocessable")
   ) {
     return "validation";
   }
   return "server_or_client_response";
+}
+
+export function formatSafeResponseProblem(
+  statusCode: number | null,
+  responseBody: string,
+  fallbackStatusLabel: "ERROR" | "NETWORK" = "ERROR",
+): string {
+  const statusLabel = statusCode ? `HTTP ${statusCode}` : fallbackStatusLabel;
+  return `${statusLabel} ${summarizePendingError(responseBody) ?? "server_or_client_response"}`;
 }
 
 export function normalizeActorRoleInput(rawValue: string | null | undefined): string {

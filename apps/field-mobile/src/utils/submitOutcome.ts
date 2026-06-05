@@ -1,10 +1,11 @@
 import type { SubmitAttemptResult } from "../types";
+import { formatSafeResponseProblem } from "./appHelpers";
 
 function formatAttemptProblem(
   result: SubmitAttemptResult,
   fallbackStatusLabel: "ERROR" | "NETWORK",
 ): string {
-  return `${result.statusCode ? `HTTP ${result.statusCode}` : fallbackStatusLabel} ${result.body}`;
+  return formatSafeResponseProblem(result.statusCode, result.body, fallbackStatusLabel);
 }
 
 export function buildQueuedCapturePackageMessage(

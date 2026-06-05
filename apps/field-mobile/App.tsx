@@ -74,6 +74,7 @@ import {
   createSessionId,
   createSyncId,
   extractCreatedRecordId,
+  formatSafeResponseProblem,
 } from "./src/utils/appHelpers";
 
 const defaultMeasuredAt = new Date().toISOString().slice(0, 19) + "Z";
@@ -546,8 +547,8 @@ export default function App() {
       setLastResponse(message);
       Alert.alert("API reachable", message);
     } catch (error) {
-      const message = String(error);
-      setLastResponse(buildApiCheckFailedMessage(error));
+      const message = buildApiCheckFailedMessage(error);
+      setLastResponse(message);
       Alert.alert("API check failed", message);
     }
   }
@@ -725,13 +726,13 @@ export default function App() {
       const body = await response.text();
       if (!response.ok) {
         setSummary(null);
-        setSummaryError(`HTTP ${response.status}: ${body}`);
+        setSummaryError(formatSafeResponseProblem(response.status, body));
         return;
       }
       setSummary(JSON.parse(body) as ComparisonSummaryResponse);
     } catch (error) {
       setSummary(null);
-      setSummaryError(String(error));
+      setSummaryError(formatSafeResponseProblem(null, String(error), "NETWORK"));
     } finally {
       setSummaryLoading(false);
     }
@@ -765,13 +766,13 @@ export default function App() {
       const body = await response.text();
       if (!response.ok) {
         setCoverageSummary(null);
-        setCoverageError(`HTTP ${response.status}: ${body}`);
+        setCoverageError(formatSafeResponseProblem(response.status, body));
         return;
       }
       setCoverageSummary(JSON.parse(body) as CaptureCoverageSummaryResponse);
     } catch (error) {
       setCoverageSummary(null);
-      setCoverageError(String(error));
+      setCoverageError(formatSafeResponseProblem(null, String(error), "NETWORK"));
     } finally {
       setCoverageLoading(false);
     }

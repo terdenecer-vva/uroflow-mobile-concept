@@ -1,5 +1,6 @@
 import type { AuthContextResponse } from "../types";
 import { buildBaseUrl } from "./clinicalHub";
+import { formatSafeResponseProblem } from "../utils/appHelpers";
 
 export function buildAuthContextUrl(apiBaseUrl: string): string {
   return `${buildBaseUrl(apiBaseUrl)}/api/v1/auth-context`;
@@ -17,7 +18,7 @@ export function buildAuthContextCheckFailedMessage(
   status: number,
   body: string,
 ): string {
-  return `Auth-context check failed: HTTP ${status} ${body}`;
+  return `Auth-context check failed: ${formatSafeResponseProblem(status, body)}`;
 }
 
 export function buildAuthContextOkMessage(
@@ -31,5 +32,5 @@ export function buildAuthContextOkMessage(
 }
 
 export function buildApiCheckFailedMessage(error: unknown): string {
-  return `API check failed: ${String(error)}`;
+  return `API check failed: ${formatSafeResponseProblem(null, String(error), "NETWORK")}`;
 }
