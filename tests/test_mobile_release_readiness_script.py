@@ -69,6 +69,7 @@ def test_mobile_release_readiness_reports_external_blockers(tmp_path: Path) -> N
         "validate_ci_runs_unit_tests",
         "unit_test_runner_script",
         "mobile_helper_unit_tests_present",
+        "connection_check_unit_tests_present",
         "capture_contract_unit_tests_present",
         "pending_submission_storage_unit_tests_present",
         "pending_sync_queue_unit_tests_present",
