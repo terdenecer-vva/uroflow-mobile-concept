@@ -3,12 +3,37 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
+import zlib
 from pathlib import Path
+
+
+def _write_png(path: Path, width: int, height: int) -> None:
+    import struct
+
+    def chunk(kind: bytes, data: bytes) -> bytes:
+        return (
+            struct.pack(">I", len(data))
+            + kind
+            + data
+            + struct.pack(">I", zlib.crc32(kind + data) & 0xFFFFFFFF)
+        )
+
+    row = b"\x00" + (b"\x00\x00\x00\xff" * width)
+    raw = row * height
+    payload = b"\x89PNG\r\n\x1a\n"
+    payload += chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0))
+    payload += chunk(b"IDAT", zlib.compress(raw, 9))
+    payload += chunk(b"IEND", b"")
+    path.write_bytes(payload)
 
 
 def test_build_mobile_release_manifest_script(tmp_path: Path) -> None:
     app_json = tmp_path / "app.json"
     output = tmp_path / "manifest.json"
+    assets = tmp_path / "assets"
+    assets.mkdir()
+    _write_png(assets / "icon.png", 1024, 1024)
+    _write_png(assets / "adaptive-icon.png", 1024, 1024)
 
     app_json.write_text(
         json.dumps(
@@ -17,9 +42,20 @@ def test_build_mobile_release_manifest_script(tmp_path: Path) -> None:
                     "name": "Uroflow Field",
                     "slug": "uroflow-field-mobile",
                     "version": "0.1.0",
+                    "icon": "./assets/icon.png",
                     "platforms": ["ios", "android"],
-                    "ios": {"bundleIdentifier": "com.uroflow.field"},
-                    "android": {"package": "com.uroflow.field"},
+                    "ios": {
+                        "bundleIdentifier": "com.uroflow.field",
+                        "buildNumber": "1",
+                    },
+                    "android": {
+                        "package": "com.uroflow.field",
+                        "versionCode": 1,
+                        "adaptiveIcon": {
+                            "foregroundImage": "./assets/adaptive-icon.png",
+                            "backgroundColor": "#0B1F2A",
+                        },
+                    },
                 }
             }
         ),
@@ -51,5 +87,19 @@ def test_build_mobile_release_manifest_script(tmp_path: Path) -> None:
     assert payload["release"]["profile"] == "preview"
     assert payload["release"]["channel"] == "preview"
     assert payload["app"]["name"] == "Uroflow Field"
+    assert payload["app"]["ios_build_number"] == "1"
+    assert payload["app"]["android_version_code"] == 1
+    assert payload["assets"]["icon"]["path"] == "./assets/icon.png"
+    assert payload["assets"]["icon"]["bytes"] > 0
+    assert len(payload["assets"]["icon"]["sha256"]) == 64
+    assert payload["assets"]["icon"]["png_dimensions"] == [1024, 1024]
+    assert payload["assets"]["android_adaptive_icon"]["foreground"]["path"] == (
+        "./assets/adaptive-icon.png"
+    )
+    assert payload["assets"]["android_adaptive_icon"]["foreground"]["png_dimensions"] == [
+        1024,
+        1024,
+    ]
+    assert payload["assets"]["android_adaptive_icon"]["background_color"] == "#0B1F2A"
     assert payload["algorithm"]["model_id"] == "fusion-v0.1"
     assert payload["algorithm"]["capture_schema_version"] == "ios_capture_v1"

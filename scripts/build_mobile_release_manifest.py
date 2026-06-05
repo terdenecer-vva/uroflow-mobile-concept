@@ -2,10 +2,41 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
+
+
+def _asset_path(app_json: Path, raw_path: Any) -> Path | None:
+    if not isinstance(raw_path, str) or not raw_path.strip():
+        return None
+    candidate = Path(raw_path)
+    if not candidate.is_absolute():
+        candidate = app_json.parent / candidate
+    return candidate
+
+
+def _png_dimensions(path: Path) -> list[int] | None:
+    header = path.read_bytes()[:24]
+    if len(header) < 24 or header[:8] != b"\x89PNG\r\n\x1a\n" or header[12:16] != b"IHDR":
+        return None
+    return [int.from_bytes(header[16:20], "big"), int.from_bytes(header[20:24], "big")]
+
+
+def _asset_metadata(app_json: Path, raw_path: Any) -> dict[str, Any] | None:
+    path = _asset_path(app_json, raw_path)
+    if path is None or not path.is_file():
+        return None
+    data = path.read_bytes()
+    return {
+        "path": raw_path,
+        "bytes": len(data),
+        "sha256": hashlib.sha256(data).hexdigest(),
+        "png_dimensions": _png_dimensions(path),
+    }
 
 
 def parse_args() -> argparse.Namespace:
@@ -25,6 +56,9 @@ def main() -> int:
     args = parse_args()
     app_payload = json.loads(args.app_json.read_text(encoding="utf-8"))
     expo = app_payload.get("expo", {})
+    ios = expo.get("ios", {})
+    android = expo.get("android", {})
+    android_adaptive_icon = android.get("adaptiveIcon", {})
 
     manifest = {
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
@@ -37,8 +71,19 @@ def main() -> int:
             "name": expo.get("name"),
             "slug": expo.get("slug"),
             "version": expo.get("version"),
-            "ios_bundle_identifier": expo.get("ios", {}).get("bundleIdentifier"),
-            "android_package": expo.get("android", {}).get("package"),
+            "ios_bundle_identifier": ios.get("bundleIdentifier"),
+            "ios_build_number": ios.get("buildNumber"),
+            "android_package": android.get("package"),
+            "android_version_code": android.get("versionCode"),
+        },
+        "assets": {
+            "icon": _asset_metadata(args.app_json, expo.get("icon")),
+            "android_adaptive_icon": {
+                "foreground": _asset_metadata(
+                    args.app_json, android_adaptive_icon.get("foregroundImage")
+                ),
+                "background_color": android_adaptive_icon.get("backgroundColor"),
+            },
         },
         "traceability": {
             "git_sha": os.environ.get("GITHUB_SHA", "local"),
