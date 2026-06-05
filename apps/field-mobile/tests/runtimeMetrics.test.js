@@ -167,6 +167,18 @@ test("scoreRuntimeCaptureQuality repeats high low-confidence captures", () => {
   assert.equal(quality.highMotionRatio, 0);
 });
 
+test("scoreRuntimeCaptureQuality repeats timing-gap captures", () => {
+  const quality = runtime.scoreRuntimeCaptureQuality({
+    averageMotionNorm: 0.02,
+    samples: [sample(), sample(), sample(), sample()],
+    timingGapWarning: true,
+  });
+
+  assert.equal(quality.qualityStatus, "repeat");
+  assert.equal(quality.timingGapWarning, true);
+  assert.equal(quality.qualityScore, 83.4);
+});
+
 test("calculateAverageMotionNorm handles empty samples", () => {
   assert.equal(runtime.calculateAverageMotionNorm([]), 0);
   assert.equal(

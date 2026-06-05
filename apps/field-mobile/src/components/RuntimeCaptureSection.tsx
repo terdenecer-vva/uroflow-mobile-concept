@@ -17,6 +17,7 @@ type RuntimeCaptureSectionProps = {
   captureRunning: boolean;
   captureSampleCount: number;
   captureStatus: string;
+  captureTimingGapWarning: boolean;
   flowSeries: RuntimeFlowPoint[];
   manualAppMetricsOverride: boolean;
   roiFrameCount: number;
@@ -45,6 +46,7 @@ export function RuntimeCaptureSection({
   captureRunning,
   captureSampleCount,
   captureStatus,
+  captureTimingGapWarning,
   flowSeries,
   manualAppMetricsOverride,
   roiFrameCount,
@@ -75,7 +77,8 @@ export function RuntimeCaptureSection({
       <Text style={styles.captureStatusText}>
         quality flags: roi_valid_ratio={captureRoiValidRatio.toFixed(3)}, low_confidence_ratio=
         {captureLowConfidenceRatio.toFixed(3)}, high_motion_ratio=
-        {captureHighMotionRatio.toFixed(3)}
+        {captureHighMotionRatio.toFixed(3)}, timing_gap_warning=
+        {captureTimingGapWarning ? "yes" : "no"}
       </Text>
       <Text style={styles.captureStatusText}>
         Contract payload:{" "}

@@ -127,6 +127,7 @@ def test_validate_capture_payload_allows_optional_analysis_block() -> None:
             "quality_status": "valid",
             "roi_valid_ratio": 0.94,
             "low_confidence_ratio": 0.08,
+            "timing_gap_warning": False,
         },
         "runtime_timeline": {
             "clock_source": "elapsed_wall_clock_ms",
@@ -184,6 +185,20 @@ def test_validate_capture_payload_rejects_invalid_runtime_timeline() -> None:
     )
     assert "analysis.runtime_timeline.monotonic must be boolean" in report.errors
     assert "analysis.runtime_timeline.gap_warning must be boolean" in report.errors
+
+
+def test_validate_capture_payload_rejects_invalid_runtime_quality_timing_gap() -> None:
+    payload = _valid_payload()
+    payload["analysis"] = {
+        "runtime_quality": {
+            "timing_gap_warning": "false",
+        },
+    }
+
+    report = validate_capture_payload(payload)
+
+    assert report.valid is False
+    assert "analysis.runtime_quality.timing_gap_warning must be boolean" in report.errors
 
 
 def test_validate_capture_payload_allows_derivatives_only_feature_manifest() -> None:

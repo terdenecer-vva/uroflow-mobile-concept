@@ -41,6 +41,7 @@ export type CaptureContractAnalysis = {
     roi_valid_ratio?: number;
     low_confidence_ratio?: number;
     high_motion_ratio?: number;
+    timing_gap_warning?: boolean;
   };
 };
 
@@ -327,6 +328,9 @@ function sanitizeAnalysis(
       runtimeQuality.high_motion_ratio = round4(
         clamp(runtimeQualityRaw.high_motion_ratio as number, 0, 1),
       );
+    }
+    if (typeof runtimeQualityRaw.timing_gap_warning === "boolean") {
+      runtimeQuality.timing_gap_warning = runtimeQualityRaw.timing_gap_warning;
     }
   }
   const hasRuntimeQuality = Object.keys(runtimeQuality).length > 0;
