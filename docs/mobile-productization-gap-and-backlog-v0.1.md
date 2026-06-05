@@ -18,6 +18,7 @@ Implemented now:
 - Pending queue auto-sync on connectivity restore via NetInfo, with interval/AppState fallback.
 - Deterministic mobile sync smoke covering queued paired+capture replay after network restore.
 - Mobile Build release notes artifact and manifest traceability for operator-facing build handoff.
+- Physical-device smoke evidence JSON template and validator for iOS+Android release handoff.
 
 Not yet implemented:
 - Real sensor capture pipeline (camera/audio/IMU/depth).
@@ -33,12 +34,12 @@ Not yet implemented:
 
 ### G2. Data contract gap
 - Capture contract can use live runtime samples, with scaffold fallback still available.
-- `capture-packages` are queued for offline retry, with app-level connectivity-restore sync; device-level E2E replay evidence still needs to be archived.
+- `capture-packages` are queued for offline retry, with app-level connectivity-restore sync; device-level E2E replay evidence now has a validated archive format but still needs real-device logs.
 - Mobile payloads include a derivatives-only feature/media manifest; native-grade feature bundles and device-level media-manifest replay evidence still need physical-device archival.
 
 ### G3. Security/privacy gap
 - Secure storage introduced for API key, but no media encryption path yet.
-- Mobile response/submit-exception/runtime-exception redaction tests are present; broader device log collection review still needs physical-device evidence.
+- Mobile response/submit-exception/runtime-exception redaction tests are present; device log PHI review is now required in the physical-device smoke log format, but real logs still need archival.
 - Mobile data residency policy controls are present; live Clinical Hub region mapping still needs deployment/account evidence.
 
 ### G4. Build/release gap
@@ -48,8 +49,8 @@ Not yet implemented:
 
 ### G5. Verification gap
 - Mobile tests include TypeScript, unit, export, and deterministic sync replay coverage.
-- Deterministic replay tests cover capture contract generation and queued paired+capture sync; physical-device evidence still needs archival.
-- No device-matrix smoke checks (iPhone/Android model spread).
+- Deterministic replay tests cover capture contract generation and queued paired+capture sync; physical-device evidence now has a validator/template but still needs real-device execution.
+- Device-matrix smoke evidence requires at least one iPhone and one Android run in `mobile_device_smoke_log_v0.1`.
 
 ## 3) Backlog (implementation order)
 
@@ -98,7 +99,7 @@ DoD:
 
 ## B4: Quality and validation readiness
 1. Add unit tests for capture payload generation and local validation. Status: implemented for paired payload, capture package payload, capture contract generation, ROI signal, runtime metrics, and backend capture contract validation.
-2. Add E2E mobile smoke tests (session create -> submit -> queue -> sync). Status: implemented as deterministic repository-level paired+capture queue replay after network restore; physical-device/live Clinical Hub smoke evidence still required.
+2. Add E2E mobile smoke tests (session create -> submit -> queue -> sync). Status: implemented as deterministic repository-level paired+capture queue replay after network restore, plus a validated iOS+Android physical-device smoke log schema/template; real physical-device/live Clinical Hub smoke evidence still required.
 3. Export nightly comparison summary and gate snapshot to Clinical Hub.
 
 DoD:

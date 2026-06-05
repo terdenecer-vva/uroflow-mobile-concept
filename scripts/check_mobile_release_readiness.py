@@ -756,6 +756,15 @@ def build_readiness_report(
     repo_root = package_json.resolve().parent.parent.parent
     backend_capture_contract_path = repo_root / "src" / "uroflow_mobile" / "capture_contract.py"
     backend_capture_tests_path = repo_root / "tests" / "test_capture_contract.py"
+    mobile_device_smoke_template_path = (
+        repo_root / "docs" / "mobile-device-smoke-log-template-v0.1.json"
+    )
+    mobile_device_smoke_validator_path = (
+        repo_root / "scripts" / "validate_mobile_device_smoke_log.py"
+    )
+    mobile_device_smoke_validator_tests_path = (
+        repo_root / "tests" / "test_mobile_device_smoke_log.py"
+    )
     paired_payload_tests_path = mobile_root / "tests" / "pairedPayload.test.js"
     roi_signal_tests_path = mobile_root / "tests" / "roiSignalEstimator.test.js"
     runtime_metrics_source_path = mobile_root / "src" / "capture" / "runtimeMetrics.ts"
@@ -788,6 +797,11 @@ def build_readiness_report(
     backend_capture_tests_source = _read_file_text(backend_capture_tests_path)
     runtime_metrics_source = _read_file_text(runtime_metrics_source_path)
     runtime_metrics_tests_source = _read_file_text(runtime_metrics_tests_path)
+    mobile_device_smoke_template_source = _read_file_text(mobile_device_smoke_template_path)
+    mobile_device_smoke_validator_source = _read_file_text(mobile_device_smoke_validator_path)
+    mobile_device_smoke_validator_tests_source = _read_file_text(
+        mobile_device_smoke_validator_tests_path
+    )
     _check(
         checks,
         "unit_test_script",
@@ -986,6 +1000,51 @@ def build_readiness_report(
         "mobile_e2e_sync_smoke_unit_tests_present",
         all(mobile_e2e_sync_smoke_test_requirements.values()),
         f"requirements={mobile_e2e_sync_smoke_test_requirements!r}",
+    )
+    mobile_device_smoke_template_requirements = {
+        "template_file": mobile_device_smoke_template_path.is_file(),
+        "schema_version": "mobile_device_smoke_log_v0.1"
+        in mobile_device_smoke_template_source,
+        "ios_platform": '"platform": "ios"' in mobile_device_smoke_template_source,
+        "android_platform": '"platform": "android"' in mobile_device_smoke_template_source,
+        "restore_sync_check": "connectivity_restore_sync" in mobile_device_smoke_template_source,
+        "log_phi_review_check": "device_logs_reviewed_no_phi"
+        in mobile_device_smoke_template_source,
+    }
+    _check(
+        checks,
+        "mobile_device_smoke_log_template_present",
+        all(mobile_device_smoke_template_requirements.values()),
+        f"requirements={mobile_device_smoke_template_requirements!r}",
+    )
+    mobile_device_smoke_validator_requirements = {
+        "validator_file": mobile_device_smoke_validator_path.is_file(),
+        "required_platforms": "REQUIRED_PLATFORMS" in mobile_device_smoke_validator_source,
+        "required_checks": "REQUIRED_SMOKE_CHECK_IDS" in mobile_device_smoke_validator_source,
+        "sha256_traceability": "mobile_release_manifest_sha256"
+        in mobile_device_smoke_validator_source,
+        "no_phi_log_review": "device_logs_reviewed_no_phi"
+        in mobile_device_smoke_validator_source,
+    }
+    _check(
+        checks,
+        "mobile_device_smoke_log_validator_sources",
+        all(mobile_device_smoke_validator_requirements.values()),
+        f"requirements={mobile_device_smoke_validator_requirements!r}",
+    )
+    mobile_device_smoke_validator_test_requirements = {
+        "valid_template_test": "test_mobile_device_smoke_log_template_validates"
+        in mobile_device_smoke_validator_tests_source,
+        "ios_android_matrix_test": "requires_ios_and_android"
+        in mobile_device_smoke_validator_tests_source,
+        "required_checks_test": "requires_passing_required_checks"
+        in mobile_device_smoke_validator_tests_source,
+    }
+    _check(
+        checks,
+        "mobile_device_smoke_log_validator_unit_tests_present",
+        all(mobile_device_smoke_validator_test_requirements.values()),
+        f"requirements={mobile_device_smoke_validator_test_requirements!r}",
     )
     _check(
         checks,

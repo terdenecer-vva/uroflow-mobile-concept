@@ -139,7 +139,8 @@ secret blockers. The artifact has separate machine-readable gates:
   runtime config/defaults such as Clinical Hub v1 endpoint set, disabled debug gates,
   privacy-by-default switches, single-region data residency policy,
   runtime motion quality gates, derivatives-only feature/media
-  manifest gates, pending sync connectivity-restore trigger, API response + submit exception + runtime exception PHI redaction, and non-localhost API URL defaults,
+  manifest gates, pending sync connectivity-restore trigger, device-smoke evidence template/validator,
+  API response + submit exception + runtime exception PHI redaction, and non-localhost API URL defaults,
   store privacy declarations,
   launch/icon assets, dependency lock alignment, and unit-test evidence that can be verified
   without external credentials.
