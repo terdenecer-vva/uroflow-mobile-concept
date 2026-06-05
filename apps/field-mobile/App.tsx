@@ -14,6 +14,10 @@ import {
   buildRequestHeaders,
   fetchWithTimeout,
 } from "./src/api/clinicalHub";
+import {
+  buildCaptureCoverageSummaryUrl,
+  buildComparisonSummaryUrl,
+} from "./src/api/summaryRequests";
 import { buildCaptureContractPayloadFromSamples } from "./src/capture/buildCaptureContract";
 import {
   RuntimeCaptureSession,
@@ -674,16 +678,12 @@ export default function App() {
   }
 
   async function loadComparisonSummary() {
-    const baseUrl = buildBaseUrl(apiBaseUrl);
-    const params = new URLSearchParams();
-    if (siteId.trim()) {
-      params.set("site_id", siteId.trim());
-    }
-    if (summarySyncId.trim()) {
-      params.set("sync_id", summarySyncId.trim());
-    }
-    params.set("quality_status", summaryQualityStatus);
-    const url = `${baseUrl}/api/v1/comparison-summary?${params.toString()}`;
+    const url = buildComparisonSummaryUrl({
+      apiBaseUrl,
+      siteId,
+      summarySyncId,
+      summaryQualityStatus,
+    });
 
     setSummaryLoading(true);
     setSummaryError("");
@@ -713,16 +713,12 @@ export default function App() {
   }
 
   async function loadCaptureCoverageSummary() {
-    const baseUrl = buildBaseUrl(apiBaseUrl);
-    const params = new URLSearchParams();
-    if (siteId.trim()) {
-      params.set("site_id", siteId.trim());
-    }
-    if (summarySyncId.trim()) {
-      params.set("sync_id", summarySyncId.trim());
-    }
-    params.set("quality_status", summaryQualityStatus);
-    const url = `${baseUrl}/api/v1/capture-coverage-summary?${params.toString()}`;
+    const url = buildCaptureCoverageSummaryUrl({
+      apiBaseUrl,
+      siteId,
+      summarySyncId,
+      summaryQualityStatus,
+    });
 
     setCoverageLoading(true);
     setCoverageError("");

@@ -13,6 +13,7 @@ tsc --ignoreConfig \
   src/payload/capturePackagePayload.ts \
   src/payload/pairedPayload.ts \
   src/api/clinicalHub.ts \
+  src/api/summaryRequests.ts \
   src/capture/buildCaptureContract.ts \
   src/capture/runtimeMetrics.ts \
   src/capture/roiSignalEstimator.ts \
