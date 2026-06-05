@@ -765,6 +765,15 @@ def build_readiness_report(
     mobile_device_smoke_validator_tests_path = (
         repo_root / "tests" / "test_mobile_device_smoke_log.py"
     )
+    mobile_store_rollout_template_path = (
+        repo_root / "docs" / "mobile-store-rollout-handoff-template-v0.1.json"
+    )
+    mobile_store_rollout_validator_path = (
+        repo_root / "scripts" / "validate_mobile_store_rollout_handoff.py"
+    )
+    mobile_store_rollout_validator_tests_path = (
+        repo_root / "tests" / "test_mobile_store_rollout_handoff.py"
+    )
     paired_payload_tests_path = mobile_root / "tests" / "pairedPayload.test.js"
     roi_signal_tests_path = mobile_root / "tests" / "roiSignalEstimator.test.js"
     runtime_metrics_source_path = mobile_root / "src" / "capture" / "runtimeMetrics.ts"
@@ -801,6 +810,13 @@ def build_readiness_report(
     mobile_device_smoke_validator_source = _read_file_text(mobile_device_smoke_validator_path)
     mobile_device_smoke_validator_tests_source = _read_file_text(
         mobile_device_smoke_validator_tests_path
+    )
+    mobile_store_rollout_template_source = _read_file_text(mobile_store_rollout_template_path)
+    mobile_store_rollout_validator_source = _read_file_text(
+        mobile_store_rollout_validator_path
+    )
+    mobile_store_rollout_validator_tests_source = _read_file_text(
+        mobile_store_rollout_validator_tests_path
     )
     _check(
         checks,
@@ -1045,6 +1061,56 @@ def build_readiness_report(
         "mobile_device_smoke_log_validator_unit_tests_present",
         all(mobile_device_smoke_validator_test_requirements.values()),
         f"requirements={mobile_device_smoke_validator_test_requirements!r}",
+    )
+    mobile_store_rollout_template_requirements = {
+        "template_file": mobile_store_rollout_template_path.is_file(),
+        "schema_version": "mobile_store_rollout_handoff_v0.1"
+        in mobile_store_rollout_template_source,
+        "testflight_channel": '"distribution_channel": "testflight_internal"'
+        in mobile_store_rollout_template_source,
+        "play_internal_channel": '"distribution_channel": "play_internal_testing"'
+        in mobile_store_rollout_template_source,
+        "blocked_external_status": '"rollout_status": "blocked_external"'
+        in mobile_store_rollout_template_source,
+        "release_manifest_traceability": "mobile_release_manifest_sha256"
+        in mobile_store_rollout_template_source,
+    }
+    _check(
+        checks,
+        "mobile_store_rollout_handoff_template_present",
+        all(mobile_store_rollout_template_requirements.values()),
+        f"requirements={mobile_store_rollout_template_requirements!r}",
+    )
+    mobile_store_rollout_validator_requirements = {
+        "validator_file": mobile_store_rollout_validator_path.is_file(),
+        "required_channels": "REQUIRED_CHANNELS" in mobile_store_rollout_validator_source,
+        "testflight_internal": "testflight_internal" in mobile_store_rollout_validator_source,
+        "play_internal_testing": "play_internal_testing" in mobile_store_rollout_validator_source,
+        "sha256_traceability": "mobile_release_manifest_sha256"
+        in mobile_store_rollout_validator_source,
+        "blocked_external_support": "BLOCKED_STATUS" in mobile_store_rollout_validator_source,
+    }
+    _check(
+        checks,
+        "mobile_store_rollout_handoff_validator_sources",
+        all(mobile_store_rollout_validator_requirements.values()),
+        f"requirements={mobile_store_rollout_validator_requirements!r}",
+    )
+    mobile_store_rollout_validator_test_requirements = {
+        "valid_template_test": "test_mobile_store_rollout_handoff_template_validates"
+        in mobile_store_rollout_validator_tests_source,
+        "ios_android_channels_test": "requires_ios_and_android"
+        in mobile_store_rollout_validator_tests_source,
+        "distribution_pass_checks_test": "requires_pass_checks_for_distribution"
+        in mobile_store_rollout_validator_tests_source,
+        "release_sha_test": "rejects_invalid_release_sha"
+        in mobile_store_rollout_validator_tests_source,
+    }
+    _check(
+        checks,
+        "mobile_store_rollout_handoff_validator_unit_tests_present",
+        all(mobile_store_rollout_validator_test_requirements.values()),
+        f"requirements={mobile_store_rollout_validator_test_requirements!r}",
     )
     _check(
         checks,
