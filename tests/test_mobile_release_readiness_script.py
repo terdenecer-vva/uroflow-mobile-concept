@@ -13,26 +13,39 @@ PACKAGE_JSON = Path("apps/field-mobile/package.json")
 PACKAGE_LOCK = Path("apps/field-mobile/package-lock.json")
 
 
-def _run_readiness(output: Path, env: dict[str, str]) -> dict:
+def _run_readiness_with_paths(
+    output: Path,
+    env: dict[str, str],
+    *,
+    app_json: Path = APP_JSON,
+    eas_json: Path = EAS_JSON,
+    package_json: Path = PACKAGE_JSON,
+    package_lock: Path = PACKAGE_LOCK,
+    check: bool = True,
+) -> dict:
     subprocess.run(
         [
             sys.executable,
             str(SCRIPT),
             "--app-json",
-            str(APP_JSON),
+            str(app_json),
             "--eas-json",
-            str(EAS_JSON),
+            str(eas_json),
             "--package-json",
-            str(PACKAGE_JSON),
+            str(package_json),
             "--package-lock",
-            str(PACKAGE_LOCK),
+            str(package_lock),
             "--output",
             str(output),
         ],
-        check=True,
+        check=check,
         env=env,
     )
     return json.loads(output.read_text(encoding="utf-8"))
+
+
+def _run_readiness(output: Path, env: dict[str, str]) -> dict:
+    return _run_readiness_with_paths(output, env)
 
 
 def test_mobile_release_readiness_reports_external_blockers(tmp_path: Path) -> None:
@@ -61,10 +74,20 @@ def test_mobile_release_readiness_reports_external_blockers(tmp_path: Path) -> N
     assert all(item["status"] == "pass" for item in payload["local_checks"])
     local_check_ids = {item["id"] for item in payload["local_checks"]}
     assert {
+        "android_runtime_permissions_minimal",
+        "app_version_matches_package_version",
         "app_settings_storage_unit_tests_present",
+        "audio_microphone_permission",
         "clinical_hub_api_unit_tests_present",
         "capture_package_payload_unit_tests_present",
+        "eas_cli_version_declared",
+        "eas_production_auto_increment",
+        "eas_profile_channels",
+        "ios_privacy_usage_descriptions",
         "paired_payload_unit_tests_present",
+        "package_lock_matches_root",
+        "secure_store_dependency_locked",
+        "secure_store_plugin",
         "unit_test_script",
         "validate_ci_runs_unit_tests",
         "unit_test_runner_script",
@@ -90,6 +113,30 @@ def test_mobile_release_readiness_reports_external_blockers(tmp_path: Path) -> N
     )
     assert expo_action["secret_names"] == ["EXPO_TOKEN"]
     assert expo_action["verification"]
+
+
+def test_mobile_release_readiness_fails_local_version_mismatch(tmp_path: Path) -> None:
+    mutated_app_json = tmp_path / "app.json"
+    app_payload = json.loads(APP_JSON.read_text(encoding="utf-8"))
+    app_payload["expo"]["version"] = "9.9.9"
+    mutated_app_json.write_text(json.dumps(app_payload), encoding="utf-8")
+
+    payload = _run_readiness_with_paths(
+        tmp_path / "readiness.json",
+        env={"PATH": os.environ.get("PATH", "")},
+        app_json=mutated_app_json,
+        check=False,
+    )
+
+    check = next(
+        item
+        for item in payload["local_checks"]
+        if item["id"] == "app_version_matches_package_version"
+    )
+    assert payload["status"] == "not_ready"
+    assert payload["local_checks_status"] == "fail"
+    assert check["status"] == "fail"
+    assert "expo.version='9.9.9'" in check["evidence"]
 
 
 def test_mobile_release_readiness_passes_authenticated_preflight_env(tmp_path: Path) -> None:

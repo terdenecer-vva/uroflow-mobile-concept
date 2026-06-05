@@ -185,6 +185,9 @@ def build_readiness_report(
     checks: list[dict[str, Any]] = []
 
     platforms = expo.get("platforms", [])
+    package_dependencies = package_payload.get("dependencies", {})
+    lock_dependencies = root_lock.get("dependencies", {})
+    lock_dev_dependencies = root_lock.get("devDependencies", {})
     _check(
         checks,
         "platforms_ios_android",
@@ -196,6 +199,16 @@ def build_readiness_report(
     _check(checks, "expo_version", bool(expo.get("version")), f"version={expo.get('version')!r}")
     _check(
         checks,
+        "app_version_matches_package_version",
+        expo.get("version") == package_payload.get("version") == root_lock.get("version"),
+        (
+            f"expo.version={expo.get('version')!r}, "
+            f"package.version={package_payload.get('version')!r}, "
+            f"lock.version={root_lock.get('version')!r}"
+        ),
+    )
+    _check(
+        checks,
         "ios_bundle_identifier",
         bool(ios.get("bundleIdentifier")),
         f"bundleIdentifier={ios.get('bundleIdentifier')!r}",
@@ -205,6 +218,22 @@ def build_readiness_report(
         "ios_build_number",
         bool(ios.get("buildNumber")),
         f"buildNumber={ios.get('buildNumber')!r}",
+    )
+    ios_info_plist = ios.get("infoPlist", {})
+    required_ios_privacy_strings = {
+        "NSCameraUsageDescription",
+        "NSMicrophoneUsageDescription",
+        "NSMotionUsageDescription",
+    }
+    _check(
+        checks,
+        "ios_privacy_usage_descriptions",
+        required_ios_privacy_strings.issubset(set(ios_info_plist))
+        and all(
+            isinstance(ios_info_plist.get(key), str) and bool(ios_info_plist.get(key, "").strip())
+            for key in required_ios_privacy_strings
+        ),
+        f"infoPlist keys={sorted(ios_info_plist)}",
     )
     _check(
         checks,
@@ -245,6 +274,38 @@ def build_readiness_report(
         {"CAMERA", "RECORD_AUDIO"}.issubset(set(android.get("permissions", []))),
         f"permissions={android.get('permissions', [])!r}",
     )
+    _check(
+        checks,
+        "android_runtime_permissions_minimal",
+        set(android.get("permissions", [])) == {"CAMERA", "RECORD_AUDIO"},
+        f"permissions={android.get('permissions', [])!r}",
+        severity="warning",
+    )
+    _check(
+        checks,
+        "secure_store_plugin",
+        _has_plugin(plugins, "expo-secure-store"),
+        "expo-secure-store plugin configured",
+    )
+    _check(
+        checks,
+        "secure_store_dependency_locked",
+        "expo-secure-store" in package_dependencies
+        and package_dependencies.get("expo-secure-store")
+        == lock_dependencies.get("expo-secure-store"),
+        (
+            "expo-secure-store dependency="
+            f"{package_dependencies.get('expo-secure-store')!r}, "
+            f"lock={lock_dependencies.get('expo-secure-store')!r}"
+        ),
+    )
+    _check(
+        checks,
+        "audio_microphone_permission",
+        isinstance(audio_options.get("microphonePermission"), str)
+        and bool(audio_options.get("microphonePermission", "").strip()),
+        f"microphonePermission={audio_options.get('microphonePermission')!r}",
+    )
 
     for profile in ("development", "preview", "production"):
         _check(
@@ -253,6 +314,30 @@ def build_readiness_report(
             profile in eas_build,
             f"eas build profiles={list(eas_build)}",
         )
+    _check(
+        checks,
+        "eas_cli_version_declared",
+        bool(eas_payload.get("cli", {}).get("version")),
+        f"eas.cli.version={eas_payload.get('cli', {}).get('version')!r}",
+    )
+    _check(
+        checks,
+        "eas_profile_channels",
+        eas_build.get("development", {}).get("channel") == "development"
+        and eas_build.get("preview", {}).get("channel") == "preview"
+        and eas_build.get("production", {}).get("channel") == "production",
+        (
+            f"development={eas_build.get('development', {}).get('channel')!r}, "
+            f"preview={eas_build.get('preview', {}).get('channel')!r}, "
+            f"production={eas_build.get('production', {}).get('channel')!r}"
+        ),
+    )
+    _check(
+        checks,
+        "eas_production_auto_increment",
+        eas_build.get("production", {}).get("autoIncrement") is True,
+        f"production.autoIncrement={eas_build.get('production', {}).get('autoIncrement')!r}",
+    )
     _check(
         checks,
         "preview_android_apk",
@@ -389,14 +474,18 @@ def build_readiness_report(
     _check(
         checks,
         "package_lock_matches_root",
-        root_lock.get("name") == package_payload.get("name"),
-        f"lock root={root_lock.get('name')!r}, package={package_payload.get('name')!r}",
+        root_lock.get("name") == package_payload.get("name")
+        and root_lock.get("version") == package_payload.get("version"),
+        (
+            f"lock root={root_lock.get('name')!r}/{root_lock.get('version')!r}, "
+            f"package={package_payload.get('name')!r}/{package_payload.get('version')!r}"
+        ),
     )
     _check(
         checks,
         "expo_doctor_pinned",
         package_payload.get("devDependencies", {}).get("expo-doctor") == "1.19.8"
-        and root_lock.get("devDependencies", {}).get("expo-doctor") == "1.19.8",
+        and lock_dev_dependencies.get("expo-doctor") == "1.19.8",
         "expo-doctor devDependency is pinned in package.json and package-lock.json",
     )
 
