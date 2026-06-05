@@ -3,6 +3,7 @@ import {
   buildHeaderContextFromValues,
   createPendingId,
   normalizePendingEndpoint,
+  summarizePendingError,
 } from "../utils/appHelpers";
 
 type SessionContext = {
@@ -76,6 +77,10 @@ export function normalizePendingSubmission(
   const attemptCount = Number.isFinite(attemptCountRaw)
     ? Math.max(0, Math.round(attemptCountRaw))
     : 0;
+  const rawLastError = readString(candidate.last_error);
+  const lastError = rawLastError
+    ? summarizePendingError(rawLastError) ?? "server_or_client_response"
+    : null;
 
   return {
     id,
@@ -85,7 +90,7 @@ export function normalizePendingSubmission(
     request_headers: normalizeRequestHeaderContext(candidate.request_headers, sessionContext),
     attempt_count: attemptCount,
     last_attempt_at: readString(candidate.last_attempt_at) || null,
-    last_error: readString(candidate.last_error) || null,
+    last_error: lastError,
     last_status_code:
       typeof candidate.last_status_code === "number" ? candidate.last_status_code : null,
   };

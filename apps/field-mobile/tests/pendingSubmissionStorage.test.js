@@ -121,6 +121,23 @@ test("normalizePendingSubmission preserves capture package payloads", () => {
   assert.equal(item.last_status_code, 503);
 });
 
+test("normalizePendingSubmission redacts migrated raw last errors", () => {
+  const item = storage.normalizePendingSubmission({
+    id: "PENDING-RAW-ERROR",
+    endpoint: "paired_measurements",
+    payload: buildPairedPayload(),
+    request_headers: null,
+    attempt_count: 1,
+    last_attempt_at: "2026-06-04T01:02:03.000Z",
+    last_error: "Validation error for patient_name=Jane Doe",
+    last_status_code: 422,
+  });
+
+  assert.ok(item);
+  assert.equal(item.last_error, "validation");
+  assert.equal(item.last_status_code, 422);
+});
+
 test("normalizePendingSubmission drops corrupt payloads without session context", () => {
   assert.equal(
     storage.normalizePendingSubmission({

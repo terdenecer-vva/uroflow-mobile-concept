@@ -16,7 +16,11 @@ import type {
   PendingSubmission,
   RequestHeaderContext,
 } from "../types";
-import { createPendingId, resolvePendingHeaderContext } from "../utils/appHelpers";
+import {
+  createPendingId,
+  resolvePendingHeaderContext,
+  summarizePendingError,
+} from "../utils/appHelpers";
 import {
   buildPendingSyncAttempt,
   buildPendingSyncStatusMessage,
@@ -61,6 +65,9 @@ export function usePendingSyncQueue({
     ): Promise<void> => {
       const queue = await loadPendingSubmissions();
       const pendingId = createPendingId();
+      const storedLastError = lastError
+        ? summarizePendingError(lastError) ?? "server_or_client_response"
+        : null;
       const pendingItem: PendingSubmission = {
         id: pendingId,
         created_at: new Date().toISOString(),
@@ -72,7 +79,7 @@ export function usePendingSyncQueue({
         },
         attempt_count: 0,
         last_attempt_at: null,
-        last_error: lastError,
+        last_error: storedLastError,
         last_status_code: lastStatusCode,
       };
       await persistPendingQueue([...queue, pendingItem]);

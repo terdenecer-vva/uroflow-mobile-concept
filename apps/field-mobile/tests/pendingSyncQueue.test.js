@@ -142,14 +142,19 @@ test("buildPendingSyncAttempt keeps retryable failures queued with attempt metad
       operator_id: "OP-CURRENT",
       request_id: "REQ-CURRENT",
     },
-    result: { ok: false, statusCode: 503, body: "upstream unavailable", retryable: true },
+    result: {
+      ok: false,
+      statusCode: 503,
+      body: "upstream unavailable for subject SUBJ-001",
+      retryable: true,
+    },
     attemptedAtIso: "2026-06-04T01:02:03.000Z",
   });
 
   assert.equal(attempt.outcome, "retryable");
   assert.equal(attempt.attemptedItem.attempt_count, 1);
   assert.equal(attempt.attemptedItem.last_status_code, 503);
-  assert.equal(attempt.attemptedItem.last_error, "upstream unavailable");
+  assert.equal(attempt.attemptedItem.last_error, "server_or_client_response");
 });
 
 test("buildPendingSyncAttempt drops non-retryable failed paired submissions", () => {
@@ -162,13 +167,19 @@ test("buildPendingSyncAttempt drops non-retryable failed paired submissions", ()
       operator_id: "OP-CURRENT",
       request_id: "REQ-CURRENT",
     },
-    result: { ok: false, statusCode: 422, body: "validation error", retryable: false },
+    result: {
+      ok: false,
+      statusCode: 422,
+      body: "validation error: patient name missing",
+      retryable: false,
+    },
     attemptedAtIso: "2026-06-04T01:02:03.000Z",
   });
 
   assert.equal(attempt.outcome, "dropped_non_retryable");
   assert.equal(attempt.attemptedItem.attempt_count, 1);
   assert.equal(attempt.attemptedItem.last_status_code, 422);
+  assert.equal(attempt.attemptedItem.last_error, "validation");
 });
 
 test("buildPendingSyncStatusMessage preserves operator-facing sync wording", () => {
