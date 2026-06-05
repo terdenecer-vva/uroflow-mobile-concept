@@ -21,7 +21,8 @@ From GitHub Actions:
 2. Run `workflow_dispatch` and set:
    - `build_profile` (`preview` for pilot by default),
    - `build_platform` (`all`/`ios`/`android`),
-   - `wait_for_build` (`false` for fast trigger, `true` for full wait mode).
+   - `wait_for_build` (`false` for fast trigger, `true` for full wait mode),
+   - `release_notes` for operator-facing clinic handoff notes.
 3. Verify `preflight` passes.
 4. Open workflow summary (`Mobile Release Readiness`) and confirm:
    - `Local checks` is `pass`,
@@ -44,6 +45,7 @@ npm run build:preview
 
 Workflow generates artifact `mobile-release-manifest` containing:
 - app version and package IDs,
+- release notes metadata (`present`, byte size, SHA-256, title) without embedding the full notes body,
 - iOS build number and Android versionCode,
 - icon/adaptive-icon paths, `expo-splash-screen` image path, SHA-256 fingerprints, byte sizes, PNG dimensions, and splash background/resize/width config,
 - runtime release metadata from `apps/field-mobile/src/config/releaseMetadata.ts` for app version, model ID, and capture schema version,
@@ -64,6 +66,12 @@ Workflow also generates artifact `mobile-release-readiness` containing:
 - live Clinical Hub API readiness status (`present`, `missing`, or `invalid`),
 - manual release requirements for Apple Developer and Google Play accounts,
 - machine-readable `next_actions` for configuring missing GitHub secrets/variables and manual store-account handoff.
+
+Workflow also generates artifact `mobile-release-notes` containing:
+- git SHA/ref/run-id,
+- selected build profile/platform,
+- operator-facing release notes from workflow input or an explicit placeholder when not supplied,
+- required evidence reminders for manifest, readiness, EAS build links, and physical-device smoke logs.
 
 Manifest script:
 

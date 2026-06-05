@@ -315,6 +315,41 @@ def _readiness_summary(readiness_json: Path | None) -> dict[str, Any]:
     }
 
 
+def _release_notes_summary(release_notes: Path | None) -> dict[str, Any]:
+    if release_notes is None:
+        return {
+            "source_path": None,
+            "present": False,
+            "bytes": 0,
+            "sha256": None,
+            "title": None,
+        }
+    if not release_notes.is_file():
+        return {
+            "source_path": str(release_notes),
+            "present": False,
+            "bytes": 0,
+            "sha256": None,
+            "title": None,
+        }
+
+    data = release_notes.read_bytes()
+    title = None
+    for line in release_notes.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if stripped.startswith("#"):
+            title = stripped.lstrip("#").strip() or None
+            break
+
+    return {
+        "source_path": str(release_notes),
+        "present": True,
+        "bytes": len(data),
+        "sha256": hashlib.sha256(data).hexdigest(),
+        "title": title,
+    }
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Build mobile release manifest for pilot traceability."
@@ -322,6 +357,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--app-json", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--readiness-json", type=Path)
+    parser.add_argument("--release-notes", type=Path)
     parser.add_argument("--profile", default="preview")
     parser.add_argument("--channel", default="preview")
     parser.add_argument("--model-id", default="fusion-v0.1")
@@ -384,6 +420,7 @@ def main() -> int:
         "runtime_defaults": app_settings_defaults,
         "capture_contract": _capture_contract_evidence(args.app_json, app_runtime_config),
         "readiness": _readiness_summary(args.readiness_json),
+        "release_notes": _release_notes_summary(args.release_notes),
         "algorithm": {
             "model_id": args.model_id,
             "capture_schema_version": args.schema_version,

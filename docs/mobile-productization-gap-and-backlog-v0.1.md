@@ -17,6 +17,7 @@ Implemented now:
 - Mobile release readiness gate for single-region data residency policy (`us`, no cross-region sync, region-matched Clinical Hub required).
 - Pending queue auto-sync on connectivity restore via NetInfo, with interval/AppState fallback.
 - Deterministic mobile sync smoke covering queued paired+capture replay after network restore.
+- Mobile Build release notes artifact and manifest traceability for operator-facing build handoff.
 
 Not yet implemented:
 - Real sensor capture pipeline (camera/audio/IMU/depth).
@@ -85,7 +86,7 @@ DoD:
 
 ## B3: Release and tester delivery
 1. Configure Expo project credentials and EAS secrets.
-2. Wire CI dispatch for preview builds with release notes.
+2. Wire CI dispatch for preview builds with release notes. Status: release notes input/artifact and manifest digest traceability implemented; authenticated EAS trigger still waits for Expo/EAS credentials.
 3. Set distribution channels:
 - iOS TestFlight (internal group)
 - Android Internal Testing (Play)

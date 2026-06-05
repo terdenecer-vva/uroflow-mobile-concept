@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import subprocess
 import sys
@@ -31,6 +32,7 @@ def test_build_mobile_release_manifest_script(tmp_path: Path) -> None:
     app_json = tmp_path / "app.json"
     output = tmp_path / "manifest.json"
     readiness_json = tmp_path / "readiness.json"
+    release_notes = tmp_path / "mobile-release-notes.md"
     assets = tmp_path / "assets"
     metadata_path = tmp_path / "src" / "config" / "releaseMetadata.ts"
     app_config_path = tmp_path / "src" / "config" / "appConfig.ts"
@@ -201,6 +203,17 @@ def test_build_mobile_release_manifest_script(tmp_path: Path) -> None:
         ),
         encoding="utf-8",
     )
+    release_notes.write_text(
+        "\n".join(
+            [
+                "# Uroflow Field Mobile Release Notes",
+                "",
+                "Pilot operator note: verify offline queue before first subject.",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
 
     script_path = Path("scripts/build_mobile_release_manifest.py")
     subprocess.run(
@@ -213,6 +226,8 @@ def test_build_mobile_release_manifest_script(tmp_path: Path) -> None:
             str(output),
             "--readiness-json",
             str(readiness_json),
+            "--release-notes",
+            str(release_notes),
             "--profile",
             "preview",
             "--channel",
@@ -313,6 +328,14 @@ def test_build_mobile_release_manifest_script(tmp_path: Path) -> None:
             "configure_eas_project_identity",
             "configure_clinical_hub_live_api",
         ],
+    }
+    release_notes_bytes = release_notes.read_bytes()
+    assert payload["release_notes"] == {
+        "source_path": str(release_notes),
+        "present": True,
+        "bytes": len(release_notes_bytes),
+        "sha256": hashlib.sha256(release_notes_bytes).hexdigest(),
+        "title": "Uroflow Field Mobile Release Notes",
     }
     serialized_manifest = json.dumps(payload)
     assert "secret-free evidence" not in serialized_manifest

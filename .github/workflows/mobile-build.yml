@@ -26,6 +26,10 @@ on:
         required: false
         type: boolean
         default: false
+      release_notes:
+        description: "Operator-facing release notes for this mobile build"
+        required: false
+        type: string
   push:
     branches:
       - main
@@ -162,6 +166,51 @@ jobs:
               handle.write("\n".join(lines) + "\n")
           PY
 
+      - name: Build release notes artifact
+        env:
+          WORKFLOW_BUILD_PROFILE: ${{ github.event.inputs.build_profile || 'preview' }}
+          WORKFLOW_BUILD_PLATFORM: ${{ github.event.inputs.build_platform || 'all' }}
+          WORKFLOW_RELEASE_NOTES: ${{ github.event.inputs.release_notes || '' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+
+          notes = os.environ.get("WORKFLOW_RELEASE_NOTES", "").strip()
+          if not notes:
+              notes = (
+                  "No operator-facing release notes were supplied for this run. "
+                  "Use the workflow_dispatch release_notes input for clinic handoff notes."
+              )
+
+          lines = [
+              "# Uroflow Field Mobile Release Notes",
+              "",
+              f"- Git SHA: `{os.environ.get('GITHUB_SHA', 'local')}`",
+              f"- Git ref: `{os.environ.get('GITHUB_REF', 'local')}`",
+              f"- GitHub run: `{os.environ.get('GITHUB_RUN_ID', 'local')}`",
+              f"- Build profile: `{os.environ.get('WORKFLOW_BUILD_PROFILE', 'preview')}`",
+              f"- Build platform: `{os.environ.get('WORKFLOW_BUILD_PLATFORM', 'all')}`",
+              "",
+              "## Operator Notes",
+              "",
+              notes,
+              "",
+              "## Required Evidence",
+              "",
+              "- Download `mobile-release-manifest`.",
+              "- Download `mobile-release-readiness`.",
+              "- Archive iOS/Android EAS build links when authenticated EAS build runs.",
+              "- Archive physical-device smoke log with device model and OS version.",
+          ]
+          Path("/tmp/mobile-release-notes.md").write_text(
+              "\n".join(lines) + "\n",
+              encoding="utf-8",
+          )
+          PY
+
       - name: Build release manifest
         env:
           WORKFLOW_BUILD_PROFILE: ${{ github.event.inputs.build_profile || 'preview' }}
@@ -177,10 +226,17 @@ jobs:
             --app-json app.json \
             --output /tmp/mobile-release-manifest.json \
             --readiness-json /tmp/mobile-release-readiness.json \
+            --release-notes /tmp/mobile-release-notes.md \
             --profile "$profile" \
             --channel "$channel" \
             --model-id fusion-v0.1 \
             --schema-version ios_capture_v1
+
+      - name: Upload release notes
+        uses: actions/upload-artifact@v7
+        with:
+          name: mobile-release-notes
+          path: /tmp/mobile-release-notes.md
 
       - name: Upload release manifest
         uses: actions/upload-artifact@v7
