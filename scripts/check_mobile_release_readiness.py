@@ -272,6 +272,7 @@ def build_readiness_report(
     helper_tests_path = mobile_root / "tests" / "appHelpers.test.js"
     app_settings_storage_tests_path = mobile_root / "tests" / "appSettingsStorage.test.js"
     capture_tests_path = mobile_root / "tests" / "captureContract.test.js"
+    paired_payload_tests_path = mobile_root / "tests" / "pairedPayload.test.js"
     roi_signal_tests_path = mobile_root / "tests" / "roiSignalEstimator.test.js"
     runtime_metrics_tests_path = mobile_root / "tests" / "runtimeMetrics.test.js"
     pending_sync_queue_tests_path = mobile_root / "tests" / "pendingSyncQueue.test.js"
@@ -313,6 +314,12 @@ def build_readiness_report(
         "capture_contract_unit_tests_present",
         capture_tests_path.is_file(),
         f"path={capture_tests_path}",
+    )
+    _check(
+        checks,
+        "paired_payload_unit_tests_present",
+        paired_payload_tests_path.is_file(),
+        f"path={paired_payload_tests_path}",
     )
     _check(
         checks,

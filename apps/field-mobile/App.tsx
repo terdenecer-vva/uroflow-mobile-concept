@@ -30,6 +30,10 @@ import { RuntimeCaptureSection } from "./src/components/RuntimeCaptureSection";
 import { styles } from "./src/styles/appStyles";
 import { usePendingSyncQueue } from "./src/hooks/usePendingSyncQueue";
 import {
+  buildPairedPayloadFromForm,
+  validatePairedPayloadForSubmission,
+} from "./src/payload/pairedPayload";
+import {
   loadAppSettings,
   saveAppSettings,
 } from "./src/storage/appStorage";
@@ -52,7 +56,6 @@ import {
   createSessionId,
   createSyncId,
   extractCreatedRecordId,
-  parseNumber,
   runtimeCaptureMatchesSession,
 } from "./src/utils/appHelpers";
 
@@ -161,45 +164,35 @@ export default function App() {
   });
 
   const payload = useMemo<PairedPayload>(() => {
-    return {
-      session: {
-        session_id: sessionId.trim(),
-        sync_id: syncId.trim() || null,
-        site_id: siteId.trim(),
-        subject_id: subjectId.trim(),
-        operator_id: operatorId.trim(),
-        attempt_number: parseNumber(attemptNumber),
-        measured_at: measuredAt.trim(),
-        platform,
-        device_model: deviceModel.trim() || null,
-        app_version: appVersion.trim() || null,
-        capture_mode: captureMode,
-      },
-      app: {
-        metrics: {
-          qmax_ml_s: parseNumber(appQmax),
-          qavg_ml_s: parseNumber(appQavg),
-          vvoid_ml: parseNumber(appVvoid),
-          flow_time_s: parseNumber(appFlowTime),
-          tqmax_s: parseNumber(appTqmax),
-        },
-        quality_status: appQualityStatus,
-        quality_score: parseNumber(appQualityScore),
-        model_id: appModelId.trim() || null,
-      },
-      reference: {
-        metrics: {
-          qmax_ml_s: parseNumber(refQmax),
-          qavg_ml_s: parseNumber(refQavg),
-          vvoid_ml: parseNumber(refVvoid),
-          flow_time_s: parseNumber(refFlowTime),
-          tqmax_s: parseNumber(refTqmax),
-        },
-        device_model: refDeviceModel.trim() || null,
-        device_serial: refDeviceSerial.trim() || null,
-      },
-      notes: notes.trim() || null,
-    };
+    return buildPairedPayloadFromForm({
+      sessionId,
+      syncId,
+      siteId,
+      subjectId,
+      operatorId,
+      attemptNumber,
+      measuredAt,
+      platform,
+      deviceModel,
+      appVersion,
+      captureMode,
+      appQmax,
+      appQavg,
+      appVvoid,
+      appFlowTime,
+      appTqmax,
+      appQualityStatus,
+      appQualityScore,
+      appModelId,
+      refQmax,
+      refQavg,
+      refVvoid,
+      refFlowTime,
+      refTqmax,
+      refDeviceModel,
+      refDeviceSerial,
+      notes,
+    });
   }, [
     appFlowTime,
     appModelId,
@@ -574,28 +567,7 @@ export default function App() {
   }
 
   function validateRequired(): string | null {
-    if (captureRunning) {
-      return "Stop runtime capture before submitting.";
-    }
-    if (!payload.session.session_id) {
-      return "session_id is required";
-    }
-    if (!payload.session.site_id || !payload.session.subject_id || !payload.session.operator_id) {
-      return "site_id, subject_id, operator_id are required";
-    }
-    if (!payload.session.attempt_number || payload.session.attempt_number < 1) {
-      return "attempt_number must be >= 1";
-    }
-    if (!payload.session.measured_at) {
-      return "measured_at is required";
-    }
-    if (payload.app.metrics.qmax_ml_s == null || payload.app.metrics.qavg_ml_s == null || payload.app.metrics.vvoid_ml == null) {
-      return "App metrics qmax/qavg/vvoid are required";
-    }
-    if (payload.reference.metrics.qmax_ml_s == null || payload.reference.metrics.qavg_ml_s == null || payload.reference.metrics.vvoid_ml == null) {
-      return "Reference metrics qmax/qavg/vvoid are required";
-    }
-    return null;
+    return validatePairedPayloadForSubmission(payload, { captureRunning });
   }
 
   async function submitPayload() {
