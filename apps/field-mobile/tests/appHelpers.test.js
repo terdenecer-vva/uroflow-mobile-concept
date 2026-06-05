@@ -53,6 +53,16 @@ test("classifyRetryable separates transient and non-retryable statuses", () => {
   assert.equal(helpers.classifyRetryable(422), false);
 });
 
+test("classifyEndpointRetryable keeps auth failures queued for clinical payloads", () => {
+  assert.equal(helpers.classifyEndpointRetryable("paired_measurements", 401), true);
+  assert.equal(helpers.classifyEndpointRetryable("capture_packages", 403), true);
+  assert.equal(helpers.classifyEndpointRetryable("paired_measurements", 429), true);
+  assert.equal(helpers.classifyEndpointRetryable("capture_packages", 503), true);
+  assert.equal(helpers.classifyEndpointRetryable("paired_measurements", 400), false);
+  assert.equal(helpers.classifyEndpointRetryable("capture_packages", 422), false);
+  assert.equal(helpers.classifyEndpointRetryable("capture_packages", 409), false);
+});
+
 test("summarizePendingError redacts raw response bodies into safe categories", () => {
   assert.equal(helpers.summarizePendingError(null), null);
   assert.equal(helpers.summarizePendingError("validation"), "validation");

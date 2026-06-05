@@ -89,7 +89,7 @@ Workflow generates artifact `mobile-release-manifest` containing:
 
 Workflow also generates artifact `mobile-release-readiness` containing:
 - git SHA/ref/run-id/workflow traceability,
-- local mobile readiness checks (`app.json`, `eas.json`, EAS build/submit profile shape, runtime release metadata/config/defaults, endpoint set/data residency/debug gates, Expo Device identity defaults, Clinical Hub preflight guard, Clinical Hub runtime trace headers, in-app release identity evidence, pending sync connectivity restore, deterministic mobile E2E sync smoke, physical-device smoke log template/validator, store rollout handoff template/validator, release bundle verifier, runtime motion quality gates, runtime timeline integrity metadata and quality gating, derivatives-only feature/media manifest gates, package scripts, lockfile, pinned tooling, API response + submit exception + runtime exception PHI redaction, unit-test coverage wiring),
+- local mobile readiness checks (`app.json`, `eas.json`, EAS build/submit profile shape, runtime release metadata/config/defaults, endpoint set/data residency/debug gates, Expo Device identity defaults, Clinical Hub preflight guard, Clinical Hub runtime trace headers, in-app release identity evidence, pending sync connectivity restore, pending sync auth/permission retry policy, deterministic mobile E2E sync smoke, physical-device smoke log template/validator, store rollout handoff template/validator, release bundle verifier, runtime motion quality gates, runtime timeline integrity metadata and quality gating, derivatives-only feature/media manifest gates, package scripts, lockfile, pinned tooling, API response + submit exception + runtime exception PHI redaction, unit-test coverage wiring),
 - external credential state without secret values,
 - authenticated EAS readiness status and specific EAS blockers,
 - live Clinical Hub API readiness status (`present`, `missing`, or `invalid`),
@@ -218,7 +218,7 @@ python3 scripts/validate_mobile_store_rollout_handoff.py \
    Repeat or mark the run failed if foreground/device load creates a timing gap warning.
 8. Submit produces `paired-measurements` and `capture-packages` records.
 9. Offline mode queues both endpoint jobs.
-10. Returning online triggers successful auto-sync through connectivity restore, interval, or AppState fallback.
+10. Returning online triggers successful auto-sync through connectivity restore, interval, or AppState fallback; if Clinical Hub returns `401/403`, fix API key/site/role credentials and retry without clearing queued payloads.
 11. Repository-level deterministic smoke confirms queued paired+capture replay drains after network restore.
 
 ## 6) Evidence to archive per build

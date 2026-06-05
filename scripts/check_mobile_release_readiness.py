@@ -1299,6 +1299,42 @@ def build_readiness_report(
         all(connectivity_restore_test_requirements.values()),
         f"requirements={connectivity_restore_test_requirements!r}",
     )
+    auth_retry_policy_requirements = {
+        "endpoint_policy_helper": "classifyEndpointRetryable" in app_helpers_source,
+        "clinical_hub_uses_endpoint_policy": (
+            "classifyEndpointRetryable(options.endpoint, response.status)"
+        )
+        in clinical_hub_source,
+        "auth_statuses_recoverable": (
+            "statusCode === 401 || statusCode === 403" in app_helpers_source
+        ),
+        "validation_statuses_still_non_retryable": (
+            "classifyEndpointRetryable(\"capture_packages\", 422)" in helper_tests_source
+        ),
+    }
+    _check(
+        checks,
+        "pending_sync_auth_retry_policy_sources",
+        all(auth_retry_policy_requirements.values()),
+        f"requirements={auth_retry_policy_requirements!r}",
+    )
+    auth_retry_policy_test_requirements = {
+        "helper_policy_test": "keeps auth failures queued for clinical payloads"
+        in helper_tests_source,
+        "clinical_hub_auth_retry_test": (
+            "keeps auth failures retryable for queued clinical payloads"
+        )
+        in clinical_hub_tests_source,
+        "queue_auth_retry_test": "keeps auth failures queued for credential repair"
+        in pending_sync_queue_tests_source,
+        "auth_error_redacted": "auth_or_permission" in pending_sync_queue_tests_source,
+    }
+    _check(
+        checks,
+        "pending_sync_auth_retry_policy_unit_tests_present",
+        all(auth_retry_policy_test_requirements.values()),
+        f"requirements={auth_retry_policy_test_requirements!r}",
+    )
     mobile_e2e_sync_smoke_requirements = {
         "batch_replay_helper": "runPendingSyncBatch" in pending_sync_queue_source,
         "submitter_injection": "submitEndpoint" in pending_sync_queue_source,

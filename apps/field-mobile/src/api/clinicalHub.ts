@@ -19,7 +19,7 @@ import {
 } from "../config/releaseMetadata";
 import {
   clampTimeoutMs,
-  classifyRetryable,
+  classifyEndpointRetryable,
   createRequestId,
   summarizeSafeExceptionCategory,
 } from "../utils/appHelpers";
@@ -115,7 +115,9 @@ export async function attemptSubmitEndpoint(options: {
       ok: response.ok,
       statusCode: response.status,
       body,
-      retryable: !response.ok ? classifyRetryable(response.status) : false,
+      retryable: !response.ok
+        ? classifyEndpointRetryable(options.endpoint, response.status)
+        : false,
     };
   } catch (error) {
     return {
