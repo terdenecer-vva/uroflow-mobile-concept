@@ -34,6 +34,7 @@ import {
 } from "./src/capture/runtimeCaptureSession";
 import { APP_MODEL_ID, APP_RELEASE_VERSION } from "./src/config/releaseMetadata";
 import { estimateRoiSignalFromBase64 } from "./src/capture/roiSignalEstimator";
+import { APP_DEFAULT_CAPTURE_MODE } from "./src/config/appConfig";
 import { ApiConnectionSection } from "./src/components/ApiConnectionSection";
 import { MeasurementFormSection } from "./src/components/MeasurementFormSection";
 import { ResponseAndSummarySection } from "./src/components/ResponseAndSummarySection";
@@ -97,7 +98,7 @@ export default function App() {
   const [platform, setPlatform] = useState<string>(defaultPlatform);
   const [deviceModel, setDeviceModel] = useState<string>(Platform.OS);
   const [appVersion, setAppVersion] = useState(APP_RELEASE_VERSION);
-  const [captureMode, setCaptureMode] = useState("water_impact");
+  const [captureMode, setCaptureMode] = useState(APP_DEFAULT_CAPTURE_MODE);
 
   const [appQmax, setAppQmax] = useState("");
   const [appQavg, setAppQavg] = useState("");

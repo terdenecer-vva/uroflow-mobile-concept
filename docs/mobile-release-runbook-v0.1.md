@@ -47,6 +47,7 @@ Workflow generates artifact `mobile-release-manifest` containing:
 - iOS build number and Android versionCode,
 - icon/adaptive-icon paths, `expo-splash-screen` image path, SHA-256 fingerprints, byte sizes, PNG dimensions, and splash background/resize/width config,
 - runtime release metadata from `apps/field-mobile/src/config/releaseMetadata.ts` for app version, model ID, and capture schema version,
+- runtime app config from `apps/field-mobile/src/config/appConfig.ts` for pilot mode, default capture mode, and privacy-by-default switches,
 - runtime defaults such as `DEFAULT_API_BASE_URL` to prove release builds do not point field devices at localhost,
 - git SHA/ref/run-id,
 - model_id and capture schema version.
@@ -54,7 +55,7 @@ Workflow generates artifact `mobile-release-manifest` containing:
 
 Workflow also generates artifact `mobile-release-readiness` containing:
 - git SHA/ref/run-id/workflow traceability,
-- local mobile readiness checks (`app.json`, `eas.json`, runtime release metadata/defaults, package scripts, lockfile, pinned tooling, API response redaction, unit-test coverage wiring),
+- local mobile readiness checks (`app.json`, `eas.json`, runtime release metadata/config/defaults, package scripts, lockfile, pinned tooling, API response redaction, unit-test coverage wiring),
 - external credential state without secret values,
 - authenticated EAS readiness status and specific EAS blockers,
 - live Clinical Hub API readiness status (`present`, `missing`, or `invalid`),

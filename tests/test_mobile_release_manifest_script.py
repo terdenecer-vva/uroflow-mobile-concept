@@ -32,6 +32,7 @@ def test_build_mobile_release_manifest_script(tmp_path: Path) -> None:
     output = tmp_path / "manifest.json"
     assets = tmp_path / "assets"
     metadata_path = tmp_path / "src" / "config" / "releaseMetadata.ts"
+    app_config_path = tmp_path / "src" / "config" / "appConfig.ts"
     app_settings_path = tmp_path / "src" / "storage" / "appSettingsStorage.ts"
     assets.mkdir()
     metadata_path.parent.mkdir(parents=True)
@@ -83,6 +84,18 @@ def test_build_mobile_release_manifest_script(tmp_path: Path) -> None:
                 'export const APP_RELEASE_VERSION = "0.1.0";',
                 'export const APP_MODEL_ID = "fusion-v0.1";',
                 'export const APP_CAPTURE_SCHEMA_VERSION = "ios_capture_v1";',
+            ]
+        ),
+        encoding="utf-8",
+    )
+    app_config_path.write_text(
+        "\n".join(
+            [
+                'export const APP_RUNTIME_MODE = "pilot";',
+                'export const APP_DEFAULT_CAPTURE_MODE = "water_impact";',
+                "export const APP_STORE_RAW_VIDEO = false;",
+                "export const APP_STORE_RAW_AUDIO = false;",
+                "export const APP_ROI_ONLY = true;",
             ]
         ),
         encoding="utf-8",
@@ -139,6 +152,11 @@ def test_build_mobile_release_manifest_script(tmp_path: Path) -> None:
     assert payload["runtime_release_metadata"]["app_version"] == "0.1.0"
     assert payload["runtime_release_metadata"]["model_id"] == "fusion-v0.1"
     assert payload["runtime_release_metadata"]["capture_schema_version"] == "ios_capture_v1"
+    assert payload["runtime_config"]["runtime_mode"] == "pilot"
+    assert payload["runtime_config"]["default_capture_mode"] == "water_impact"
+    assert payload["runtime_config"]["store_raw_video"] is False
+    assert payload["runtime_config"]["store_raw_audio"] is False
+    assert payload["runtime_config"]["roi_only"] is True
     assert payload["runtime_defaults"]["default_api_base_url"] == ""
     assert payload["algorithm"]["model_id"] == "fusion-v0.1"
     assert payload["algorithm"]["capture_schema_version"] == "ios_capture_v1"

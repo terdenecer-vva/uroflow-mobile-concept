@@ -114,7 +114,7 @@ When backend is configured with API key policy map (`--api-key-map-json`), set i
 
 CI:
 - `.github/workflows/mobile-ci.yml` runs `npm run validate:ci` for `apps/field-mobile/**` changes.
-- `validate:ci` covers TypeScript, Clinical Hub API client/connection check/summary requests + mobile helper/API + submit outcome + paired/capture-package payload + capture-contract + ROI signal + runtime metric + pending queue + storage unit tests, Expo Doctor, production dependency audit, and iOS/Android Expo exports.
+- `validate:ci` covers TypeScript, Clinical Hub API client/connection check/summary requests + mobile helper/API + runtime config + submit outcome + paired/capture-package payload + capture-contract + ROI signal + runtime metric + pending queue + storage unit tests, Expo Doctor, production dependency audit, and iOS/Android Expo exports.
 - `.github/workflows/mobile-build.yml` runs release preflight for mobile app/release-script changes and provides manual EAS build trigger (`workflow_dispatch`) with inputs:
   - `build_profile` (`preview` / `development` / `production`)
   - `build_platform` (`all` / `ios` / `android`)
@@ -131,7 +131,8 @@ CI:
 secret blockers. The artifact has separate machine-readable gates:
 
 - `local_checks_status`: local app metadata, runtime release metadata, EAS profile shape,
-  runtime defaults such as non-localhost API URL defaults, store privacy declarations,
+  runtime config/defaults such as privacy-by-default switches and non-localhost API URL defaults,
+  store privacy declarations,
   launch/icon assets, dependency lock alignment, and unit-test evidence that can be verified
   without external credentials.
 - `authenticated_eas_status`: whether `EXPO_TOKEN` and deterministic EAS project identity are ready for an authenticated EAS build trigger.

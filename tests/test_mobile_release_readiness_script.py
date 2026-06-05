@@ -88,8 +88,12 @@ def test_mobile_release_readiness_reports_external_blockers(tmp_path: Path) -> N
         "eas_production_auto_increment",
         "eas_profile_channels",
         "ios_privacy_usage_descriptions",
+        "app_config_unit_tests_present",
         "paired_payload_unit_tests_present",
         "package_lock_matches_root",
+        "runtime_config_default_capture_mode",
+        "runtime_config_module",
+        "runtime_config_privacy_by_default",
         "secure_store_dependency_locked",
         "secure_store_plugin",
         "splash_background_color",
@@ -264,6 +268,43 @@ def test_mobile_release_readiness_fails_localhost_default_api_url(tmp_path: Path
     assert payload["local_checks_status"] == "fail"
     assert check["status"] == "fail"
     assert "http://127.0.0.1:8000" in check["evidence"]
+
+
+def test_mobile_release_readiness_fails_raw_media_runtime_config(tmp_path: Path) -> None:
+    mutated_app_json = tmp_path / "app.json"
+    app_config_path = tmp_path / "src" / "config" / "appConfig.ts"
+    app_config_path.parent.mkdir(parents=True)
+    app_payload = json.loads(APP_JSON.read_text(encoding="utf-8"))
+    mutated_app_json.write_text(json.dumps(app_payload), encoding="utf-8")
+    app_config_path.write_text(
+        "\n".join(
+            [
+                'export const APP_RUNTIME_MODE = "pilot";',
+                'export const APP_DEFAULT_CAPTURE_MODE = "water_impact";',
+                "export const APP_STORE_RAW_VIDEO = true;",
+                "export const APP_STORE_RAW_AUDIO = false;",
+                "export const APP_ROI_ONLY = true;",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    payload = _run_readiness_with_paths(
+        tmp_path / "readiness.json",
+        env={"PATH": os.environ.get("PATH", "")},
+        app_json=mutated_app_json,
+        check=False,
+    )
+
+    check = next(
+        item
+        for item in payload["local_checks"]
+        if item["id"] == "runtime_config_privacy_by_default"
+    )
+    assert payload["status"] == "not_ready"
+    assert payload["local_checks_status"] == "fail"
+    assert check["status"] == "fail"
+    assert "store_raw_video=True" in check["evidence"]
 
 
 def test_mobile_release_readiness_passes_authenticated_preflight_env(tmp_path: Path) -> None:
