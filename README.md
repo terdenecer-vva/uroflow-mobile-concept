@@ -361,6 +361,12 @@ uroflow-mobile evaluate-gates /path/to/metrics.json \
   --output-json /path/to/gate_summary.json
 ```
 
+`evaluate-gates` always writes `traceability.schema_version =
+gate_summary_traceability_v0.1`. In CI, `pilot-automation-smoke` also fills
+`git_sha`, `workflow_run_id`, `mobile_build_id`, `app_version`, `model_id`, and
+`capture_schema_version` from GitHub runtime metadata plus
+`apps/field-mobile/src/config/releaseMetadata.ts`.
+
 Для проверки строго по submission-ready порогам из пакета v2.8:
 
 ```bash
