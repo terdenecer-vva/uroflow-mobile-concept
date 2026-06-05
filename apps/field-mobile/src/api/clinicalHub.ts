@@ -5,7 +5,12 @@ import type {
   SubmitAttemptResult,
 } from "../types";
 import { APP_ENDPOINT_PATHS } from "../config/appConfig";
-import { clampTimeoutMs, classifyRetryable, createRequestId } from "../utils/appHelpers";
+import {
+  clampTimeoutMs,
+  classifyRetryable,
+  createRequestId,
+  summarizeSafeExceptionCategory,
+} from "../utils/appHelpers";
 
 export function buildBaseUrl(apiBaseUrl: string): string {
   return apiBaseUrl.trim().replace(/\/+$/, "");
@@ -91,7 +96,7 @@ export async function attemptSubmitEndpoint(options: {
     return {
       ok: false,
       statusCode: null,
-      body: String(error),
+      body: summarizeSafeExceptionCategory(error, "network_or_timeout"),
       retryable: true,
     };
   }
