@@ -50,6 +50,7 @@ Workflow generates artifact `mobile-release-manifest` containing:
 - runtime app config from `apps/field-mobile/src/config/appConfig.ts` for pilot mode, Clinical Hub v1 endpoint set, default capture mode, privacy-by-default switches, and disabled debug gates,
 - runtime quality evidence for ROI validity, low-confidence depth ratio, and high-motion IMU artifact ratio in `capture_payload.analysis.runtime_quality`,
 - source-backed derivatives-only feature/media manifest evidence in `capture_contract.feature_manifest`, including manifest version, feature keys, `sample_count` source, `raw_media.*=false`, and `privacy.media_scope=roi_derivatives_only`,
+- readiness gate summary in `readiness`, including local/external/EAS/Clinical Hub statuses, local check counts, failed check IDs, external blocker statuses, and next-action IDs without secret values or detailed evidence strings,
 - runtime defaults such as `DEFAULT_API_BASE_URL` to prove release builds do not point field devices at localhost,
 - git SHA/ref/run-id,
 - model_id and capture schema version.

@@ -12,6 +12,7 @@ Implemented now:
 - App-level runtime config for pilot mode, Clinical Hub v1 endpoint set, default capture mode, privacy-by-default switches, and disabled debug gates.
 - Runtime capture quality gates for ROI validity, low-confidence depth, and high-motion IMU artifacts.
 - Derivatives-only feature/media manifest in mobile `ios_capture_v1` payloads, with backend validation that raw media storage/upload flags remain disabled.
+- Release manifest traceability for app version, git SHA, model/schema, runtime config, capture contract feature-manifest evidence, and readiness gate summary.
 
 Not yet implemented:
 - Real sensor capture pipeline (camera/audio/IMU/depth).
@@ -38,7 +39,7 @@ Not yet implemented:
 ### G4. Build/release gap
 - EAS profiles are added but CI does not yet publish artifacts to testers automatically.
 - TestFlight and Play Internal release SOPs are not codified in repo.
-- No immutable release manifest (version -> git sha -> model id -> gate summary).
+- Release manifest is generated with version -> git SHA -> model/schema -> gate summary traceability; signed store distribution remains externally blocked until Apple/Google/Expo credentials are configured.
 
 ### G5. Verification gap
 - Mobile tests are only typecheck-level.
@@ -50,7 +51,7 @@ Not yet implemented:
 ## B0: Foundation (must finish first)
 1. Split app architecture into modules: `api`, `capture`, `storage`, `sync`, `screens`.
 2. Add app-level config object (`mode`, endpoint set, privacy switches, debug gates). Status: implemented for pilot mode, Clinical Hub v1 endpoint set, default capture mode, privacy switches, and disabled debug gates.
-3. Add release manifest JSON generation (`app_version`, `git_sha`, `model_id`, `schema_version`).
+3. Add release manifest JSON generation (`app_version`, `git_sha`, `model_id`, `schema_version`, readiness gate summary). Status: implemented in Mobile Build artifacts.
 
 DoD:
 - App builds locally for iOS and Android.

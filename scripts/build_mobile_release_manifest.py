@@ -215,12 +215,99 @@ def _capture_contract_evidence(
     }
 
 
+def _readiness_summary(readiness_json: Path | None) -> dict[str, Any]:
+    if readiness_json is None:
+        return {
+            "source_path": None,
+            "status": "not_provided",
+            "local_checks_status": None,
+            "external_readiness_status": None,
+            "authenticated_eas_status": None,
+            "authenticated_eas_blockers": [],
+            "clinical_hub_live_api_status": None,
+            "local_check_counts": {},
+            "failed_local_checks": [],
+            "warning_local_checks": [],
+            "external_items": [],
+            "manual_external_items": [],
+            "next_action_ids": [],
+        }
+    if not readiness_json.is_file():
+        return {
+            "source_path": str(readiness_json),
+            "status": "missing",
+            "local_checks_status": None,
+            "external_readiness_status": None,
+            "authenticated_eas_status": None,
+            "authenticated_eas_blockers": [],
+            "clinical_hub_live_api_status": None,
+            "local_check_counts": {},
+            "failed_local_checks": [],
+            "warning_local_checks": [],
+            "external_items": [],
+            "manual_external_items": [],
+            "next_action_ids": [],
+        }
+
+    payload = json.loads(readiness_json.read_text(encoding="utf-8"))
+    local_checks = payload.get("local_checks", [])
+    local_check_counts: dict[str, int] = {}
+    failed_local_checks: list[str] = []
+    warning_local_checks: list[str] = []
+    for check in local_checks:
+        if not isinstance(check, dict):
+            continue
+        status = str(check.get("status", "unknown"))
+        local_check_counts[status] = local_check_counts.get(status, 0) + 1
+        check_id = check.get("id")
+        if isinstance(check_id, str) and status != "pass":
+            failed_local_checks.append(check_id)
+        if isinstance(check_id, str) and check.get("severity") == "warning":
+            warning_local_checks.append(check_id)
+
+    def item_statuses(items: Any) -> list[dict[str, str]]:
+        if not isinstance(items, list):
+            return []
+        result: list[dict[str, str]] = []
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+            item_id = item.get("id")
+            status = item.get("status")
+            if isinstance(item_id, str) and isinstance(status, str):
+                result.append({"id": item_id, "status": status})
+        return result
+
+    next_action_ids = [
+        item["id"]
+        for item in payload.get("next_actions", [])
+        if isinstance(item, dict) and isinstance(item.get("id"), str)
+    ]
+
+    return {
+        "source_path": str(readiness_json),
+        "status": payload.get("status"),
+        "local_checks_status": payload.get("local_checks_status"),
+        "external_readiness_status": payload.get("external_readiness_status"),
+        "authenticated_eas_status": payload.get("authenticated_eas_status"),
+        "authenticated_eas_blockers": payload.get("authenticated_eas_blockers", []),
+        "clinical_hub_live_api_status": payload.get("clinical_hub_live_api_status"),
+        "local_check_counts": local_check_counts,
+        "failed_local_checks": failed_local_checks,
+        "warning_local_checks": warning_local_checks,
+        "external_items": item_statuses(payload.get("external_items")),
+        "manual_external_items": item_statuses(payload.get("manual_external_items")),
+        "next_action_ids": next_action_ids,
+    }
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Build mobile release manifest for pilot traceability."
     )
     parser.add_argument("--app-json", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--readiness-json", type=Path)
     parser.add_argument("--profile", default="preview")
     parser.add_argument("--channel", default="preview")
     parser.add_argument("--model-id", default="fusion-v0.1")
@@ -282,6 +369,7 @@ def main() -> int:
         "runtime_config": app_runtime_config,
         "runtime_defaults": app_settings_defaults,
         "capture_contract": _capture_contract_evidence(args.app_json, app_runtime_config),
+        "readiness": _readiness_summary(args.readiness_json),
         "algorithm": {
             "model_id": args.model_id,
             "capture_schema_version": args.schema_version,
