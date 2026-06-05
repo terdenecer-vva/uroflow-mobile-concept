@@ -14,10 +14,7 @@ import {
   buildRequestHeaders,
   fetchWithTimeout,
 } from "./src/api/clinicalHub";
-import {
-  buildCaptureContractPayload,
-  buildCaptureContractPayloadFromSamples,
-} from "./src/capture/buildCaptureContract";
+import { buildCaptureContractPayloadFromSamples } from "./src/capture/buildCaptureContract";
 import {
   RuntimeCaptureSession,
   type RuntimeFlowPoint,
@@ -29,6 +26,7 @@ import { ResponseAndSummarySection } from "./src/components/ResponseAndSummarySe
 import { RuntimeCaptureSection } from "./src/components/RuntimeCaptureSection";
 import { styles } from "./src/styles/appStyles";
 import { usePendingSyncQueue } from "./src/hooks/usePendingSyncQueue";
+import { buildCapturePackagePayloadFromPaired } from "./src/payload/capturePackagePayload";
 import {
   buildPairedPayloadFromForm,
   validatePairedPayloadForSubmission,
@@ -41,7 +39,6 @@ import type {
   AppSettings,
   AuthContextResponse,
   CaptureCoverageSummaryResponse,
-  CapturePackagePayload,
   ComparisonSummaryResponse,
   PairedPayload,
   QualityStatus,
@@ -56,7 +53,6 @@ import {
   createSessionId,
   createSyncId,
   extractCreatedRecordId,
-  runtimeCaptureMatchesSession,
 } from "./src/utils/appHelpers";
 
 const defaultMeasuredAt = new Date().toISOString().slice(0, 19) + "Z";
@@ -482,39 +478,6 @@ export default function App() {
     return requestHeaderContext;
   }
 
-  function buildCapturePackagePayloadFromPaired(
-    currentPayload: PairedPayload,
-    pairedMeasurementId: number | null,
-  ): CapturePackagePayload {
-    let captureContractPayload: Record<string, unknown>;
-    let notes = "mobile_scaffold_capture_contract_v0.1";
-    const runtimePayload = runtimeCaptureContractPayload;
-    if (runtimePayload && runtimeCaptureMatchesSession(runtimePayload, currentPayload.session)) {
-      captureContractPayload = runtimePayload;
-      notes = "mobile_runtime_capture_contract_audio_imu_v0.1";
-    } else {
-      captureContractPayload = buildCaptureContractPayload({
-        sessionId: currentPayload.session.session_id,
-        syncId: currentPayload.session.sync_id,
-        startedAtIso: currentPayload.session.measured_at,
-        captureMode: currentPayload.session.capture_mode,
-        deviceModel: currentPayload.session.device_model,
-        iosVersion: String(Platform.Version),
-        appVersion: currentPayload.session.app_version,
-        qmaxMlS: currentPayload.app.metrics.qmax_ml_s,
-        qavgMlS: currentPayload.app.metrics.qavg_ml_s,
-        flowTimeS: currentPayload.app.metrics.flow_time_s,
-      }) as unknown as Record<string, unknown>;
-    }
-    return {
-      session: currentPayload.session,
-      package_type: "capture_contract_json",
-      capture_payload: captureContractPayload,
-      paired_measurement_id: pairedMeasurementId,
-      notes,
-    };
-  }
-
   async function testApiConnection(): Promise<void> {
     const baseUrl = buildBaseUrl(apiBaseUrl);
     const authContextUrl = `${baseUrl}/api/v1/auth-context`;
@@ -595,10 +558,12 @@ export default function App() {
       });
       if (result.ok) {
         const pairedMeasurementId = extractCreatedRecordId(result.body);
-        const capturePayload = buildCapturePackagePayloadFromPaired(
-          payload,
+        const capturePayload = buildCapturePackagePayloadFromPaired({
+          currentPayload: payload,
           pairedMeasurementId,
-        );
+          runtimeCaptureContractPayload,
+          platformVersion: String(Platform.Version),
+        });
         const captureRequestHeaderContext: RequestHeaderContext = {
           ...requestHeaderContext,
           request_id: createRequestId(),
@@ -661,7 +626,12 @@ export default function App() {
         return;
       }
 
-      const capturePayloadWithoutPair = buildCapturePackagePayloadFromPaired(payload, null);
+      const capturePayloadWithoutPair = buildCapturePackagePayloadFromPaired({
+        currentPayload: payload,
+        pairedMeasurementId: null,
+        runtimeCaptureContractPayload,
+        platformVersion: String(Platform.Version),
+      });
       const captureRetryHeaderContext: RequestHeaderContext = {
         ...requestHeaderContext,
         request_id: createRequestId(),
