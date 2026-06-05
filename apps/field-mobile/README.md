@@ -24,6 +24,8 @@ Cross-platform mobile client (Expo React Native) for collecting paired measureme
 - Queue controls: `Test API`, `Sync Queue`, `Clear Queue`
 - Clinical Hub preflight is shown in the API block; missing/invalid URLs and obvious
   cross-region Hub targets are blocked before `Test API`, `Submit`, or `Sync Queue`.
+- All Clinical Hub requests include non-secret `x-uroflow-*` trace headers for app version,
+  model/schema, runtime mode, endpoint set, and data-residency policy.
 - Persisted local settings (`API URL`, `site/operator`, timeout, summary filter)
 - `API Key` stored in device secure storage (`expo-secure-store`) with AsyncStorage fallback
 - `Device Model` defaults from Expo Device metadata with platform fallback and remains editable for field correction.
@@ -103,6 +105,10 @@ The API block shows a preflight result. Missing/unsupported URLs block field act
 Local/LAN URLs are allowed with a warning for smoke tests. HTTPS URLs with an obvious
 non-US region token are blocked because the pilot runtime policy requires the configured
 single-region Clinical Hub.
+Requests add `x-uroflow-app-version`, `x-uroflow-model-id`,
+`x-uroflow-capture-schema-version`, `x-uroflow-runtime-mode`,
+`x-uroflow-endpoint-set`, and data-residency headers so Clinical Hub logs can be
+matched to the release manifest without exposing API keys or PHI.
 
 Examples:
 
@@ -149,6 +155,7 @@ secret blockers. The artifact has separate machine-readable gates:
   runtime config/defaults such as Clinical Hub v1 endpoint set, disabled debug gates,
   privacy-by-default switches, single-region data residency policy, Expo Device identity defaults,
   Clinical Hub preflight guard,
+  Clinical Hub runtime trace headers,
   in-app release identity evidence,
   runtime motion quality gates, derivatives-only feature/media
   manifest gates, pending sync connectivity-restore trigger, device-smoke evidence template/validator,

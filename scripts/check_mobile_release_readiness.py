@@ -970,6 +970,52 @@ def build_readiness_report(
         clinical_hub_api_tests_path.is_file(),
         f"path={clinical_hub_api_tests_path}",
     )
+    runtime_trace_header_requirements = {
+        "helper_function": "buildRuntimeTraceHeaders" in clinical_hub_source,
+        "release_version_header": "x-uroflow-app-version" in clinical_hub_source
+        and "APP_RELEASE_VERSION" in clinical_hub_source,
+        "model_id_header": "x-uroflow-model-id" in clinical_hub_source
+        and "APP_MODEL_ID" in clinical_hub_source,
+        "capture_schema_header": "x-uroflow-capture-schema-version"
+        in clinical_hub_source
+        and "APP_CAPTURE_SCHEMA_VERSION" in clinical_hub_source,
+        "runtime_mode_header": "x-uroflow-runtime-mode" in clinical_hub_source
+        and "APP_RUNTIME_MODE" in clinical_hub_source,
+        "endpoint_set_header": "x-uroflow-endpoint-set" in clinical_hub_source
+        and "APP_ENDPOINT_SET" in clinical_hub_source,
+        "data_residency_headers": (
+            "x-uroflow-data-residency-region" in clinical_hub_source
+            and "APP_DATA_RESIDENCY_REGION" in clinical_hub_source
+            and "x-uroflow-data-residency-boundary" in clinical_hub_source
+            and "APP_DATA_RESIDENCY_BOUNDARY" in clinical_hub_source
+            and "x-uroflow-region-match-required" in clinical_hub_source
+        ),
+        "request_headers_include_trace": (
+            "const headers: Record<string, string> = buildRuntimeTraceHeaders()"
+            in clinical_hub_source
+        ),
+    }
+    _check(
+        checks,
+        "clinical_hub_runtime_trace_headers_sources",
+        all(runtime_trace_header_requirements.values()),
+        f"requirements={runtime_trace_header_requirements!r}",
+    )
+    runtime_trace_header_test_requirements = {
+        "runtime_trace_header_test": (
+            "buildRuntimeTraceHeaders exposes release and residency metadata without secrets"
+            in clinical_hub_tests_source
+        ),
+        "submit_header_test": "x-uroflow-data-residency-region"
+        in clinical_hub_tests_source,
+        "helper_header_test": "x-uroflow-runtime-mode" in helper_tests_source,
+    }
+    _check(
+        checks,
+        "clinical_hub_runtime_trace_headers_unit_tests_present",
+        all(runtime_trace_header_test_requirements.values()),
+        f"requirements={runtime_trace_header_test_requirements!r}",
+    )
     clinical_hub_preflight_requirements = {
         "source_file": clinical_hub_preflight_source_path.is_file(),
         "uses_data_residency_policy": (
