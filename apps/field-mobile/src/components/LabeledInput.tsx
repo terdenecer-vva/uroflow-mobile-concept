@@ -7,6 +7,7 @@ export type LabeledInputProps = {
   onChangeText: (text: string) => void;
   keyboardType?: "default" | "number-pad" | "decimal-pad";
   multiline?: boolean;
+  placeholder?: string;
   secureTextEntry?: boolean;
 };
 
@@ -16,6 +17,7 @@ export function LabeledInput({
   onChangeText,
   keyboardType = "default",
   multiline = false,
+  placeholder,
   secureTextEntry = false,
 }: LabeledInputProps) {
   return (
@@ -27,6 +29,8 @@ export function LabeledInput({
         onChangeText={onChangeText}
         keyboardType={keyboardType}
         multiline={multiline}
+        placeholder={placeholder}
+        placeholderTextColor="#94a3b8"
         secureTextEntry={secureTextEntry}
       />
     </View>

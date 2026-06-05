@@ -5,6 +5,10 @@ const test = require("node:test");
 const buildDir = process.env.MOBILE_UNIT_BUILD_DIR ?? "/tmp/uroflow-field-mobile-unit";
 const settings = require(path.join(buildDir, "storage/appSettingsStorage.js"));
 
+test("default app settings do not point release devices at localhost", () => {
+  assert.equal(settings.DEFAULT_API_BASE_URL, "");
+});
+
 test("parseStoredAppSettings builds defaults when only secure API key remains", () => {
   assert.deepEqual(settings.parseStoredAppSettings(null, "secure-key"), {
     api_base_url: settings.DEFAULT_API_BASE_URL,

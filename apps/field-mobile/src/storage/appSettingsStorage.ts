@@ -1,7 +1,7 @@
 import type { AppSettings, SummaryQualityStatus } from "../types";
 import { DEFAULT_REQUEST_TIMEOUT_MS, normalizeActorRoleInput } from "../utils/appHelpers";
 
-export const DEFAULT_API_BASE_URL = "http://127.0.0.1:8000";
+export const DEFAULT_API_BASE_URL = "";
 export const DEFAULT_SITE_ID = "SITE-001";
 export const DEFAULT_OPERATOR_ID = "OP-01";
 

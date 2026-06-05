@@ -7,7 +7,15 @@ import type {
 import { clampTimeoutMs, classifyRetryable, createRequestId } from "../utils/appHelpers";
 
 export function buildBaseUrl(apiBaseUrl: string): string {
-  return apiBaseUrl.replace(/\/$/, "");
+  return apiBaseUrl.trim().replace(/\/+$/, "");
+}
+
+export function isConfiguredApiBaseUrl(apiBaseUrl: string): boolean {
+  return /^https?:\/\//i.test(buildBaseUrl(apiBaseUrl));
+}
+
+export function buildMissingApiBaseUrlMessage(): string {
+  return "Configure Clinical Hub API Base URL before testing, submitting, or syncing.";
 }
 
 export function endpointPath(endpoint: PendingEndpoint): string {

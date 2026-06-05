@@ -130,8 +130,9 @@ CI:
 secret blockers. The artifact has separate machine-readable gates:
 
 - `local_checks_status`: local app metadata, runtime release metadata, EAS profile shape,
-  store privacy declarations, launch/icon assets, dependency lock alignment, and unit-test
-  evidence that can be verified without external credentials.
+  runtime defaults such as non-localhost API URL defaults, store privacy declarations,
+  launch/icon assets, dependency lock alignment, and unit-test evidence that can be verified
+  without external credentials.
 - `authenticated_eas_status`: whether `EXPO_TOKEN` and deterministic EAS project identity are ready for an authenticated EAS build trigger.
 - `clinical_hub_live_api_status`: whether live Clinical Hub API smoke/report-push credentials are configured.
 - `external_readiness_status`: aggregate external status across Expo/EAS + Clinical Hub.
