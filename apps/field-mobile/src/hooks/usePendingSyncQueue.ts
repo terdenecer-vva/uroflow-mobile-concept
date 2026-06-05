@@ -13,8 +13,11 @@ import type {
   RequestHeaderContext,
 } from "../types";
 import { createPendingId, resolvePendingHeaderContext } from "../utils/appHelpers";
-
-const MAX_PENDING_SYNC_BATCH_SIZE = 10;
+import {
+  buildPendingSyncAttempt,
+  buildPendingSyncStatusMessage,
+  splitPendingSyncBatch,
+} from "../utils/pendingSyncQueue";
 
 type UsePendingSyncQueueOptions = {
   apiBaseUrl: string;
@@ -87,8 +90,7 @@ export function usePendingSyncQueue({
           return;
         }
 
-        const batch = queue.slice(0, MAX_PENDING_SYNC_BATCH_SIZE);
-        const deferred = queue.slice(MAX_PENDING_SYNC_BATCH_SIZE);
+        const { batch, deferred } = splitPendingSyncBatch(queue);
         const retryableBatchItems: PendingSubmission[] = [];
         let syncedPaired = 0;
         let syncedCapture = 0;
@@ -103,24 +105,22 @@ export function usePendingSyncQueue({
             endpointPayload: item.payload,
             headerContext,
           });
-          const attemptedItem: PendingSubmission = {
-            ...item,
-            request_headers: headerContext,
-            attempt_count: item.attempt_count + 1,
-            last_attempt_at: new Date().toISOString(),
-            last_status_code: result.statusCode,
-            last_error: result.ok ? null : result.body,
-          };
-          if (result.ok) {
-            if (item.endpoint === "capture_packages") {
-              syncedCapture += 1;
-            } else {
-              syncedPaired += 1;
-            }
+          const attempt = buildPendingSyncAttempt({
+            item,
+            headerContext,
+            result,
+            attemptedAtIso: new Date().toISOString(),
+          });
+          if (attempt.outcome === "synced_capture") {
+            syncedCapture += 1;
             continue;
           }
-          if (result.retryable) {
-            retryableBatchItems.push(attemptedItem);
+          if (attempt.outcome === "synced_paired") {
+            syncedPaired += 1;
+            continue;
+          }
+          if (attempt.outcome === "retryable") {
+            retryableBatchItems.push(attempt.attemptedItem);
             continue;
           }
           droppedNonRetryable += 1;
@@ -129,11 +129,15 @@ export function usePendingSyncQueue({
         const remaining = [...retryableBatchItems, ...deferred];
         await persistPendingQueue(remaining);
 
-        const statusMessage =
-          `Sync batch completed (${batch.length}/${queue.length}). ` +
-          `Synced paired: ${syncedPaired}, synced capture: ${syncedCapture}, ` +
-          `remaining queued: ${remaining.length}, ` +
-          `deferred: ${deferred.length}, dropped non-retryable: ${droppedNonRetryable}.`;
+        const statusMessage = buildPendingSyncStatusMessage({
+          batchCount: batch.length,
+          totalCount: queue.length,
+          syncedPaired,
+          syncedCapture,
+          remainingQueued: remaining.length,
+          deferred: deferred.length,
+          droppedNonRetryable,
+        });
         setSyncStatusMessage(statusMessage);
         onLastResponse(statusMessage);
         if (showAlert) {
