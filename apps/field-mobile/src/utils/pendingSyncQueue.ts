@@ -34,6 +34,11 @@ export type PendingAutoSyncGate = {
   apiConfigured: boolean;
 };
 
+export type PendingConnectivityRestoreGate = PendingAutoSyncGate & {
+  wasNetworkReachable: boolean | null;
+  isNetworkReachable: boolean;
+};
+
 export function splitPendingSyncBatch(
   queue: PendingSubmission[],
   maxBatchSize = MAX_PENDING_SYNC_BATCH_SIZE,
@@ -49,6 +54,23 @@ export function splitPendingSyncBatch(
 
 export function shouldAutoSyncPendingQueue(gate: PendingAutoSyncGate): boolean {
   return gate.settingsHydrated && gate.pendingCount > 0 && gate.apiConfigured;
+}
+
+export function isNetworkReachableForSync(
+  isConnected: boolean | null,
+  isInternetReachable: boolean | null,
+): boolean {
+  return isConnected === true && isInternetReachable !== false;
+}
+
+export function shouldAutoSyncOnConnectivityRestore(
+  gate: PendingConnectivityRestoreGate,
+): boolean {
+  return (
+    shouldAutoSyncPendingQueue(gate) &&
+    gate.wasNetworkReachable === false &&
+    gate.isNetworkReachable
+  );
 }
 
 export function buildPendingSyncAttempt(options: {

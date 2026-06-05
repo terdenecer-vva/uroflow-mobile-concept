@@ -920,6 +920,35 @@ def build_readiness_report(
         pending_sync_queue_tests_path.is_file(),
         f"path={pending_sync_queue_tests_path}",
     )
+    connectivity_restore_requirements = {
+        "netinfo_dependency": "@react-native-community/netinfo" in package_dependencies,
+        "netinfo_listener": "NetInfo.addEventListener" in pending_sync_hook_source,
+        "network_reachable_helper": "isNetworkReachableForSync" in pending_sync_queue_source,
+        "restore_gate_helper": "shouldAutoSyncOnConnectivityRestore"
+        in pending_sync_queue_source,
+        "restore_gate_used_by_hook": "shouldAutoSyncOnConnectivityRestore"
+        in pending_sync_hook_source,
+    }
+    _check(
+        checks,
+        "pending_sync_connectivity_restore_sources",
+        all(connectivity_restore_requirements.values()),
+        f"requirements={connectivity_restore_requirements!r}",
+    )
+    connectivity_restore_test_requirements = {
+        "reachability_helper_test": (
+            "isNetworkReachableForSync treats connected unknown internet as usable"
+        )
+        in pending_sync_queue_tests_source,
+        "restore_gate_test": "requires unreachable to reachable transition"
+        in pending_sync_queue_tests_source,
+    }
+    _check(
+        checks,
+        "pending_sync_connectivity_restore_unit_tests_present",
+        all(connectivity_restore_test_requirements.values()),
+        f"requirements={connectivity_restore_test_requirements!r}",
+    )
     _check(
         checks,
         "pending_submission_storage_unit_tests_present",
