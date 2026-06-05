@@ -39,6 +39,13 @@ def _asset_metadata(app_json: Path, raw_path: Any) -> dict[str, Any] | None:
     }
 
 
+def _get_plugin_options(plugins: list[Any], plugin_name: str) -> dict[str, Any]:
+    for plugin in plugins:
+        if isinstance(plugin, list) and len(plugin) > 1 and plugin[0] == plugin_name:
+            return plugin[1] if isinstance(plugin[1], dict) else {}
+    return {}
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Build mobile release manifest for pilot traceability."
@@ -56,8 +63,10 @@ def main() -> int:
     args = parse_args()
     app_payload = json.loads(args.app_json.read_text(encoding="utf-8"))
     expo = app_payload.get("expo", {})
+    plugins = expo.get("plugins", [])
     ios = expo.get("ios", {})
     android = expo.get("android", {})
+    splash = _get_plugin_options(plugins, "expo-splash-screen")
     android_adaptive_icon = android.get("adaptiveIcon", {})
 
     manifest = {
@@ -78,6 +87,12 @@ def main() -> int:
         },
         "assets": {
             "icon": _asset_metadata(args.app_json, expo.get("icon")),
+            "splash": {
+                "image": _asset_metadata(args.app_json, splash.get("image")),
+                "resize_mode": splash.get("resizeMode"),
+                "background_color": splash.get("backgroundColor"),
+                "image_width": splash.get("imageWidth"),
+            },
             "android_adaptive_icon": {
                 "foreground": _asset_metadata(
                     args.app_json, android_adaptive_icon.get("foregroundImage")

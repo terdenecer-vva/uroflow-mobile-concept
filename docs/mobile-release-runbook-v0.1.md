@@ -45,7 +45,7 @@ npm run build:preview
 Workflow generates artifact `mobile-release-manifest` containing:
 - app version and package IDs,
 - iOS build number and Android versionCode,
-- icon/adaptive-icon paths, SHA-256 fingerprints, byte sizes, and PNG dimensions,
+- icon/adaptive-icon paths, `expo-splash-screen` image path, SHA-256 fingerprints, byte sizes, PNG dimensions, and splash background/resize/width config,
 - git SHA/ref/run-id,
 - model_id and capture schema version.
 - selected build profile/channel.

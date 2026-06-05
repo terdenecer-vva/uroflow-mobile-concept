@@ -34,6 +34,7 @@ def test_build_mobile_release_manifest_script(tmp_path: Path) -> None:
     assets.mkdir()
     _write_png(assets / "icon.png", 1024, 1024)
     _write_png(assets / "adaptive-icon.png", 1024, 1024)
+    _write_png(assets / "splash.png", 1024, 1024)
 
     app_json.write_text(
         json.dumps(
@@ -44,6 +45,17 @@ def test_build_mobile_release_manifest_script(tmp_path: Path) -> None:
                     "version": "0.1.0",
                     "icon": "./assets/icon.png",
                     "platforms": ["ios", "android"],
+                    "plugins": [
+                        [
+                            "expo-splash-screen",
+                            {
+                                "image": "./assets/splash.png",
+                                "resizeMode": "contain",
+                                "backgroundColor": "#F5F2EA",
+                                "imageWidth": 220,
+                            },
+                        ]
+                    ],
                     "ios": {
                         "bundleIdentifier": "com.uroflow.field",
                         "buildNumber": "1",
@@ -93,6 +105,11 @@ def test_build_mobile_release_manifest_script(tmp_path: Path) -> None:
     assert payload["assets"]["icon"]["bytes"] > 0
     assert len(payload["assets"]["icon"]["sha256"]) == 64
     assert payload["assets"]["icon"]["png_dimensions"] == [1024, 1024]
+    assert payload["assets"]["splash"]["image"]["path"] == "./assets/splash.png"
+    assert payload["assets"]["splash"]["image"]["png_dimensions"] == [1024, 1024]
+    assert payload["assets"]["splash"]["resize_mode"] == "contain"
+    assert payload["assets"]["splash"]["background_color"] == "#F5F2EA"
+    assert payload["assets"]["splash"]["image_width"] == 220
     assert payload["assets"]["android_adaptive_icon"]["foreground"]["path"] == (
         "./assets/adaptive-icon.png"
     )

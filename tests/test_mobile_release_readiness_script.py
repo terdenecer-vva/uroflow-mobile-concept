@@ -91,6 +91,12 @@ def test_mobile_release_readiness_reports_external_blockers(tmp_path: Path) -> N
         "package_lock_matches_root",
         "secure_store_dependency_locked",
         "secure_store_plugin",
+        "splash_background_color",
+        "splash_image_width",
+        "splash_png_asset",
+        "splash_resize_mode",
+        "splash_screen_dependency_locked",
+        "splash_screen_plugin",
         "unit_test_script",
         "validate_ci_runs_unit_tests",
         "unit_test_runner_script",
@@ -136,6 +142,31 @@ def test_mobile_release_readiness_fails_missing_app_icon(tmp_path: Path) -> None
     assert payload["local_checks_status"] == "fail"
     assert check["status"] == "fail"
     assert "missing-icon.png" in check["evidence"]
+
+
+def test_mobile_release_readiness_fails_missing_splash_asset(tmp_path: Path) -> None:
+    mutated_app_json = tmp_path / "app.json"
+    app_payload = json.loads(APP_JSON.read_text(encoding="utf-8"))
+    splash_plugin = next(
+        plugin
+        for plugin in app_payload["expo"]["plugins"]
+        if isinstance(plugin, list) and plugin[0] == "expo-splash-screen"
+    )
+    splash_plugin[1]["image"] = "./assets/missing-splash.png"
+    mutated_app_json.write_text(json.dumps(app_payload), encoding="utf-8")
+
+    payload = _run_readiness_with_paths(
+        tmp_path / "readiness.json",
+        env={"PATH": os.environ.get("PATH", "")},
+        app_json=mutated_app_json,
+        check=False,
+    )
+
+    check = next(item for item in payload["local_checks"] if item["id"] == "splash_png_asset")
+    assert payload["status"] == "not_ready"
+    assert payload["local_checks_status"] == "fail"
+    assert check["status"] == "fail"
+    assert "missing-splash.png" in check["evidence"]
 
 
 def test_mobile_release_readiness_fails_local_version_mismatch(tmp_path: Path) -> None:

@@ -31,6 +31,15 @@ def _png_dimensions(path: Path | None) -> tuple[int, int] | None:
     return int.from_bytes(header[16:20], "big"), int.from_bytes(header[20:24], "big")
 
 
+def _is_six_digit_hex_color(value: Any) -> bool:
+    return (
+        isinstance(value, str)
+        and len(value) == 7
+        and value.startswith("#")
+        and all(character in "0123456789abcdefABCDEF" for character in value[1:])
+    )
+
+
 def _has_plugin(plugins: list[Any], plugin_name: str) -> bool:
     for plugin in plugins:
         if plugin == plugin_name:
@@ -195,6 +204,7 @@ def build_readiness_report(
     plugins = expo.get("plugins", [])
     ios = expo.get("ios", {})
     android = expo.get("android", {})
+    splash = _get_plugin_options(plugins, "expo-splash-screen")
     android_adaptive_icon = android.get("adaptiveIcon", {})
     scripts = package_payload.get("scripts", {})
     root_lock = lock_payload.get("packages", {}).get("", {})
@@ -225,6 +235,40 @@ def build_readiness_report(
         and app_icon_dimensions[0] == app_icon_dimensions[1]
         and app_icon_dimensions[0] >= 1024,
         f"icon={expo.get('icon')!r}, dimensions={app_icon_dimensions!r}",
+    )
+    splash_image_path = _asset_path(app_json, splash.get("image"))
+    splash_dimensions = _png_dimensions(splash_image_path)
+    _check(
+        checks,
+        "splash_png_asset",
+        splash_dimensions is not None
+        and splash_dimensions[0] == splash_dimensions[1]
+        and splash_dimensions[0] >= 1024,
+        f"image={splash.get('image')!r}, dimensions={splash_dimensions!r}",
+    )
+    _check(
+        checks,
+        "splash_screen_plugin",
+        _has_plugin(plugins, "expo-splash-screen"),
+        "expo-splash-screen plugin configured",
+    )
+    _check(
+        checks,
+        "splash_resize_mode",
+        splash.get("resizeMode") in {"contain", "cover", "native"},
+        f"resizeMode={splash.get('resizeMode')!r}",
+    )
+    _check(
+        checks,
+        "splash_image_width",
+        isinstance(splash.get("imageWidth"), int) and 0 < splash.get("imageWidth", 0) <= 512,
+        f"imageWidth={splash.get('imageWidth')!r}",
+    )
+    _check(
+        checks,
+        "splash_background_color",
+        _is_six_digit_hex_color(splash.get("backgroundColor")),
+        f"backgroundColor={splash.get('backgroundColor')!r}",
     )
     _check(
         checks,
@@ -328,9 +372,7 @@ def build_readiness_report(
     _check(
         checks,
         "android_adaptive_icon_background_color",
-        isinstance(android_adaptive_icon.get("backgroundColor"), str)
-        and android_adaptive_icon.get("backgroundColor", "").startswith("#")
-        and len(android_adaptive_icon.get("backgroundColor", "")) == 7,
+        _is_six_digit_hex_color(android_adaptive_icon.get("backgroundColor")),
         f"backgroundColor={android_adaptive_icon.get('backgroundColor')!r}",
     )
     _check(
@@ -349,6 +391,18 @@ def build_readiness_report(
             "expo-secure-store dependency="
             f"{package_dependencies.get('expo-secure-store')!r}, "
             f"lock={lock_dependencies.get('expo-secure-store')!r}"
+        ),
+    )
+    _check(
+        checks,
+        "splash_screen_dependency_locked",
+        "expo-splash-screen" in package_dependencies
+        and package_dependencies.get("expo-splash-screen")
+        == lock_dependencies.get("expo-splash-screen"),
+        (
+            "expo-splash-screen dependency="
+            f"{package_dependencies.get('expo-splash-screen')!r}, "
+            f"lock={lock_dependencies.get('expo-splash-screen')!r}"
         ),
     )
     _check(
