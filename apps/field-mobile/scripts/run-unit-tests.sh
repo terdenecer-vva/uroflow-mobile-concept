@@ -10,6 +10,7 @@ tsc --ignoreConfig \
   src/utils/pendingSyncQueue.ts \
   src/storage/appSettingsStorage.ts \
   src/storage/pendingSubmissionStorage.ts \
+  src/payload/pairedPayload.ts \
   src/api/clinicalHub.ts \
   src/capture/buildCaptureContract.ts \
   src/capture/runtimeMetrics.ts \
