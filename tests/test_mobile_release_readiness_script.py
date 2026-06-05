@@ -117,6 +117,8 @@ def test_mobile_release_readiness_reports_external_blockers(tmp_path: Path) -> N
         "mobile_feature_media_manifest_unit_tests_present",
         "connection_check_unit_tests_present",
         "capture_contract_unit_tests_present",
+        "mobile_e2e_sync_smoke_sources",
+        "mobile_e2e_sync_smoke_unit_tests_present",
         "pending_submission_storage_unit_tests_present",
         "pending_sync_connectivity_restore_sources",
         "pending_sync_connectivity_restore_unit_tests_present",

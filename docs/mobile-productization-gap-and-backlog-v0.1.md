@@ -16,6 +16,7 @@ Implemented now:
 - Mobile API response, submit exception outcome, and runtime exception redaction gates for raw body, PHI-like subject/site/operator IDs, and secret-like error details.
 - Mobile release readiness gate for single-region data residency policy (`us`, no cross-region sync, region-matched Clinical Hub required).
 - Pending queue auto-sync on connectivity restore via NetInfo, with interval/AppState fallback.
+- Deterministic mobile sync smoke covering queued paired+capture replay after network restore.
 
 Not yet implemented:
 - Real sensor capture pipeline (camera/audio/IMU/depth).
@@ -45,8 +46,8 @@ Not yet implemented:
 - Release manifest is generated with version -> git SHA -> model/schema -> gate summary traceability; signed store distribution remains externally blocked until Apple/Google/Expo credentials are configured.
 
 ### G5. Verification gap
-- Mobile tests are only typecheck-level.
-- No deterministic replay tests for capture contract generation on device.
+- Mobile tests include TypeScript, unit, export, and deterministic sync replay coverage.
+- Deterministic replay tests cover capture contract generation and queued paired+capture sync; physical-device evidence still needs archival.
 - No device-matrix smoke checks (iPhone/Android model spread).
 
 ## 3) Backlog (implementation order)
@@ -95,8 +96,8 @@ DoD:
 - Every build has linked commit SHA and changelog.
 
 ## B4: Quality and validation readiness
-1. Add unit tests for capture payload generation and local validation.
-2. Add E2E mobile smoke tests (session create -> submit -> queue -> sync).
+1. Add unit tests for capture payload generation and local validation. Status: implemented for paired payload, capture package payload, capture contract generation, ROI signal, runtime metrics, and backend capture contract validation.
+2. Add E2E mobile smoke tests (session create -> submit -> queue -> sync). Status: implemented as deterministic repository-level paired+capture queue replay after network restore; physical-device/live Clinical Hub smoke evidence still required.
 3. Export nightly comparison summary and gate snapshot to Clinical Hub.
 
 DoD:

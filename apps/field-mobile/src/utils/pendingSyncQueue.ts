@@ -1,9 +1,11 @@
 import type {
+  EndpointPayload,
+  PendingEndpoint,
   PendingSubmission,
   RequestHeaderContext,
   SubmitAttemptResult,
 } from "../types";
-import { summarizePendingError } from "./appHelpers";
+import { resolvePendingHeaderContext, summarizePendingError } from "./appHelpers";
 
 export const MAX_PENDING_SYNC_BATCH_SIZE = 10;
 
@@ -37,6 +39,19 @@ export type PendingAutoSyncGate = {
 export type PendingConnectivityRestoreGate = PendingAutoSyncGate & {
   wasNetworkReachable: boolean | null;
   isNetworkReachable: boolean;
+};
+
+export type SubmitPendingEndpoint = (options: {
+  endpoint: PendingEndpoint;
+  endpointPayload: EndpointPayload;
+  headerContext: RequestHeaderContext;
+}) => Promise<SubmitAttemptResult>;
+
+export type PendingSyncBatchResult = {
+  remaining: PendingSubmission[];
+  attempts: PendingSyncAttempt[];
+  summary: PendingSyncStatusSummary;
+  statusMessage: string;
 };
 
 export function splitPendingSyncBatch(
@@ -104,6 +119,70 @@ export function buildPendingSyncAttempt(options: {
   return {
     attemptedItem,
     outcome: options.result.retryable ? "retryable" : "dropped_non_retryable",
+  };
+}
+
+export async function runPendingSyncBatch(options: {
+  queue: PendingSubmission[];
+  requestHeaderContext: RequestHeaderContext;
+  submitEndpoint: SubmitPendingEndpoint;
+  attemptedAtIso?: string;
+  maxBatchSize?: number;
+}): Promise<PendingSyncBatchResult> {
+  const { batch, deferred } = splitPendingSyncBatch(options.queue, options.maxBatchSize);
+  const retryableBatchItems: PendingSubmission[] = [];
+  const attempts: PendingSyncAttempt[] = [];
+  let syncedPaired = 0;
+  let syncedCapture = 0;
+  let droppedNonRetryable = 0;
+  const attemptedAtIso = options.attemptedAtIso ?? new Date().toISOString();
+
+  for (const item of batch) {
+    const headerContext = resolvePendingHeaderContext(item, options.requestHeaderContext);
+    const result = await options.submitEndpoint({
+      endpoint: item.endpoint,
+      endpointPayload: item.payload,
+      headerContext,
+    });
+    const attempt = buildPendingSyncAttempt({
+      item,
+      headerContext,
+      result,
+      attemptedAtIso,
+    });
+    attempts.push(attempt);
+
+    if (attempt.outcome === "synced_capture") {
+      syncedCapture += 1;
+      continue;
+    }
+    if (attempt.outcome === "synced_paired") {
+      syncedPaired += 1;
+      continue;
+    }
+    if (attempt.outcome === "retryable") {
+      retryableBatchItems.push(attempt.attemptedItem);
+      continue;
+    }
+    droppedNonRetryable += 1;
+  }
+
+  const remaining = [...retryableBatchItems, ...deferred];
+  const summary = {
+    batchCount: batch.length,
+    totalCount: options.queue.length,
+    syncedPaired,
+    syncedCapture,
+    remainingQueued: remaining.length,
+    deferred: deferred.length,
+    droppedNonRetryable,
+  };
+
+  return {
+    remaining,
+    attempts,
+    summary,
+    statusMessage: buildPendingSyncStatusMessage(summary),
   };
 }
 
