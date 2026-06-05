@@ -61,6 +61,12 @@ def _read_ts_boolean_constant(source: str, name: str) -> bool | None:
     return match.group(1) == "true"
 
 
+def _read_ts_string_assignment(source: str, name: str) -> str | None:
+    pattern = re.compile(rf"{re.escape(name)}\s*=\s*[\"']([^\"']*)[\"']")
+    match = pattern.search(source)
+    return match.group(1) if match else None
+
+
 def _release_metadata(app_json: Path) -> dict[str, str | None]:
     path = app_json.parent / "src" / "config" / "releaseMetadata.ts"
     if not path.is_file():
@@ -134,6 +140,81 @@ def _app_settings_defaults(app_json: Path) -> dict[str, str | None]:
     }
 
 
+def _capture_contract_evidence(
+    app_json: Path,
+    app_runtime_config: dict[str, str | bool | None],
+) -> dict[str, Any]:
+    path = app_json.parent / "src" / "capture" / "buildCaptureContract.ts"
+    if not path.is_file():
+        return {
+            "path": str(path),
+            "feature_manifest": {
+                "version": None,
+                "derivatives_only": None,
+                "sample_count_source": None,
+                "feature_keys": [],
+                "raw_media": {
+                    "store_raw_video": app_runtime_config.get("store_raw_video"),
+                    "store_raw_audio": app_runtime_config.get("store_raw_audio"),
+                    "upload_raw_video": None,
+                    "upload_raw_audio": None,
+                },
+                "privacy": {
+                    "roi_only": app_runtime_config.get("roi_only"),
+                    "media_scope": None,
+                },
+            },
+        }
+
+    source = path.read_text(encoding="utf-8")
+    feature_keys = [
+        key
+        for key in (
+            "audio_rms_dbfs",
+            "depth_confidence",
+            "depth_level_mm",
+            "motion_norm",
+            "rgb_level_mm",
+            "roi_valid",
+            "runtime_flow_series.flow_ml_s",
+            "runtime_quality.high_motion_ratio",
+            "t_s",
+        )
+        if key in source
+    ]
+    if (
+        "runtime_quality" in source
+        and "high_motion_ratio" in source
+        and "runtime_quality.high_motion_ratio" not in feature_keys
+    ):
+        feature_keys.append("runtime_quality.high_motion_ratio")
+    return {
+        "path": str(path),
+        "feature_manifest": {
+            "version": _read_ts_string_assignment(source, "FEATURE_MANIFEST_VERSION"),
+            "derivatives_only": "derivatives_only: true" in source,
+            "sample_count_source": (
+                "samples.length" if "sample_count: samples.length" in source else None
+            ),
+            "feature_keys": feature_keys,
+            "raw_media": {
+                "store_raw_video": app_runtime_config.get("store_raw_video"),
+                "store_raw_audio": app_runtime_config.get("store_raw_audio"),
+                "upload_raw_video": False if "upload_raw_video: false" in source else None,
+                "upload_raw_audio": False if "upload_raw_audio: false" in source else None,
+            },
+            "privacy": {
+                "roi_only": app_runtime_config.get("roi_only"),
+                "media_scope": (
+                    "roi_derivatives_only"
+                    if 'media_scope: "roi_derivatives_only"' in source
+                    else None
+                ),
+            },
+        },
+    }
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Build mobile release manifest for pilot traceability."
@@ -200,6 +281,7 @@ def main() -> int:
         "runtime_release_metadata": release_metadata,
         "runtime_config": app_runtime_config,
         "runtime_defaults": app_settings_defaults,
+        "capture_contract": _capture_contract_evidence(args.app_json, app_runtime_config),
         "algorithm": {
             "model_id": args.model_id,
             "capture_schema_version": args.schema_version,
