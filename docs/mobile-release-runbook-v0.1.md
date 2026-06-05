@@ -212,8 +212,8 @@ python3 scripts/validate_mobile_store_rollout_handoff.py \
 4. Clinical Hub request logs include non-secret `x-uroflow-*` release/runtime/data-residency trace headers, and backend contract tests reject a deliberate mismatched region header.
 5. `Device Model` is auto-filled from the physical device model or a platform fallback, and matches the smoke-log device entry after any field correction.
 6. `Start Capture` and `Stop Capture` work on real device.
-7. `Contract payload: ready` after stop, with `analysis.runtime_timeline.gap_warning=false`
-   unless the runbook explicitly records a foreground/device-load interruption.
+7. `Contract payload: ready` after stop, with `analysis.runtime_timeline.gap_warning=false`.
+   Repeat or mark the run failed if foreground/device load creates a timing gap warning.
 8. Submit produces `paired-measurements` and `capture-packages` records.
 9. Offline mode queues both endpoint jobs.
 10. Returning online triggers successful auto-sync through connectivity restore, interval, or AppState fallback.
@@ -228,6 +228,8 @@ python3 scripts/validate_mobile_store_rollout_handoff.py \
 5. Build links (iOS + Android).
 6. Smoke test log with device model and OS version.
 7. Validated smoke summary JSON from `scripts/validate_mobile_device_smoke_log.py`.
+   - The smoke log must include per-device `runtime_timeline` evidence copied from
+     `capture_payload.analysis.runtime_timeline`, with `gap_warning=false`.
 8. Clinical Hub sample export (paired + capture package rows).
    - For `capture-packages`, archive `capture_payload.feature_manifest` and confirm `derivatives_only=true`, `raw_media.store_raw_video=false`, `raw_media.store_raw_audio=false`, `raw_media.upload_raw_video=false`, and `raw_media.upload_raw_audio=false`.
    - Archive `capture_payload.analysis.runtime_timeline` and investigate runs with
