@@ -274,6 +274,9 @@ def build_readiness_report(
     roi_signal_tests_path = mobile_root / "tests" / "roiSignalEstimator.test.js"
     runtime_metrics_tests_path = mobile_root / "tests" / "runtimeMetrics.test.js"
     pending_sync_queue_tests_path = mobile_root / "tests" / "pendingSyncQueue.test.js"
+    pending_submission_storage_tests_path = (
+        mobile_root / "tests" / "pendingSubmissionStorage.test.js"
+    )
     _check(
         checks,
         "unit_test_script",
@@ -321,6 +324,12 @@ def build_readiness_report(
         "pending_sync_queue_unit_tests_present",
         pending_sync_queue_tests_path.is_file(),
         f"path={pending_sync_queue_tests_path}",
+    )
+    _check(
+        checks,
+        "pending_submission_storage_unit_tests_present",
+        pending_submission_storage_tests_path.is_file(),
+        f"path={pending_submission_storage_tests_path}",
     )
     _check(
         checks,
