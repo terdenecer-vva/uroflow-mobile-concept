@@ -20,6 +20,7 @@ Implemented now:
 - Mobile Build release notes artifact and manifest traceability for operator-facing build handoff.
 - Physical-device smoke evidence JSON template and validator for iOS+Android release handoff.
 - Store rollout handoff JSON template, validator, and Mobile Build artifact for TestFlight/Play Internal traceability.
+- Mobile release bundle verifier for manifest/readiness/notes/store-handoff artifact consistency.
 
 Not yet implemented:
 - Real sensor capture pipeline (camera/audio/IMU/depth).

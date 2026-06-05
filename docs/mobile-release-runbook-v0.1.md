@@ -60,7 +60,7 @@ Workflow generates artifact `mobile-release-manifest` containing:
 
 Workflow also generates artifact `mobile-release-readiness` containing:
 - git SHA/ref/run-id/workflow traceability,
-- local mobile readiness checks (`app.json`, `eas.json`, runtime release metadata/config/defaults, endpoint set/data residency/debug gates, pending sync connectivity restore, deterministic mobile E2E sync smoke, physical-device smoke log template/validator, store rollout handoff template/validator, runtime motion quality gates, derivatives-only feature/media manifest gates, package scripts, lockfile, pinned tooling, API response + submit exception + runtime exception PHI redaction, unit-test coverage wiring),
+- local mobile readiness checks (`app.json`, `eas.json`, runtime release metadata/config/defaults, endpoint set/data residency/debug gates, pending sync connectivity restore, deterministic mobile E2E sync smoke, physical-device smoke log template/validator, store rollout handoff template/validator, release bundle verifier, runtime motion quality gates, derivatives-only feature/media manifest gates, package scripts, lockfile, pinned tooling, API response + submit exception + runtime exception PHI redaction, unit-test coverage wiring),
 - external credential state without secret values,
 - authenticated EAS readiness status and specific EAS blockers,
 - live Clinical Hub API readiness status (`present`, `missing`, or `invalid`),
@@ -78,6 +78,12 @@ Workflow also generates artifact `mobile-store-rollout-handoff` containing:
 - iOS TestFlight internal handoff checklist and current external blockers,
 - Android Play Internal Testing handoff checklist and current external blockers,
 - validation summary from `scripts/validate_mobile_store_rollout_handoff.py`.
+
+Workflow also generates artifact `mobile-release-bundle-verification` containing:
+- git/run traceability shared by manifest, readiness, and store rollout handoff,
+- SHA-256 fingerprints for manifest, readiness, release notes, store rollout handoff, and store rollout summary,
+- consistency checks proving the manifest readiness summary matches raw readiness JSON,
+- digest checks proving the store rollout handoff references the exact manifest/readiness/notes files from the same run.
 
 Manifest script:
 
@@ -118,6 +124,18 @@ cp docs/mobile-store-rollout-handoff-template-v0.1.json /tmp/mobile-store-rollou
 python3 scripts/validate_mobile_store_rollout_handoff.py \
   /tmp/mobile-store-rollout-handoff.json \
   --output /tmp/mobile-store-rollout-summary.json
+```
+
+Release bundle verification:
+
+```bash
+python3 scripts/verify_mobile_release_bundle.py \
+  --manifest-json /tmp/mobile-release-manifest.json \
+  --readiness-json /tmp/mobile-release-readiness.json \
+  --release-notes /tmp/mobile-release-notes.md \
+  --store-rollout-handoff-json /tmp/mobile-store-rollout-handoff.json \
+  --store-rollout-summary-json /tmp/mobile-store-rollout-summary.json \
+  --output /tmp/mobile-release-bundle-verification.json
 ```
 
 External handoff commands, using placeholders only:
@@ -171,10 +189,11 @@ python3 scripts/validate_mobile_store_rollout_handoff.py \
 
 1. Mobile release manifest JSON.
 2. Mobile release readiness JSON.
-3. Mobile store rollout handoff JSON and validation summary.
-4. Build links (iOS + Android).
-5. Smoke test log with device model and OS version.
-6. Validated smoke summary JSON from `scripts/validate_mobile_device_smoke_log.py`.
-7. Clinical Hub sample export (paired + capture package rows).
+3. Mobile release bundle verification JSON.
+4. Mobile store rollout handoff JSON and validation summary.
+5. Build links (iOS + Android).
+6. Smoke test log with device model and OS version.
+7. Validated smoke summary JSON from `scripts/validate_mobile_device_smoke_log.py`.
+8. Clinical Hub sample export (paired + capture package rows).
    - For `capture-packages`, archive `capture_payload.feature_manifest` and confirm `derivatives_only=true`, `raw_media.store_raw_video=false`, `raw_media.store_raw_audio=false`, `raw_media.upload_raw_video=false`, and `raw_media.upload_raw_audio=false`.
-8. Go/No-Go note for pilot usage.
+9. Go/No-Go note for pilot usage.
