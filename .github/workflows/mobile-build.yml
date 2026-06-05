@@ -75,18 +75,23 @@ jobs:
         run: npm run validate:ci
 
       - name: Build release readiness report
+        shell: bash
         env:
           CLINICAL_HUB_API_KEY: ${{ secrets.CLINICAL_HUB_API_KEY }}
           CLINICAL_HUB_URL: ${{ secrets.CLINICAL_HUB_URL }}
           EAS_PROJECT_ID: ${{ vars.EAS_PROJECT_ID }}
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
+          set +e
           python3 ../../scripts/check_mobile_release_readiness.py \
             --app-json app.json \
             --eas-json eas.json \
             --package-json package.json \
             --package-lock package-lock.json \
             --output /tmp/mobile-release-readiness.json
+          readiness_exit_code=$?
+          set -e
+          echo "$readiness_exit_code" > /tmp/mobile-release-readiness-exit-code
 
       - name: Export release readiness outputs
         id: readiness
@@ -181,6 +186,17 @@ jobs:
         with:
           name: mobile-release-readiness
           path: /tmp/mobile-release-readiness.json
+
+      - name: Fail on local release readiness errors
+        shell: bash
+        run: |
+          set -euo pipefail
+          readiness_exit_code="$(cat /tmp/mobile-release-readiness-exit-code 2>/dev/null || echo 1)"
+          if [[ "$readiness_exit_code" != "0" ]]; then
+            echo "Mobile release readiness failed with exit code $readiness_exit_code."
+            echo "See the mobile-release-readiness artifact for local check details."
+            exit "$readiness_exit_code"
+          fi
 
   eas-build:
     runs-on: ubuntu-latest
