@@ -132,10 +132,14 @@ When backend is configured with API key policy map (`--api-key-map-json`), set i
 CI:
 - `.github/workflows/mobile-ci.yml` runs `npm run validate:ci` for `apps/field-mobile/**` changes.
 - `validate:ci` covers TypeScript, Clinical Hub API client/connection check/summary requests + mobile helper/API + runtime config + submit outcome + paired/capture-package payload + capture-contract + ROI signal + runtime metric + pending queue + deterministic sync smoke + storage unit tests, Expo Doctor, production dependency audit, and iOS/Android Expo exports.
-- `.github/workflows/mobile-build.yml` runs release preflight for mobile app/release-script changes and provides manual EAS build trigger (`workflow_dispatch`) with inputs:
+- `.github/workflows/mobile-build.yml` runs release preflight for mobile app/release-script changes and provides manual EAS build/submit triggers (`workflow_dispatch`) with inputs:
   - `build_profile` (`preview` / `development` / `production`)
   - `build_platform` (`all` / `ios` / `android`)
   - `wait_for_build` (`true` / `false`)
+  - `submit_to_store` (`true` / `false`; submits the latest production build only when authenticated EAS readiness is `pass`)
+  - `submit_platform` (`all` / `ios` / `android`)
+  - `wait_for_submit` (`true` / `false`)
+  - `what_to_test` (optional TestFlight text for iOS submit)
   - `release_notes` (operator-facing handoff notes archived as `mobile-release-notes`)
 - `mobile-build` uploads:
   - `mobile-release-manifest` (version + runtime release metadata/config + release notes digest + capture contract feature-manifest evidence + readiness gate summary + git SHA + model/schema traceability)
@@ -144,6 +148,7 @@ CI:
   - `mobile-release-bundle-verification` (manifest/readiness/notes/store-handoff digest and traceability consistency summary)
   - `mobile-store-rollout-handoff` (per-run TestFlight/Play Internal handoff template + validation summary with current external blockers)
   - `mobile-eas-build-result-<run_id>` (raw EAS JSON response for build IDs/URLs)
+  - `mobile-eas-submit-result-<run_id>` (raw EAS submit log + exit code when `submit_to_store=true`)
 - Workflow summary includes release readiness status and direct EAS build links for operator/release use.
 
 ## Release Readiness Handoff
@@ -217,7 +222,8 @@ npm run submit:production
 
 iOS submit still requires the external App Store Connect app record and Apple credentials.
 Android submit uses `submit.production.android.serviceAccountKeyPath=@secret:GOOGLE_SERVICE_ACCOUNT`
-and targets the Play Internal Testing track.
+and targets the Play Internal Testing track. All submit scripts use `--latest` so non-interactive
+handoff submits the latest completed EAS production build rather than prompting for build selection.
 
 Detailed release SOP:
 - `docs/mobile-release-runbook-v0.1.md`
