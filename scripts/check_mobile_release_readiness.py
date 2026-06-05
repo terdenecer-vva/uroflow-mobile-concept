@@ -695,6 +695,18 @@ def build_readiness_report(
     )
     _check(
         checks,
+        "file_system_dependency_locked",
+        "expo-file-system" in package_dependencies
+        and package_dependencies.get("expo-file-system")
+        == lock_dependencies.get("expo-file-system"),
+        (
+            "expo-file-system dependency="
+            f"{package_dependencies.get('expo-file-system')!r}, "
+            f"lock={lock_dependencies.get('expo-file-system')!r}"
+        ),
+    )
+    _check(
+        checks,
         "audio_microphone_permission",
         isinstance(audio_options.get("microphonePermission"), str)
         and bool(audio_options.get("microphonePermission", "").strip()),
@@ -810,6 +822,7 @@ def build_readiness_report(
     runtime_capture_session_source_path = (
         mobile_root / "src" / "capture" / "runtimeCaptureSession.ts"
     )
+    raw_media_retention_source_path = mobile_root / "src" / "capture" / "rawMediaRetention.ts"
     capture_tests_path = mobile_root / "tests" / "captureContract.test.js"
     repo_root = package_json.resolve().parent.parent.parent
     backend_capture_contract_path = repo_root / "src" / "uroflow_mobile" / "capture_contract.py"
@@ -844,6 +857,7 @@ def build_readiness_report(
     roi_signal_tests_path = mobile_root / "tests" / "roiSignalEstimator.test.js"
     runtime_metrics_source_path = mobile_root / "src" / "capture" / "runtimeMetrics.ts"
     runtime_metrics_tests_path = mobile_root / "tests" / "runtimeMetrics.test.js"
+    raw_media_retention_tests_path = mobile_root / "tests" / "rawMediaRetention.test.js"
     pending_sync_queue_tests_path = mobile_root / "tests" / "pendingSyncQueue.test.js"
     pending_submission_storage_tests_path = (
         mobile_root / "tests" / "pendingSubmissionStorage.test.js"
@@ -881,6 +895,7 @@ def build_readiness_report(
     submit_outcome_tests_source = _read_file_text(submit_outcome_tests_path)
     capture_contract_source = _read_file_text(capture_contract_source_path)
     runtime_capture_session_source = _read_file_text(runtime_capture_session_source_path)
+    raw_media_retention_source = _read_file_text(raw_media_retention_source_path)
     capture_tests_source = _read_file_text(capture_tests_path)
     backend_capture_contract_source = _read_file_text(backend_capture_contract_path)
     backend_capture_tests_source = _read_file_text(backend_capture_tests_path)
@@ -888,6 +903,7 @@ def build_readiness_report(
     backend_session_tests_source = _read_file_text(backend_session_tests_path)
     runtime_metrics_source = _read_file_text(runtime_metrics_source_path)
     runtime_metrics_tests_source = _read_file_text(runtime_metrics_tests_path)
+    raw_media_retention_tests_source = _read_file_text(raw_media_retention_tests_path)
     mobile_device_smoke_template_source = _read_file_text(mobile_device_smoke_template_path)
     mobile_device_smoke_validator_source = _read_file_text(mobile_device_smoke_validator_path)
     mobile_device_smoke_validator_tests_source = _read_file_text(
@@ -1210,6 +1226,40 @@ def build_readiness_report(
         and "allows_derivatives_only_feature_manifest" in backend_capture_tests_source
         and "rejects_feature_manifest_raw_media_upload" in backend_capture_tests_source,
         f"paths={[str(capture_tests_path), str(backend_capture_tests_path)]}",
+    )
+    raw_media_cleanup_requirements = {
+        "cleanup_source_file": raw_media_retention_source_path.is_file(),
+        "file_system_deleter": (
+            'await import("expo-file-system")' in raw_media_retention_source
+            and "new File(uri).delete()" in raw_media_retention_source
+        ),
+        "stop_and_delete_helper": "stopAndDeleteRuntimeRecording"
+        in raw_media_retention_source,
+        "runtime_session_uses_cleanup": "stopAndDeleteRuntimeRecording"
+        in runtime_capture_session_source,
+        "runtime_session_no_direct_stop_only": "await this.recording.stop()"
+        not in runtime_capture_session_source,
+    }
+    _check(
+        checks,
+        "runtime_raw_media_temp_cleanup_sources",
+        all(raw_media_cleanup_requirements.values()),
+        f"requirements={raw_media_cleanup_requirements!r}",
+    )
+    raw_media_cleanup_test_requirements = {
+        "test_file": raw_media_retention_tests_path.is_file(),
+        "delete_after_stop": "deletes recorder uri after stop"
+        in raw_media_retention_tests_source,
+        "delete_after_stop_failure": "still deletes pre-stop uri when stop fails"
+        in raw_media_retention_tests_source,
+        "delete_failure_best_effort": "reports best-effort delete failure"
+        in raw_media_retention_tests_source,
+    }
+    _check(
+        checks,
+        "runtime_raw_media_temp_cleanup_unit_tests_present",
+        all(raw_media_cleanup_test_requirements.values()),
+        f"requirements={raw_media_cleanup_test_requirements!r}",
     )
     _check(
         checks,

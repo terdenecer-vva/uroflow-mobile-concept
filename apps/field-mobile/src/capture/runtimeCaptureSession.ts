@@ -24,6 +24,7 @@ import {
   type RuntimeFlowPoint,
 } from "./runtimeMetrics";
 import { buildDeviceModelLabel, buildDeviceOsVersion } from "../utils/deviceIdentity";
+import { stopAndDeleteRuntimeRecording } from "./rawMediaRetention";
 
 export type {
   RuntimeCaptureDerivedMetrics,
@@ -179,11 +180,7 @@ export class RuntimeCaptureSession {
     this.stopMotionCapture();
 
     if (this.recording) {
-      try {
-        await this.recording.stop();
-      } catch {
-        // Recording may already be stopped.
-      }
+      await stopAndDeleteRuntimeRecording(this.recording);
       this.recording = null;
     }
 
@@ -259,11 +256,7 @@ export class RuntimeCaptureSession {
     this.flowSeries = [];
 
     if (this.recording) {
-      try {
-        await this.recording.stop();
-      } catch {
-        // best effort cleanup
-      }
+      await stopAndDeleteRuntimeRecording(this.recording);
       this.recording = null;
     }
   }

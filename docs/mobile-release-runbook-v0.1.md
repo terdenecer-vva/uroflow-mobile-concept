@@ -80,6 +80,8 @@ Workflow generates artifact `mobile-release-manifest` containing:
   including sample count, duration, median sample step, max sample gap, and gap warning,
 - runtime quality gating evidence that `runtime_quality.timing_gap_warning=true`
   forces at least `repeat`,
+- runtime raw-media retention evidence proving temporary native recorder audio files are
+  deleted after stop/reset and payloads retain derived features only,
 - source-backed derivatives-only feature/media manifest evidence in `capture_contract.feature_manifest`, including manifest version, feature keys, `sample_count` source, `raw_media.*=false`, and `privacy.media_scope=roi_derivatives_only`,
 - readiness gate summary in `readiness`, including local/external/EAS/Clinical Hub statuses, local check counts, failed check IDs, external blocker statuses, and next-action IDs without secret values or detailed evidence strings,
 - runtime defaults such as `DEFAULT_API_BASE_URL` to prove release builds do not point field devices at localhost,
@@ -89,7 +91,7 @@ Workflow generates artifact `mobile-release-manifest` containing:
 
 Workflow also generates artifact `mobile-release-readiness` containing:
 - git SHA/ref/run-id/workflow traceability,
-- local mobile readiness checks (`app.json`, `eas.json`, EAS build/submit profile shape, runtime release metadata/config/defaults, endpoint set/data residency/debug gates, Expo Device identity defaults, Clinical Hub preflight guard, Clinical Hub runtime trace headers, in-app release identity evidence, pending sync connectivity restore, pending sync auth/permission retry policy, deterministic mobile E2E sync smoke, physical-device smoke log template/validator, store rollout handoff template/validator, release bundle verifier, runtime motion quality gates, runtime timeline integrity metadata and quality gating, derivatives-only feature/media manifest gates, package scripts, lockfile, pinned tooling, API response + submit exception + runtime exception PHI redaction, unit-test coverage wiring),
+- local mobile readiness checks (`app.json`, `eas.json`, EAS build/submit profile shape, runtime release metadata/config/defaults, endpoint set/data residency/debug gates, Expo Device identity defaults, Clinical Hub preflight guard, Clinical Hub runtime trace headers, in-app release identity evidence, pending sync connectivity restore, pending sync auth/permission retry policy, deterministic mobile E2E sync smoke, physical-device smoke log template/validator, store rollout handoff template/validator, release bundle verifier, runtime motion quality gates, runtime timeline integrity metadata and quality gating, runtime raw-media temp-file cleanup, derivatives-only feature/media manifest gates, package scripts, lockfile, pinned tooling, API response + submit exception + runtime exception PHI redaction, unit-test coverage wiring),
 - external credential state without secret values,
 - authenticated EAS readiness status and specific EAS blockers,
 - live Clinical Hub API readiness status (`present`, `missing`, or `invalid`),
