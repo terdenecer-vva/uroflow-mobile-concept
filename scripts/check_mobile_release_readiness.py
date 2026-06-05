@@ -84,6 +84,18 @@ def _is_localhost_url(value: str | None) -> bool:
     return bool(re.match(r"^https?://(localhost|127\.0\.0\.1|0\.0\.0\.0)([:/]|$)", value))
 
 
+def _is_https_non_localhost_url(value: str | None) -> bool:
+    if value is None:
+        return False
+    candidate = value.strip()
+    is_https_url = bool(re.match(r"^https://[^/:\s]+(?::\d+)?(?:/|$)", candidate))
+    return is_https_url and not _is_localhost_url(candidate)
+
+
+def _read_file_text(path: Path) -> str:
+    return path.read_text(encoding="utf-8") if path.is_file() else ""
+
+
 def _has_plugin(plugins: list[Any], plugin_name: str) -> bool:
     for plugin in plugins:
         if plugin == plugin_name:
@@ -223,7 +235,7 @@ def _build_next_actions(
 
     next_actions: list[dict[str, Any]] = []
     for item in external_items:
-        if item["status"] == "missing" and item["id"] in external_action_map:
+        if item["status"] in {"missing", "invalid"} and item["id"] in external_action_map:
             next_actions.append(external_action_map[item["id"]])
     for item in manual_external_items:
         if item["status"] == "manual_required" and item["id"] in manual_action_map:
@@ -551,6 +563,13 @@ def build_readiness_report(
     validate_ci_script = scripts.get("validate:ci", "")
     test_unit_script = scripts.get("test:unit", "")
     unit_runner_path = mobile_root / "scripts" / "run-unit-tests.sh"
+    app_ts_path = mobile_root / "App.tsx"
+    app_helpers_path = mobile_root / "src" / "utils" / "appHelpers.ts"
+    connection_check_source_path = mobile_root / "src" / "api" / "connectionCheck.ts"
+    pending_sync_queue_source_path = mobile_root / "src" / "utils" / "pendingSyncQueue.ts"
+    pending_sync_hook_source_path = mobile_root / "src" / "hooks" / "usePendingSyncQueue.ts"
+    pending_storage_source_path = mobile_root / "src" / "storage" / "pendingSubmissionStorage.ts"
+    submit_outcome_source_path = mobile_root / "src" / "utils" / "submitOutcome.ts"
     helper_tests_path = mobile_root / "tests" / "appHelpers.test.js"
     app_settings_storage_tests_path = mobile_root / "tests" / "appSettingsStorage.test.js"
     clinical_hub_api_tests_path = mobile_root / "tests" / "clinicalHub.test.js"
@@ -566,6 +585,20 @@ def build_readiness_report(
     )
     summary_requests_tests_path = mobile_root / "tests" / "summaryRequests.test.js"
     submit_outcome_tests_path = mobile_root / "tests" / "submitOutcome.test.js"
+    app_ts_source = _read_file_text(app_ts_path)
+    app_helpers_source = _read_file_text(app_helpers_path)
+    connection_check_source = _read_file_text(connection_check_source_path)
+    pending_sync_queue_source = _read_file_text(pending_sync_queue_source_path)
+    pending_sync_hook_source = _read_file_text(pending_sync_hook_source_path)
+    pending_storage_source = _read_file_text(pending_storage_source_path)
+    submit_outcome_source = _read_file_text(submit_outcome_source_path)
+    helper_tests_source = _read_file_text(helper_tests_path)
+    connection_check_tests_source = _read_file_text(connection_check_tests_path)
+    pending_sync_queue_tests_source = _read_file_text(pending_sync_queue_tests_path)
+    pending_submission_storage_tests_source = _read_file_text(
+        pending_submission_storage_tests_path
+    )
+    submit_outcome_tests_source = _read_file_text(submit_outcome_tests_path)
     _check(
         checks,
         "unit_test_script",
@@ -662,6 +695,44 @@ def build_readiness_report(
         submit_outcome_tests_path.is_file(),
         f"path={submit_outcome_tests_path}",
     )
+    redaction_source_requirements = {
+        "app_helpers_formatter": "formatSafeResponseProblem" in app_helpers_source,
+        "app_summary_errors": "formatSafeResponseProblem(response.status, body)" in app_ts_source,
+        "app_network_errors": 'formatSafeResponseProblem(null, String(error), "NETWORK")'
+        in app_ts_source,
+        "connection_check": "formatSafeResponseProblem(status, body)" in connection_check_source,
+        "submit_outcome": "formatSafeResponseProblem(result.statusCode, result.body"
+        in submit_outcome_source,
+        "pending_sync_attempt": "summarizePendingError(options.result.body)"
+        in pending_sync_queue_source,
+        "pending_enqueue": "summarizePendingError(lastError)" in pending_sync_hook_source,
+        "pending_storage_migration": "summarizePendingError(rawLastError)"
+        in pending_storage_source,
+        "no_raw_summary_body": "HTTP ${response.status}: ${body}" not in app_ts_source,
+        "no_raw_summary_catch": "setSummaryError(String(error))" not in app_ts_source,
+        "no_raw_coverage_catch": "setCoverageError(String(error))" not in app_ts_source,
+    }
+    _check(
+        checks,
+        "mobile_api_response_redaction_sources",
+        all(redaction_source_requirements.values()),
+        f"requirements={redaction_source_requirements!r}",
+    )
+    redaction_test_requirements = {
+        "safe_formatter_test": "without leaking raw response bodies" in helper_tests_source,
+        "connection_check_test": "without raw body" in connection_check_tests_source,
+        "pending_sync_test": "server_or_client_response" in pending_sync_queue_tests_source
+        and "validation" in pending_sync_queue_tests_source,
+        "pending_storage_migration_test": "redacts migrated raw last errors"
+        in pending_submission_storage_tests_source,
+        "submit_outcome_test": "without raw body" in submit_outcome_tests_source,
+    }
+    _check(
+        checks,
+        "mobile_api_response_redaction_unit_tests_present",
+        all(redaction_test_requirements.values()),
+        f"requirements={redaction_test_requirements!r}",
+    )
     _check(
         checks,
         "build_scripts",
@@ -690,6 +761,28 @@ def build_readiness_report(
     eas_project_id = (
         extra.get("eas", {}).get("projectId") if isinstance(extra.get("eas"), dict) else None
     )
+    clinical_hub_url = env.get("CLINICAL_HUB_URL", "").strip()
+    clinical_hub_api_key_present = bool(env.get("CLINICAL_HUB_API_KEY"))
+    clinical_hub_live_api_present = bool(clinical_hub_url and clinical_hub_api_key_present)
+    clinical_hub_live_api_valid = (
+        clinical_hub_live_api_present and _is_https_non_localhost_url(clinical_hub_url)
+    )
+    if clinical_hub_live_api_valid:
+        clinical_hub_live_api_status = "present"
+        clinical_hub_live_api_evidence = (
+            "CLINICAL_HUB_URL uses https with a non-localhost host and CLINICAL_HUB_API_KEY is set"
+        )
+    elif clinical_hub_live_api_present:
+        clinical_hub_live_api_status = "invalid"
+        clinical_hub_live_api_evidence = (
+            "CLINICAL_HUB_URL is set but must use https with a non-localhost host for live "
+            "release readiness"
+        )
+    else:
+        clinical_hub_live_api_status = "missing"
+        clinical_hub_live_api_evidence = (
+            "CLINICAL_HUB_URL and/or CLINICAL_HUB_API_KEY are not set"
+        )
     external_items = [
         {
             "id": "expo_token",
@@ -709,13 +802,9 @@ def build_readiness_report(
         },
         {
             "id": "clinical_hub_live_api",
-            "status": "present"
-            if bool(env.get("CLINICAL_HUB_URL") and env.get("CLINICAL_HUB_API_KEY"))
-            else "missing",
+            "status": clinical_hub_live_api_status,
             "required_for": "Live Clinical Hub smoke tests and CI report push.",
-            "evidence": "CLINICAL_HUB_URL and CLINICAL_HUB_API_KEY are set"
-            if env.get("CLINICAL_HUB_URL") and env.get("CLINICAL_HUB_API_KEY")
-            else "CLINICAL_HUB_URL and/or CLINICAL_HUB_API_KEY are not set",
+            "evidence": clinical_hub_live_api_evidence,
         },
     ]
     manual_external_items = [
@@ -739,13 +828,13 @@ def build_readiness_report(
     local_failures = [
         item for item in checks if item["status"] == "fail" and item["severity"] == "error"
     ]
-    external_missing = [item for item in external_items if item["status"] == "missing"]
+    external_blocked = [item for item in external_items if item["status"] != "present"]
     authenticated_eas_item_ids = {"expo_token", "eas_project_identity"}
     authenticated_eas_blockers = [
         item["id"] for item in external_items if item["id"] in authenticated_eas_item_ids
-        and item["status"] == "missing"
+        and item["status"] != "present"
     ]
-    clinical_hub_live_api_status = next(
+    clinical_hub_live_api_status_for_report = next(
         (
             item["status"]
             for item in external_items
@@ -755,7 +844,7 @@ def build_readiness_report(
     )
     if local_failures:
         status = "not_ready"
-    elif external_missing:
+    elif external_blocked:
         status = "ready_except_external_credentials"
     else:
         status = "ready_for_authenticated_eas_preflight"
@@ -767,10 +856,10 @@ def build_readiness_report(
         "traceability": _build_traceability(env),
         "status": status,
         "local_checks_status": "pass" if not local_failures else "fail",
-        "external_readiness_status": "pass" if not external_missing else "blocked",
+        "external_readiness_status": "pass" if not external_blocked else "blocked",
         "authenticated_eas_status": "pass" if not authenticated_eas_blockers else "blocked",
         "authenticated_eas_blockers": authenticated_eas_blockers,
-        "clinical_hub_live_api_status": clinical_hub_live_api_status,
+        "clinical_hub_live_api_status": clinical_hub_live_api_status_for_report,
         "app": {
             "name": expo.get("name"),
             "slug": expo.get("slug"),

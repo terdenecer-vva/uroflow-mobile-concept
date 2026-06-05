@@ -102,6 +102,8 @@ def test_mobile_release_readiness_reports_external_blockers(tmp_path: Path) -> N
         "validate_ci_runs_unit_tests",
         "unit_test_runner_script",
         "mobile_helper_unit_tests_present",
+        "mobile_api_response_redaction_sources",
+        "mobile_api_response_redaction_unit_tests_present",
         "connection_check_unit_tests_present",
         "capture_contract_unit_tests_present",
         "pending_submission_storage_unit_tests_present",
@@ -317,6 +319,36 @@ def test_mobile_release_readiness_separates_eas_from_clinical_hub(
     assert payload["authenticated_eas_status"] == "pass"
     assert payload["authenticated_eas_blockers"] == []
     assert payload["clinical_hub_live_api_status"] == "missing"
+    assert {item["id"] for item in payload["next_actions"]} == {
+        "configure_clinical_hub_live_api",
+        "provision_apple_developer_account",
+        "provision_google_play_account",
+    }
+
+
+def test_mobile_release_readiness_rejects_insecure_live_clinical_hub_url(
+    tmp_path: Path,
+) -> None:
+    payload = _run_readiness(
+        tmp_path / "readiness.json",
+        env={
+            "PATH": os.environ.get("PATH", ""),
+            "CLINICAL_HUB_API_KEY": "test-key",
+            "CLINICAL_HUB_URL": "http://127.0.0.1:8000",
+            "EAS_PROJECT_ID": "00000000-0000-0000-0000-000000000000",
+            "EXPO_TOKEN": "test-token",
+        },
+    )
+
+    clinical_hub_item = next(
+        item for item in payload["external_items"] if item["id"] == "clinical_hub_live_api"
+    )
+    assert payload["status"] == "ready_except_external_credentials"
+    assert payload["external_readiness_status"] == "blocked"
+    assert payload["authenticated_eas_status"] == "pass"
+    assert payload["clinical_hub_live_api_status"] == "invalid"
+    assert clinical_hub_item["status"] == "invalid"
+    assert "https" in clinical_hub_item["evidence"]
     assert {item["id"] for item in payload["next_actions"]} == {
         "configure_clinical_hub_live_api",
         "provision_apple_developer_account",

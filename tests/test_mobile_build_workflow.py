@@ -38,3 +38,14 @@ def test_mobile_build_workflow_uploads_readiness_before_local_failure() -> None:
     assert build_index < upload_index < fail_index
     assert "mobile-release-readiness-exit-code" in steps[build_index]["run"]
     assert "mobile-release-readiness artifact" in steps[fail_index]["run"]
+
+
+def test_mobile_build_workflow_summary_reports_invalid_external_items() -> None:
+    payload = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
+    steps = payload["jobs"]["preflight"]["steps"]
+    summary_step = next(
+        step for step in steps if step.get("name") == "Publish release readiness summary"
+    )
+
+    assert 'item.get("status") == "invalid"' in summary_step["run"]
+    assert "Invalid external items" in summary_step["run"]
