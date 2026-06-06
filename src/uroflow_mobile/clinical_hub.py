@@ -181,6 +181,7 @@ class CapturePackageRecord(BaseModel):
     created_at: datetime
     session: SessionMeta
     package_type: Literal["capture_contract_json", "feature_bundle", "media_manifest"]
+    capture_payload_sha256: str = Field(min_length=64, max_length=64)
     capture_payload: dict[str, object]
     paired_measurement_id: int | None = None
     notes: str | None = None
@@ -198,6 +199,7 @@ class CapturePackageListItem(BaseModel):
     attempt_number: int
     platform: PLATFORM
     package_type: Literal["capture_contract_json", "feature_bundle", "media_manifest"]
+    capture_payload_sha256: str = Field(min_length=64, max_length=64)
     paired_measurement_id: int | None = None
 
 
@@ -315,6 +317,7 @@ PAIRED_WITH_CAPTURE_CSV_HEADERS = [
     "package_type",
     "paired_measurement_id",
     "capture_notes",
+    "capture_payload_sha256",
     "capture_payload_json",
     "has_capture_package",
     "capture_match_mode",
@@ -573,6 +576,7 @@ def ensure_clinical_hub_schema(db_path: Path) -> None:
                 package_type TEXT NOT NULL,
                 paired_measurement_id INTEGER,
                 notes TEXT,
+                capture_payload_sha256 TEXT NOT NULL,
                 capture_payload_json TEXT NOT NULL,
                 FOREIGN KEY(paired_measurement_id) REFERENCES paired_measurements(id)
             )
@@ -655,8 +659,10 @@ def ensure_clinical_hub_schema(db_path: Path) -> None:
             "capture_packages",
             {
                 "sync_id": "TEXT",
+                "capture_payload_sha256": "TEXT",
             },
         )
+        _backfill_capture_payload_sha256(connection)
         _ensure_table_columns(
             connection,
             "audit_events",
@@ -667,6 +673,26 @@ def ensure_clinical_hub_schema(db_path: Path) -> None:
                 "request_id": "TEXT",
                 "sync_id": "TEXT",
             },
+        )
+
+
+def _backfill_capture_payload_sha256(connection: sqlite3.Connection) -> None:
+    cursor = connection.execute(
+        """
+        SELECT id, capture_payload_json
+        FROM capture_packages
+        WHERE capture_payload_sha256 IS NULL OR capture_payload_sha256 = ''
+        """
+    )
+    for row in cursor.fetchall():
+        digest = _capture_payload_sha256_from_json(str(row["capture_payload_json"]))
+        connection.execute(
+            """
+            UPDATE capture_packages
+            SET capture_payload_sha256 = ?
+            WHERE id = ?
+            """,
+            (digest, int(row["id"])),
         )
 
 
@@ -772,6 +798,7 @@ def _insert_capture_package(
     created_at = _utc_now()
     measured_at = payload.session.measured_at.astimezone(timezone.utc)
     capture_payload_json = json.dumps(payload.capture_payload, ensure_ascii=False)
+    capture_payload_sha256 = _capture_payload_sha256(payload.capture_payload)
     cursor = connection.execute(
         """
         INSERT INTO capture_packages (
@@ -790,9 +817,10 @@ def _insert_capture_package(
             package_type,
             paired_measurement_id,
             notes,
+            capture_payload_sha256,
             capture_payload_json
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             _dt_to_iso(created_at),
@@ -810,6 +838,7 @@ def _insert_capture_package(
             payload.package_type,
             payload.paired_measurement_id,
             payload.notes,
+            capture_payload_sha256,
             capture_payload_json,
         ),
     )
@@ -971,6 +1000,7 @@ def _capture_package_payload_matches_row(
     payload: CapturePackageCreate,
 ) -> bool:
     measured_at = _dt_to_iso(payload.session.measured_at.astimezone(timezone.utc))
+    capture_payload_sha256 = _capture_payload_sha256(payload.capture_payload)
     return (
         str(row["measured_at"]) == measured_at
         and str(row["session_id"]) == payload.session.session_id
@@ -994,8 +1024,19 @@ def _capture_package_payload_matches_row(
         )
         == payload.paired_measurement_id
         and (str(row["notes"]) if row["notes"] is not None else None) == payload.notes
+        and _row_capture_payload_sha256(row) == capture_payload_sha256
         and json.loads(str(row["capture_payload_json"])) == payload.capture_payload
     )
+
+
+def _row_capture_payload_sha256(row: sqlite3.Row) -> str:
+    try:
+        digest = row["capture_payload_sha256"]
+    except IndexError:
+        digest = None
+    if digest:
+        return str(digest)
+    return _capture_payload_sha256_from_json(str(row["capture_payload_json"]))
 
 
 def _pilot_automation_report_payload_matches_row(
@@ -1050,6 +1091,7 @@ def _row_to_capture_package_record(row: sqlite3.Row) -> CapturePackageRecord:
         created_at=_dt_from_iso(str(row["created_at"])),
         session=session,
         package_type=str(row["package_type"]),  # type: ignore[arg-type]
+        capture_payload_sha256=_row_capture_payload_sha256(row),
         capture_payload=json.loads(str(row["capture_payload_json"])),
         paired_measurement_id=int(row["paired_measurement_id"])
         if row["paired_measurement_id"] is not None
@@ -1090,6 +1132,7 @@ def _row_to_capture_package_list_item(row: sqlite3.Row) -> CapturePackageListIte
         attempt_number=int(row["attempt_number"]),
         platform=str(row["platform"]),  # type: ignore[arg-type]
         package_type=str(row["package_type"]),  # type: ignore[arg-type]
+        capture_payload_sha256=_row_capture_payload_sha256(row),
         paired_measurement_id=int(row["paired_measurement_id"])
         if row["paired_measurement_id"] is not None
         else None,
@@ -1337,6 +1380,24 @@ def _hash_api_key(api_key: str | None) -> str | None:
     if not api_key:
         return None
     return hashlib.sha256(api_key.encode("utf-8")).hexdigest()[:12]
+
+
+def _canonical_json_sha256(payload: object) -> str:
+    encoded = json.dumps(
+        payload,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _capture_payload_sha256(capture_payload: dict[str, object]) -> str:
+    return _canonical_json_sha256(capture_payload)
+
+
+def _capture_payload_sha256_from_json(capture_payload_json: str) -> str:
+    return _canonical_json_sha256(json.loads(capture_payload_json))
 
 
 def _extract_session_metadata_from_body(body: bytes) -> dict[str, str | None]:
@@ -1863,6 +1924,7 @@ def export_capture_packages_to_csv(db_path: Path, output_csv: Path) -> int:
                 package_type,
                 paired_measurement_id,
                 notes,
+                capture_payload_sha256,
                 capture_payload_json
             FROM capture_packages
             ORDER BY measured_at DESC, id DESC
@@ -1891,6 +1953,7 @@ def export_capture_packages_to_csv(db_path: Path, output_csv: Path) -> int:
                 "package_type",
                 "paired_measurement_id",
                 "notes",
+                "capture_payload_sha256",
                 "capture_payload_json",
             ]
         )
@@ -1913,6 +1976,7 @@ def export_capture_packages_to_csv(db_path: Path, output_csv: Path) -> int:
                     row["package_type"],
                     row["paired_measurement_id"],
                     row["notes"],
+                    _row_capture_payload_sha256(row),
                     row["capture_payload_json"],
                 ]
             )
@@ -1968,6 +2032,7 @@ def _fetch_paired_with_capture_rows(
             c.package_type,
             c.paired_measurement_id,
             c.notes AS capture_notes,
+            c.capture_payload_sha256,
             c.capture_payload_json,
             CASE WHEN c.id IS NULL THEN 0 ELSE 1 END AS has_capture_package,
             CASE
@@ -2044,6 +2109,7 @@ def _paired_with_capture_row_values(row: sqlite3.Row) -> list[object | None]:
         row["package_type"],
         row["paired_measurement_id"],
         row["capture_notes"],
+        row["capture_payload_sha256"],
         row["capture_payload_json"],
         row["has_capture_package"],
         row["capture_match_mode"],
@@ -2647,6 +2713,7 @@ def create_clinical_hub_app(
                 attempt_number,
                 platform,
                 package_type,
+                capture_payload_sha256,
                 paired_measurement_id
             FROM capture_packages
             {where_sql}
@@ -3102,6 +3169,7 @@ def create_clinical_hub_app(
                 package_type,
                 paired_measurement_id,
                 notes,
+                capture_payload_sha256,
                 capture_payload_json
             FROM capture_packages
             """
@@ -3135,6 +3203,7 @@ def create_clinical_hub_app(
                 "package_type",
                 "paired_measurement_id",
                 "notes",
+                "capture_payload_sha256",
                 "capture_payload_json",
             ]
         )
@@ -3157,6 +3226,7 @@ def create_clinical_hub_app(
                     row["package_type"],
                     row["paired_measurement_id"],
                     row["notes"],
+                    _row_capture_payload_sha256(row),
                     row["capture_payload_json"],
                 ]
             )

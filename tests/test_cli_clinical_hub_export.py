@@ -99,6 +99,16 @@ def _sha256_hex(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def _payload_sha256(payload: object) -> str:
+    encoded = json.dumps(
+        payload,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
 def test_cli_export_paired_measurements(tmp_path: Path) -> None:
     db_path = tmp_path / "clinical_hub.db"
     app = create_clinical_hub_app(db_path)
@@ -231,16 +241,23 @@ def test_cli_export_paired_with_capture(tmp_path: Path) -> None:
     assert direct_row["has_capture_package"] == "1"
     assert direct_row["capture_match_mode"] == "paired_id"
     assert direct_row["capture_id"] != ""
+    assert direct_row["capture_payload_sha256"] == _payload_sha256(
+        direct_capture["capture_payload"]
+    )
 
     fallback_row = row_by_session["session-cli-join-002"]
     assert fallback_row["has_capture_package"] == "1"
     assert fallback_row["capture_match_mode"] == "session_identity"
     assert fallback_row["capture_id"] != ""
+    assert fallback_row["capture_payload_sha256"] == _payload_sha256(
+        fallback_capture["capture_payload"]
+    )
 
     missing_row = row_by_session["session-cli-join-003"]
     assert missing_row["has_capture_package"] == "0"
     assert missing_row["capture_match_mode"] == "none"
     assert missing_row["capture_id"] == ""
+    assert missing_row["capture_payload_sha256"] == ""
 
 
 def test_cli_export_capture_coverage_summary_csv(tmp_path: Path) -> None:

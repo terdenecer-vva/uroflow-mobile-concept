@@ -85,6 +85,8 @@ def test_mobile_release_readiness_reports_external_blockers(tmp_path: Path) -> N
         "clinical_hub_nightly_snapshot_sources",
         "clinical_hub_nightly_snapshot_unit_tests_present",
         "capture_package_payload_unit_tests_present",
+        "capture_payload_digest_sources",
+        "capture_payload_digest_unit_tests_present",
         "default_api_base_url_not_localhost",
         "eas_cli_version_declared",
         "eas_production_auto_increment",

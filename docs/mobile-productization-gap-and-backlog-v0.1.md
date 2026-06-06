@@ -29,6 +29,8 @@ Implemented now:
 - Pending sync retry policy keeps network/transient and Clinical Hub auth/permission failures
   queued for credential repair while dropping validation/conflict errors.
 - Deterministic mobile sync smoke covering queued paired+capture replay after network restore.
+- Clinical Hub capture package records include canonical `capture_payload_sha256` in
+  detail/list/CSV exports, with migration backfill for existing SQLite rows.
 - Mobile Build release notes artifact and manifest traceability for operator-facing build handoff.
 - Physical-device smoke evidence JSON template and validator for iOS+Android release handoff.
 - Physical-device smoke evidence requires per-device runtime timeline integrity metadata

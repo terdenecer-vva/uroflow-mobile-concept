@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import csv
+import hashlib
 import json
+import sqlite3
 from io import StringIO
 from pathlib import Path
 
@@ -114,6 +116,16 @@ def _capture_package_payload(
         "paired_measurement_id": paired_measurement_id,
         "notes": "capture package baseline",
     }
+
+
+def _payload_sha256(payload: object) -> str:
+    encoded = json.dumps(
+        payload,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
 
 
 def test_clinical_hub_crud_and_csv_export(tmp_path: Path) -> None:
@@ -290,18 +302,115 @@ def test_capture_package_idempotent_resubmit_returns_existing(tmp_path: Path) ->
             sync_id="sync-cap-001",
             paired_measurement_id=paired_id,
         )
+        expected_digest = _payload_sha256(payload["capture_payload"])
         first = client.post("/api/v1/capture-packages", json=payload)
         assert first.status_code == 201
         assert first.json()["id"] == 1
+        assert first.json()["capture_payload_sha256"] == expected_digest
 
         second = client.post("/api/v1/capture-packages", json=payload)
         assert second.status_code == 200
         assert second.json()["id"] == 1
+        assert second.json()["capture_payload_sha256"] == expected_digest
 
         listing = client.get("/api/v1/capture-packages")
         assert listing.status_code == 200
         assert len(listing.json()) == 1
         assert listing.json()[0]["sync_id"] == "sync-cap-001"
+        assert listing.json()[0]["capture_payload_sha256"] == expected_digest
+
+        detailed = client.get("/api/v1/capture-packages/1")
+        assert detailed.status_code == 200
+        assert detailed.json()["capture_payload_sha256"] == expected_digest
+
+
+def test_capture_package_digest_backfilled_for_existing_db(tmp_path: Path) -> None:
+    db_path = tmp_path / "clinical_hub_capture_digest_migration.db"
+    capture_payload = {"b": 2, "a": 1}
+    expected_digest = _payload_sha256(capture_payload)
+    with sqlite3.connect(db_path) as connection:
+        connection.execute(
+            """
+            CREATE TABLE capture_packages (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                created_at TEXT NOT NULL,
+                measured_at TEXT NOT NULL,
+                session_id TEXT NOT NULL,
+                sync_id TEXT,
+                site_id TEXT NOT NULL,
+                subject_id TEXT NOT NULL,
+                operator_id TEXT NOT NULL,
+                attempt_number INTEGER NOT NULL,
+                platform TEXT NOT NULL,
+                device_model TEXT,
+                app_version TEXT,
+                capture_mode TEXT NOT NULL,
+                package_type TEXT NOT NULL,
+                paired_measurement_id INTEGER,
+                notes TEXT,
+                capture_payload_json TEXT NOT NULL
+            )
+            """
+        )
+        connection.execute(
+            """
+            INSERT INTO capture_packages (
+                created_at,
+                measured_at,
+                session_id,
+                sync_id,
+                site_id,
+                subject_id,
+                operator_id,
+                attempt_number,
+                platform,
+                device_model,
+                app_version,
+                capture_mode,
+                package_type,
+                paired_measurement_id,
+                notes,
+                capture_payload_json
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                "2026-02-24T10:15:00Z",
+                "2026-02-24T10:15:00Z",
+                "session-old-digest",
+                "sync-old-digest",
+                "SITE-001",
+                "SUBJ-001",
+                "OP-01",
+                1,
+                "ios",
+                "iPhone15,3",
+                "0.2.0",
+                "water_impact",
+                "capture_contract_json",
+                None,
+                "old row",
+                json.dumps(capture_payload, ensure_ascii=False),
+            ),
+        )
+
+    app = create_clinical_hub_app(db_path)
+    with TestClient(app) as client:
+        listing = client.get("/api/v1/capture-packages")
+
+    assert listing.status_code == 200
+    assert listing.json()[0]["capture_payload_sha256"] == expected_digest
+
+    with sqlite3.connect(db_path) as connection:
+        digest = connection.execute(
+            """
+            SELECT capture_payload_sha256
+            FROM capture_packages
+            WHERE session_id = ?
+            """,
+            ("session-old-digest",),
+        ).fetchone()[0]
+    assert digest == expected_digest
 
 
 def test_capture_package_conflict_on_same_identity_with_changed_payload(
@@ -439,6 +548,9 @@ def test_sync_id_filters_for_paired_and_capture_endpoints(tmp_path: Path) -> Non
         assert "capture-sync-001" in capture_csv.text
         assert "capture-sync-002" not in capture_csv.text
         assert "sync-001" in capture_csv.text
+        capture_rows = list(csv.DictReader(StringIO(capture_csv.text)))
+        assert len(capture_rows) == 1
+        assert len(capture_rows[0]["capture_payload_sha256"]) == 64
 
         paired_with_capture_csv = client.get(
             "/api/v1/paired-with-capture.csv",
@@ -449,6 +561,9 @@ def test_sync_id_filters_for_paired_and_capture_endpoints(tmp_path: Path) -> Non
         assert "session-sync-002" not in paired_with_capture_csv.text
         assert "paired_id" in paired_with_capture_csv.text
         assert "capture_match_mode" in paired_with_capture_csv.text
+        paired_capture_rows = list(csv.DictReader(StringIO(paired_with_capture_csv.text)))
+        assert len(paired_capture_rows) == 1
+        assert len(paired_capture_rows[0]["capture_payload_sha256"]) == 64
 
 
 def test_capture_coverage_summary_detects_missing_capture(tmp_path: Path) -> None:
