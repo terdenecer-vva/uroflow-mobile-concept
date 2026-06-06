@@ -191,7 +191,14 @@ def _capture_contract_evidence(
             "rgb_level_mm",
             "roi_valid",
             "runtime_flow_series.flow_ml_s",
+            "runtime_alignment.drift_warning",
+            "runtime_alignment.max_allowed_drift_ms",
+            "runtime_alignment.max_stream_drift_ms",
+            "runtime_alignment.paired_sample_count",
+            "runtime_alignment.sample_count",
+            "runtime_alignment.schema_version",
             "runtime_quality.high_motion_ratio",
+            "runtime_quality.alignment_drift_warning",
             "runtime_quality.timing_gap_warning",
             "runtime_timeline.clock_source",
             "runtime_timeline.duration_s",
@@ -230,6 +237,18 @@ def _capture_contract_evidence(
         ):
             feature_key = f"runtime_timeline.{timeline_key}"
             if timeline_key in source and feature_key not in feature_keys:
+                feature_keys.append(feature_key)
+    if "runtime_alignment" in source:
+        for alignment_key in (
+            "drift_warning",
+            "max_allowed_drift_ms",
+            "max_stream_drift_ms",
+            "paired_sample_count",
+            "sample_count",
+            "schema_version",
+        ):
+            feature_key = f"runtime_alignment.{alignment_key}"
+            if alignment_key in source and feature_key not in feature_keys:
                 feature_keys.append(feature_key)
     return {
         "path": str(path),

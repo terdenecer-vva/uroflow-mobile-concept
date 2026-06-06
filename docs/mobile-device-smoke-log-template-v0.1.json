@@ -30,6 +30,15 @@
         "max_sample_gap_ratio": 1.1,
         "gap_warning": false
       },
+      "runtime_alignment": {
+        "source_payload_path": "capture_payload.analysis.runtime_alignment",
+        "schema_version": "runtime_stream_alignment_v0.1",
+        "sample_count": 12,
+        "paired_sample_count": 12,
+        "max_allowed_drift_ms": 50,
+        "max_stream_drift_ms": 30,
+        "drift_warning": false
+      },
       "checks": [
         {
           "id": "app_launch",
@@ -55,6 +64,11 @@
           "id": "runtime_timeline_integrity",
           "status": "pass",
           "evidence": "capture_payload.analysis.runtime_timeline has gap_warning=false and max_sample_gap_s=0.55."
+        },
+        {
+          "id": "runtime_alignment_integrity",
+          "status": "pass",
+          "evidence": "capture_payload.analysis.runtime_alignment has drift_warning=false and max_stream_drift_ms=30."
         },
         {
           "id": "paired_measurement_submit",
@@ -110,6 +124,15 @@
         "max_sample_gap_ratio": 1.1,
         "gap_warning": false
       },
+      "runtime_alignment": {
+        "source_payload_path": "capture_payload.analysis.runtime_alignment",
+        "schema_version": "runtime_stream_alignment_v0.1",
+        "sample_count": 12,
+        "paired_sample_count": 12,
+        "max_allowed_drift_ms": 50,
+        "max_stream_drift_ms": 30,
+        "drift_warning": false
+      },
       "checks": [
         {
           "id": "app_launch",
@@ -135,6 +158,11 @@
           "id": "runtime_timeline_integrity",
           "status": "pass",
           "evidence": "capture_payload.analysis.runtime_timeline has gap_warning=false and max_sample_gap_s=0.55."
+        },
+        {
+          "id": "runtime_alignment_integrity",
+          "status": "pass",
+          "evidence": "capture_payload.analysis.runtime_alignment has drift_warning=false and max_stream_drift_ms=30."
         },
         {
           "id": "paired_measurement_submit",

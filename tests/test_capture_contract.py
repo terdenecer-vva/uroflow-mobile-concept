@@ -128,6 +128,7 @@ def test_validate_capture_payload_allows_optional_analysis_block() -> None:
             "roi_valid_ratio": 0.94,
             "low_confidence_ratio": 0.08,
             "timing_gap_warning": False,
+            "alignment_drift_warning": False,
         },
         "runtime_timeline": {
             "clock_source": "elapsed_wall_clock_ms",
@@ -138,6 +139,15 @@ def test_validate_capture_payload_allows_optional_analysis_block() -> None:
             "max_sample_gap_ratio": 1.0,
             "monotonic": True,
             "gap_warning": False,
+        },
+        "runtime_alignment": {
+            "schema_version": "runtime_stream_alignment_v0.1",
+            "aligned_streams": ["samples", "runtime_flow_series"],
+            "sample_count": 3,
+            "paired_sample_count": 3,
+            "max_allowed_drift_ms": 50,
+            "max_stream_drift_ms": 20,
+            "drift_warning": False,
         },
     }
 
@@ -192,6 +202,7 @@ def test_validate_capture_payload_rejects_invalid_runtime_quality_timing_gap() -
     payload["analysis"] = {
         "runtime_quality": {
             "timing_gap_warning": "false",
+            "alignment_drift_warning": "false",
         },
     }
 
@@ -199,6 +210,39 @@ def test_validate_capture_payload_rejects_invalid_runtime_quality_timing_gap() -
 
     assert report.valid is False
     assert "analysis.runtime_quality.timing_gap_warning must be boolean" in report.errors
+    assert "analysis.runtime_quality.alignment_drift_warning must be boolean" in report.errors
+
+
+def test_validate_capture_payload_rejects_invalid_runtime_alignment() -> None:
+    payload = _valid_payload()
+    payload["analysis"] = {
+        "runtime_alignment": {
+            "schema_version": "runtime_stream_alignment_v0.0",
+            "aligned_streams": ["samples"],
+            "sample_count": 99,
+            "paired_sample_count": 3,
+            "max_allowed_drift_ms": 50,
+            "max_stream_drift_ms": 80,
+            "drift_warning": False,
+        },
+    }
+
+    report = validate_capture_payload(payload)
+
+    assert report.valid is False
+    assert (
+        "analysis.runtime_alignment.schema_version must be "
+        "'runtime_stream_alignment_v0.1'"
+    ) in report.errors
+    assert (
+        "analysis.runtime_alignment.aligned_streams must include "
+        "'samples' and 'runtime_flow_series'"
+    ) in report.errors
+    assert "analysis.runtime_alignment.sample_count must match samples length" in report.errors
+    assert (
+        "analysis.runtime_alignment.drift_warning must reflect unpaired streams "
+        "or max_stream_drift_ms exceeding max_allowed_drift_ms"
+    ) in report.errors
 
 
 def test_validate_capture_payload_allows_derivatives_only_feature_manifest() -> None:

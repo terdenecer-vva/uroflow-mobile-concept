@@ -43,6 +43,8 @@ Cross-platform mobile client (Expo React Native) for collecting paired measureme
 - Runtime block includes in-app `Q(t)` preview for operator review before submission
 - Runtime capture contract analysis includes `runtime_timeline` timing integrity metadata
   (`duration_s`, sample count, median sample step, max gap, and gap warning).
+- Runtime capture contract analysis includes `runtime_alignment` stream-alignment evidence;
+  drift above 50 ms forces a hard `reject` quality status.
 - Runtime audio recorder temp files are deleted best-effort after stop/reset; payloads keep only
   derived metering/flow features.
 
@@ -102,11 +104,13 @@ Notes:
 - Runtime capture currently logs sampled audio metering + motion, and derives proxy level traces.
 - Camera preview + ROI lock state are included in runtime quality gating.
 - Runtime quality scoring includes `roi_valid_ratio`, `low_confidence_ratio`,
-  `high_motion_ratio`, and `timing_gap_warning`; timing gaps force at least `repeat`.
+  `high_motion_ratio`, `timing_gap_warning`, and `alignment_drift_warning`; timing gaps
+  force at least `repeat`, while alignment drift above 50 ms forces `reject`.
 - Runtime contract analysis includes `runtime_timeline` so Clinical Hub evidence can flag
   timing gaps caused by foreground stalls or device load.
 - Physical-device smoke logs must copy `capture_payload.analysis.runtime_timeline` and
-  pass with `gap_warning=false` for release handoff.
+  `capture_payload.analysis.runtime_alignment`, then pass with `gap_warning=false` and
+  `drift_warning=false` for release handoff.
 - Raw media is not stored by default (privacy-by-default behavior).
 - Temporary runtime audio files created by the native recorder are deleted after each stop/reset;
   field handoff evidence must include `raw_media_temp_files_absent` device storage review.

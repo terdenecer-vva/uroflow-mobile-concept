@@ -172,6 +172,38 @@ def test_analyze_capture_session_marks_repeat_for_runtime_timeline_gap() -> None
     assert "runtime_timeline_gap_warning" in analysis.quality.reasons
 
 
+def test_analyze_capture_session_rejects_runtime_alignment_drift() -> None:
+    payload = _base_payload()
+    payload["analysis"] = {
+        "runtime_alignment": {
+            "schema_version": "runtime_stream_alignment_v0.1",
+            "aligned_streams": ["samples", "runtime_flow_series"],
+            "sample_count": 9,
+            "paired_sample_count": 9,
+            "max_allowed_drift_ms": 50,
+            "max_stream_drift_ms": 80,
+            "drift_warning": True,
+        },
+    }
+
+    analysis = analyze_capture_session(
+        payload,
+        config=CaptureSessionConfig(
+            ml_per_mm_override=10.0,
+            max_level_noise_mm=4.0,
+            event_min_audio_delta_db=8.0,
+        ),
+    )
+
+    assert analysis.quality.status == "reject"
+    assert analysis.quality.runtime_alignment_drift_warning is True
+    assert analysis.quality.runtime_alignment_max_stream_drift_ms == 80
+    assert any(
+        reason.startswith("runtime_alignment_drift_warning")
+        for reason in analysis.quality.reasons
+    )
+
+
 def test_analyze_capture_session_raises_for_invalid_payload() -> None:
     payload = _base_payload()
     samples = payload["samples"]

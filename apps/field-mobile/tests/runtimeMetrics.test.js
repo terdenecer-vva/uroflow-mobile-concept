@@ -179,6 +179,18 @@ test("scoreRuntimeCaptureQuality repeats timing-gap captures", () => {
   assert.equal(quality.qualityScore, 83.4);
 });
 
+test("scoreRuntimeCaptureQuality rejects alignment drift hard failures", () => {
+  const quality = runtime.scoreRuntimeCaptureQuality({
+    averageMotionNorm: 0.02,
+    samples: [sample(), sample(), sample(), sample()],
+    alignmentDriftWarning: true,
+  });
+
+  assert.equal(quality.qualityStatus, "reject");
+  assert.equal(quality.alignmentDriftWarning, true);
+  assert.equal(quality.timingGapWarning, false);
+});
+
 test("calculateAverageMotionNorm handles empty samples", () => {
   assert.equal(runtime.calculateAverageMotionNorm([]), 0);
   assert.equal(

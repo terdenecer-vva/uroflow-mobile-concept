@@ -1390,6 +1390,48 @@ def build_readiness_report(
         and "marks_repeat_for_runtime_timeline_gap" in backend_session_tests_source,
         f"paths={runtime_timeline_quality_test_paths}",
     )
+    runtime_alignment_requirements = {
+        "mobile_contract_type": "runtime_alignment" in capture_contract_source,
+        "mobile_derive_helper": "deriveRuntimeAlignment" in capture_contract_source,
+        "fifty_ms_limit": "RUNTIME_ALIGNMENT_MAX_DRIFT_MS = 50"
+        in capture_contract_source,
+        "runtime_session_uses_alignment": "deriveRuntimeAlignment"
+        in runtime_capture_session_source,
+        "quality_hard_reject": "alignmentDriftWarning" in runtime_metrics_source
+        and 'qualityStatus = "reject"' in runtime_metrics_source,
+        "backend_validator": "analysis.runtime_alignment.drift_warning"
+        in backend_capture_contract_source,
+        "backend_session_reject": "runtime_alignment_drift_warning"
+        in backend_session_source,
+        "smoke_log_template": "runtime_alignment_integrity"
+        in mobile_device_smoke_template_source,
+        "smoke_log_validator": "_validate_runtime_alignment"
+        in mobile_device_smoke_validator_source,
+    }
+    _check(
+        checks,
+        "runtime_alignment_guard_sources",
+        all(runtime_alignment_requirements.values()),
+        f"requirements={runtime_alignment_requirements!r}",
+    )
+    runtime_alignment_test_requirements = {
+        "mobile_helper_test": "deriveRuntimeAlignment flags stream drift above 50ms"
+        in capture_tests_source,
+        "mobile_quality_test": "rejects alignment drift hard failures"
+        in runtime_metrics_tests_source,
+        "backend_contract_test": "rejects_invalid_runtime_alignment"
+        in backend_capture_tests_source,
+        "backend_session_test": "rejects_runtime_alignment_drift"
+        in backend_session_tests_source,
+        "smoke_log_test": "rejects_alignment_drift_warning"
+        in mobile_device_smoke_validator_tests_source,
+    }
+    _check(
+        checks,
+        "runtime_alignment_guard_unit_tests_present",
+        all(runtime_alignment_test_requirements.values()),
+        f"requirements={runtime_alignment_test_requirements!r}",
+    )
     _check(
         checks,
         "pending_sync_queue_unit_tests_present",

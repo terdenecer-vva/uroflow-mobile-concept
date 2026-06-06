@@ -32,9 +32,20 @@ export type CaptureContractRuntimeTimeline = {
   gap_warning: boolean;
 };
 
+export type CaptureContractRuntimeAlignment = {
+  schema_version: "runtime_stream_alignment_v0.1";
+  aligned_streams: string[];
+  sample_count: number;
+  paired_sample_count: number;
+  max_allowed_drift_ms: number;
+  max_stream_drift_ms: number | null;
+  drift_warning: boolean;
+};
+
 export type CaptureContractAnalysis = {
   runtime_flow_series?: CaptureContractRuntimeFlowPoint[];
   runtime_timeline?: CaptureContractRuntimeTimeline;
+  runtime_alignment?: CaptureContractRuntimeAlignment;
   runtime_quality?: {
     quality_score?: number;
     quality_status?: CaptureContractQualityStatus;
@@ -42,6 +53,7 @@ export type CaptureContractAnalysis = {
     low_confidence_ratio?: number;
     high_motion_ratio?: number;
     timing_gap_warning?: boolean;
+    alignment_drift_warning?: boolean;
   };
 };
 
@@ -123,6 +135,7 @@ export type BuildCaptureContractFromSamplesInput = {
 
 const DEFAULT_ML_PER_MM = 8.0;
 const DEFAULT_SAMPLE_STEP_S = 0.5;
+export const RUNTIME_ALIGNMENT_MAX_DRIFT_MS = 50;
 const FEATURE_MANIFEST_VERSION = "mobile_feature_manifest_v0.1";
 const BASE_FEATURE_KEYS = Object.freeze([
   "t_s",
@@ -239,6 +252,44 @@ export function deriveRuntimeTimeline(
   };
 }
 
+export function deriveRuntimeAlignment(
+  samples: CaptureContractSample[],
+  flowSeries: CaptureContractRuntimeFlowPoint[],
+  maxAllowedDriftMs = RUNTIME_ALIGNMENT_MAX_DRIFT_MS,
+): CaptureContractRuntimeAlignment {
+  const pairedSampleCount = Math.min(samples.length, flowSeries.length);
+  let maxStreamDriftMs: number | null = null;
+  for (let index = 0; index < pairedSampleCount; index += 1) {
+    const sampleTimestamp = samples[index].t_s;
+    const flowTimestamp = flowSeries[index].t_s;
+    if (!Number.isFinite(sampleTimestamp) || !Number.isFinite(flowTimestamp)) {
+      continue;
+    }
+    const driftMs = Math.abs(sampleTimestamp - flowTimestamp) * 1000;
+    maxStreamDriftMs =
+      maxStreamDriftMs == null ? driftMs : Math.max(maxStreamDriftMs, driftMs);
+  }
+
+  const safeMaxAllowedDriftMs =
+    Number.isFinite(maxAllowedDriftMs) && maxAllowedDriftMs > 0
+      ? round4(maxAllowedDriftMs)
+      : RUNTIME_ALIGNMENT_MAX_DRIFT_MS;
+  const hasMismatchedPairs =
+    pairedSampleCount === 0 || samples.length !== flowSeries.length;
+  const exceedsDriftLimit =
+    maxStreamDriftMs != null && maxStreamDriftMs > safeMaxAllowedDriftMs;
+
+  return {
+    schema_version: "runtime_stream_alignment_v0.1",
+    aligned_streams: ["samples", "runtime_flow_series"],
+    sample_count: samples.length,
+    paired_sample_count: pairedSampleCount,
+    max_allowed_drift_ms: safeMaxAllowedDriftMs,
+    max_stream_drift_ms: sanitizeNullablePositiveMetric(maxStreamDriftMs),
+    drift_warning: hasMismatchedPairs || exceedsDriftLimit,
+  };
+}
+
 function sanitizeRuntimeTimeline(
   timeline: CaptureContractRuntimeTimeline | undefined,
 ): CaptureContractRuntimeTimeline | undefined {
@@ -256,6 +307,40 @@ function sanitizeRuntimeTimeline(
     max_sample_gap_ratio: sanitizeNullablePositiveMetric(timeline.max_sample_gap_ratio),
     monotonic: timeline.monotonic === true,
     gap_warning: timeline.gap_warning === true,
+  };
+}
+
+function sanitizeRuntimeAlignment(
+  alignment: CaptureContractRuntimeAlignment | undefined,
+  sampleCount: number,
+): CaptureContractRuntimeAlignment | undefined {
+  if (!alignment) {
+    return undefined;
+  }
+  const maxAllowedDriftMs =
+    Number.isFinite(alignment.max_allowed_drift_ms) && alignment.max_allowed_drift_ms > 0
+      ? round4(alignment.max_allowed_drift_ms)
+      : RUNTIME_ALIGNMENT_MAX_DRIFT_MS;
+  const maxStreamDriftMs = sanitizeNullablePositiveMetric(alignment.max_stream_drift_ms);
+  const pairedSampleCount = sanitizeNonNegativeInteger(alignment.paired_sample_count);
+  const alignedStreams = Array.isArray(alignment.aligned_streams)
+    ? alignment.aligned_streams
+        .filter((stream): stream is string => typeof stream === "string" && stream.trim().length > 0)
+        .map((stream) => stream.trim())
+    : [];
+  const driftWarning =
+    alignment.drift_warning === true ||
+    pairedSampleCount !== sampleCount ||
+    (maxStreamDriftMs != null && maxStreamDriftMs > maxAllowedDriftMs);
+
+  return {
+    schema_version: "runtime_stream_alignment_v0.1",
+    aligned_streams: alignedStreams.length > 0 ? alignedStreams : ["samples", "runtime_flow_series"],
+    sample_count: sampleCount,
+    paired_sample_count: pairedSampleCount,
+    max_allowed_drift_ms: maxAllowedDriftMs,
+    max_stream_drift_ms: maxStreamDriftMs,
+    drift_warning: driftWarning,
   };
 }
 
@@ -297,10 +382,16 @@ function sanitizeRuntimeSamples(samples: CaptureContractSample[]): CaptureContra
 function sanitizeAnalysis(
   analysis: CaptureContractAnalysis | undefined,
   fallbackTimeline?: CaptureContractRuntimeTimeline,
+  fallbackSamples?: CaptureContractSample[],
 ): CaptureContractAnalysis | undefined {
   const runtimeFlowSeries = sanitizeRuntimeFlowSeries(analysis?.runtime_flow_series);
   const runtimeTimeline =
     sanitizeRuntimeTimeline(analysis?.runtime_timeline) ?? fallbackTimeline;
+  const runtimeAlignment =
+    sanitizeRuntimeAlignment(analysis?.runtime_alignment, fallbackSamples?.length ?? 0) ??
+    (fallbackSamples && runtimeFlowSeries.length > 0
+      ? deriveRuntimeAlignment(fallbackSamples, runtimeFlowSeries)
+      : undefined);
   const runtimeQualityRaw = analysis?.runtime_quality;
   const runtimeQuality: CaptureContractAnalysis["runtime_quality"] = {};
   if (runtimeQualityRaw) {
@@ -332,14 +423,18 @@ function sanitizeAnalysis(
     if (typeof runtimeQualityRaw.timing_gap_warning === "boolean") {
       runtimeQuality.timing_gap_warning = runtimeQualityRaw.timing_gap_warning;
     }
+    if (typeof runtimeQualityRaw.alignment_drift_warning === "boolean") {
+      runtimeQuality.alignment_drift_warning = runtimeQualityRaw.alignment_drift_warning;
+    }
   }
   const hasRuntimeQuality = Object.keys(runtimeQuality).length > 0;
-  if (!hasRuntimeQuality && runtimeFlowSeries.length === 0 && !runtimeTimeline) {
+  if (!hasRuntimeQuality && runtimeFlowSeries.length === 0 && !runtimeTimeline && !runtimeAlignment) {
     return undefined;
   }
   return {
     ...(runtimeFlowSeries.length > 0 ? { runtime_flow_series: runtimeFlowSeries } : {}),
     ...(runtimeTimeline ? { runtime_timeline: runtimeTimeline } : {}),
+    ...(runtimeAlignment ? { runtime_alignment: runtimeAlignment } : {}),
     ...(hasRuntimeQuality ? { runtime_quality: runtimeQuality } : {}),
   };
 }
@@ -401,6 +496,11 @@ function buildFeatureManifest(
   if (analysis?.runtime_timeline) {
     Object.keys(analysis.runtime_timeline).forEach((key) => {
       featureKeys.add(`runtime_timeline.${key}`);
+    });
+  }
+  if (analysis?.runtime_alignment) {
+    Object.keys(analysis.runtime_alignment).forEach((key) => {
+      featureKeys.add(`runtime_alignment.${key}`);
     });
   }
   if (analysis?.runtime_quality) {
@@ -498,7 +598,7 @@ export function buildCaptureContractPayloadFromSamples(
       },
     ];
   }
-  const analysis = sanitizeAnalysis(input.analysis, deriveRuntimeTimeline(safeSamples));
+  const analysis = sanitizeAnalysis(input.analysis, deriveRuntimeTimeline(safeSamples), safeSamples);
 
   const payload: CaptureContractPayload = {
     schema_version: APP_CAPTURE_SCHEMA_VERSION,

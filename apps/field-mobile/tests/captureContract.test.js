@@ -334,3 +334,92 @@ test("buildCaptureContractPayloadFromSamples adds runtime timeline analysis", ()
     true,
   );
 });
+
+test("deriveRuntimeAlignment flags stream drift above 50ms", () => {
+  const clean = capture.deriveRuntimeAlignment(
+    [
+      { t_s: 0, depth_level_mm: 0, rgb_level_mm: 0, depth_confidence: 0.9, audio_rms_dbfs: -45, motion_norm: 0.02, roi_valid: true },
+      { t_s: 0.5, depth_level_mm: 0.2, rgb_level_mm: 0.19, depth_confidence: 0.8, audio_rms_dbfs: -44, motion_norm: 0.03, roi_valid: true },
+    ],
+    [
+      { t_s: 0.01, flow_ml_s: 0 },
+      { t_s: 0.53, flow_ml_s: 4 },
+    ],
+  );
+  assert.equal(clean.max_allowed_drift_ms, 50);
+  assert.equal(clean.max_stream_drift_ms, 30);
+  assert.equal(clean.drift_warning, false);
+
+  const drifted = capture.deriveRuntimeAlignment(
+    [
+      { t_s: 0, depth_level_mm: 0, rgb_level_mm: 0, depth_confidence: 0.9, audio_rms_dbfs: -45, motion_norm: 0.02, roi_valid: true },
+      { t_s: 0.5, depth_level_mm: 0.2, rgb_level_mm: 0.19, depth_confidence: 0.8, audio_rms_dbfs: -44, motion_norm: 0.03, roi_valid: true },
+    ],
+    [
+      { t_s: 0.08, flow_ml_s: 0 },
+      { t_s: 0.5, flow_ml_s: 4 },
+    ],
+  );
+  assert.equal(drifted.max_stream_drift_ms, 80);
+  assert.equal(drifted.drift_warning, true);
+});
+
+test("buildCaptureContractPayloadFromSamples adds runtime alignment analysis", () => {
+  const payload = capture.buildCaptureContractPayloadFromSamples({
+    sessionId: "SESSION-ALIGN",
+    syncId: "SYNC-ALIGN",
+    startedAtIso: "2026-06-04T01:02:03Z",
+    captureMode: "water_impact",
+    deviceModel: "Pixel",
+    iosVersion: "android-16",
+    appVersion: "0.1.0",
+    samples: [
+      {
+        t_s: 0,
+        depth_level_mm: 0,
+        rgb_level_mm: 0,
+        depth_confidence: 0.9,
+        audio_rms_dbfs: -45,
+        motion_norm: 0.02,
+        roi_valid: true,
+      },
+      {
+        t_s: 0.5,
+        depth_level_mm: 0.2,
+        rgb_level_mm: 0.19,
+        depth_confidence: 0.8,
+        audio_rms_dbfs: -44,
+        motion_norm: 0.03,
+        roi_valid: true,
+      },
+    ],
+    analysis: {
+      runtime_flow_series: [
+        { t_s: 0.02, flow_ml_s: 0 },
+        { t_s: 0.53, flow_ml_s: 4 },
+      ],
+      runtime_quality: {
+        alignment_drift_warning: false,
+      },
+    },
+  });
+
+  assert.deepEqual(payload.analysis.runtime_alignment, {
+    schema_version: "runtime_stream_alignment_v0.1",
+    aligned_streams: ["samples", "runtime_flow_series"],
+    sample_count: 2,
+    paired_sample_count: 2,
+    max_allowed_drift_ms: 50,
+    max_stream_drift_ms: 30,
+    drift_warning: false,
+  });
+  assert.equal(payload.analysis.runtime_quality.alignment_drift_warning, false);
+  assert.equal(
+    payload.feature_manifest.feature_keys.includes("runtime_alignment.max_stream_drift_ms"),
+    true,
+  );
+  assert.equal(
+    payload.feature_manifest.feature_keys.includes("runtime_quality.alignment_drift_warning"),
+    true,
+  );
+});

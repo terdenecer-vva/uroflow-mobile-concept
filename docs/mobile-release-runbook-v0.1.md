@@ -78,8 +78,12 @@ Workflow generates artifact `mobile-release-manifest` containing:
 - runtime quality evidence for ROI validity, low-confidence depth ratio, and high-motion IMU artifact ratio in `capture_payload.analysis.runtime_quality`,
 - runtime timeline integrity evidence in `capture_payload.analysis.runtime_timeline`,
   including sample count, duration, median sample step, max sample gap, and gap warning,
+- runtime stream-alignment evidence in `capture_payload.analysis.runtime_alignment`,
+  including paired sample count, max stream drift, 50 ms drift limit, and drift warning,
 - runtime quality gating evidence that `runtime_quality.timing_gap_warning=true`
   forces at least `repeat`,
+- runtime quality gating evidence that `runtime_quality.alignment_drift_warning=true`
+  forces `reject`,
 - runtime raw-media retention evidence proving temporary native recorder audio files are
   deleted after stop/reset and payloads retain derived features only,
 - source-backed derivatives-only feature/media manifest evidence in `capture_contract.feature_manifest`, including manifest version, feature keys, `sample_count` source, `raw_media.*=false`, and `privacy.media_scope=roi_derivatives_only`,
@@ -216,8 +220,10 @@ python3 scripts/validate_mobile_store_rollout_handoff.py \
 4. Clinical Hub request logs include non-secret `x-uroflow-*` release/runtime/data-residency trace headers, and backend contract tests reject a deliberate mismatched region header.
 5. `Device Model` is auto-filled from the physical device model or a platform fallback, and matches the smoke-log device entry after any field correction.
 6. `Start Capture` and `Stop Capture` work on real device.
-7. `Contract payload: ready` after stop, with `analysis.runtime_timeline.gap_warning=false`.
-   Repeat or mark the run failed if foreground/device load creates a timing gap warning.
+7. `Contract payload: ready` after stop, with `analysis.runtime_timeline.gap_warning=false`
+   and `analysis.runtime_alignment.drift_warning=false`.
+   Repeat or mark the run failed if foreground/device load creates a timing gap warning or
+   stream drift exceeds 50 ms.
 8. Submit produces `paired-measurements` and `capture-packages` records.
 9. Offline mode queues both endpoint jobs.
 10. Returning online triggers successful auto-sync through connectivity restore, interval, or AppState fallback; if Clinical Hub returns `401/403`, fix API key/site/role credentials and retry without clearing queued payloads.
@@ -234,6 +240,9 @@ python3 scripts/validate_mobile_store_rollout_handoff.py \
 7. Validated smoke summary JSON from `scripts/validate_mobile_device_smoke_log.py`.
    - The smoke log must include per-device `runtime_timeline` evidence copied from
      `capture_payload.analysis.runtime_timeline`, with `gap_warning=false`.
+   - The smoke log must include per-device `runtime_alignment` evidence copied from
+     `capture_payload.analysis.runtime_alignment`, with `drift_warning=false` and
+     `max_stream_drift_ms <= 50`.
    - The smoke log must include `raw_media_temp_files_absent` evidence after device storage
      review, confirming no recorder temp audio files, raw video files, or exported media
      artifacts remain after stop/reset.
@@ -241,4 +250,6 @@ python3 scripts/validate_mobile_store_rollout_handoff.py \
    - For `capture-packages`, archive `capture_payload.feature_manifest` and confirm `derivatives_only=true`, `raw_media.store_raw_video=false`, `raw_media.store_raw_audio=false`, `raw_media.upload_raw_video=false`, and `raw_media.upload_raw_audio=false`.
    - Archive `capture_payload.analysis.runtime_timeline` and investigate runs with
      `gap_warning=true` or unexpectedly large `max_sample_gap_s`.
+   - Archive `capture_payload.analysis.runtime_alignment` and reject runs with
+     `drift_warning=true` or `max_stream_drift_ms > 50`.
 9. Go/No-Go note for pilot usage.
