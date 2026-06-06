@@ -25,6 +25,8 @@ Implemented now:
 - Release manifest traceability for app version, git SHA, model/schema, runtime config, capture contract feature-manifest evidence, and readiness gate summary.
 - Mobile API response, submit exception outcome, and runtime exception redaction gates for raw body, PHI-like subject/site/operator IDs, and secret-like error details.
 - Mobile release readiness gate for single-region data residency policy (`us`, no cross-region sync, region-matched Clinical Hub required).
+- Clinical Hub API key policy map plus site/operator scope enforcement is covered by
+  release readiness checks and backend unit tests.
 - Pending queue auto-sync on connectivity restore via NetInfo, with interval/AppState fallback.
 - Pending sync retry policy keeps network/transient and Clinical Hub auth/permission failures
   queued for credential repair while dropping validation/conflict errors.
@@ -66,6 +68,8 @@ Not yet implemented:
 ### G3. Security/privacy gap
 - Secure storage introduced for API key; raw media is not retained by default and runtime audio
   temp files are deleted after stop/reset, but physical-device storage audit evidence is still required.
+- Clinical Hub RBAC/site/operator scope is implemented and release-gated locally; live
+  deployment still needs access-review evidence and production key provisioning.
 - Mobile response/submit-exception/runtime-exception redaction tests are present; device log PHI review is now required in the physical-device smoke log format, but real logs still need archival.
 - Mobile data residency policy controls are present; live Clinical Hub region mapping still needs deployment/account evidence.
 

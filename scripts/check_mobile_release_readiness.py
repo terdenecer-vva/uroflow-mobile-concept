@@ -1203,6 +1203,56 @@ def build_readiness_report(
         all(clinical_hub_preflight_test_requirements.values()),
         f"requirements={clinical_hub_preflight_test_requirements!r}",
     )
+    clinical_hub_rbac_requirements = {
+        "api_key_policy_model": "class ApiKeyPolicy" in clinical_hub_backend_source,
+        "policy_map_validation": "_validate_api_key_policy_map"
+        in clinical_hub_backend_source,
+        "policy_overrides_spoofable_headers": (
+            "actor_role = api_key_policy.role" in clinical_hub_backend_source
+            and "actor_site_id = api_key_policy.site_id" in clinical_hub_backend_source
+            and "actor_operator_id = api_key_policy.operator_id"
+            in clinical_hub_backend_source
+        ),
+        "site_scope_helpers": (
+            "_resolve_site_scope" in clinical_hub_backend_source
+            and "_enforce_payload_site_scope" in clinical_hub_backend_source
+            and "_enforce_row_site_scope" in clinical_hub_backend_source
+        ),
+        "operator_scope_helpers": (
+            "_resolve_operator_scope" in clinical_hub_backend_source
+            and "_enforce_payload_operator_scope" in clinical_hub_backend_source
+            and "_enforce_row_operator_scope" in clinical_hub_backend_source
+        ),
+        "operator_identity_required": "missing_actor_operator_id_for_operator_role"
+        in clinical_hub_backend_source,
+        "auth_context_route": '"/api/v1/auth-context"' in clinical_hub_backend_source,
+    }
+    _check(
+        checks,
+        "clinical_hub_rbac_scope_sources",
+        all(clinical_hub_rbac_requirements.values()),
+        f"requirements={clinical_hub_rbac_requirements!r}",
+    )
+    clinical_hub_rbac_test_requirements = {
+        "policy_map_test": "test_api_key_policy_map_enforces_site_scope_and_role"
+        in clinical_hub_backend_tests_source,
+        "site_scope_test": "test_site_scope_filters_operator_reads_and_csv"
+        in clinical_hub_backend_tests_source,
+        "operator_scope_test": (
+            "test_operator_scope_filters_same_site_data_and_blocks_cross_operator_write"
+            in clinical_hub_backend_tests_source
+        ),
+        "operator_identity_required_test": (
+            "test_operator_role_requires_operator_identity_for_non_session_requests"
+            in clinical_hub_backend_tests_source
+        ),
+    }
+    _check(
+        checks,
+        "clinical_hub_rbac_scope_unit_tests_present",
+        all(clinical_hub_rbac_test_requirements.values()),
+        f"requirements={clinical_hub_rbac_test_requirements!r}",
+    )
     _check(
         checks,
         "connection_check_unit_tests_present",

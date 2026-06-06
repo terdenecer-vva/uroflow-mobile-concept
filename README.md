@@ -355,6 +355,8 @@ Site scope enforcement:
 
 Если включён `--api-key-map-json`, роль и site scope берутся из policy map ключа
 (заголовки `x-site-id`/`x-actor-role` становятся вторичными).
+Mobile release readiness checks include Clinical Hub RBAC/source and unit-test coverage so
+policy-map, site-scope, and operator-scope regressions are surfaced in release artifacts.
 
 ## Оценка release gates (G0/G1/G2)
 
