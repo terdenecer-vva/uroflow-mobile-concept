@@ -303,6 +303,10 @@ GET /api/v1/paired-with-capture.csv
 - тот же payload → `200` с существующей записью;
 - другой payload при той же identity → `409`.
 
+Clinical Hub stores `capture_payload_sha256` for every capture package using canonical
+JSON SHA-256. The digest is returned by detail/list APIs and capture CSV exports for
+tamper-evidence review.
+
 Pilot automation endpoints:
 
 ```bash

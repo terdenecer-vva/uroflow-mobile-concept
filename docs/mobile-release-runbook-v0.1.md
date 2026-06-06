@@ -87,6 +87,8 @@ Workflow generates artifact `mobile-release-manifest` containing:
 - runtime raw-media retention evidence proving temporary native recorder audio files are
   deleted after stop/reset and payloads retain derived features only,
 - source-backed derivatives-only feature/media manifest evidence in `capture_contract.feature_manifest`, including manifest version, feature keys, `sample_count` source, `raw_media.*=false`, and `privacy.media_scope=roi_derivatives_only`,
+- Clinical Hub `capture_payload_sha256` evidence for each capture package, generated from
+  canonical JSON and included in detail/list/CSV exports for tamper-evidence review,
 - readiness gate summary in `readiness`, including local/external/EAS/Clinical Hub statuses, local check counts, failed check IDs, external blocker statuses, and next-action IDs without secret values or detailed evidence strings,
 - runtime defaults such as `DEFAULT_API_BASE_URL` to prove release builds do not point field devices at localhost,
 - git SHA/ref/run-id,
@@ -248,6 +250,8 @@ python3 scripts/validate_mobile_store_rollout_handoff.py \
      artifacts remain after stop/reset.
 8. Clinical Hub sample export (paired + capture package rows).
    - For `capture-packages`, archive `capture_payload.feature_manifest` and confirm `derivatives_only=true`, `raw_media.store_raw_video=false`, `raw_media.store_raw_audio=false`, `raw_media.upload_raw_video=false`, and `raw_media.upload_raw_audio=false`.
+   - Archive `capture_payload_sha256` from Clinical Hub detail/list/CSV exports and verify
+     it stays stable across idempotent replay.
    - Archive `capture_payload.analysis.runtime_timeline` and investigate runs with
      `gap_warning=true` or unexpectedly large `max_sample_gap_s`.
    - Archive `capture_payload.analysis.runtime_alignment` and reject runs with

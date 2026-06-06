@@ -872,6 +872,9 @@ def build_readiness_report(
     ci_workflow_path = repo_root / ".github" / "workflows" / "ci.yml"
     cli_path = repo_root / "src" / "uroflow_mobile" / "cli.py"
     cli_gates_tests_path = repo_root / "tests" / "test_cli_gates.py"
+    cli_clinical_hub_export_tests_path = (
+        repo_root / "tests" / "test_cli_clinical_hub_export.py"
+    )
     ci_workflow_tests_path = repo_root / "tests" / "test_ci_workflow.py"
     paired_payload_tests_path = mobile_root / "tests" / "pairedPayload.test.js"
     roi_signal_tests_path = mobile_root / "tests" / "roiSignalEstimator.test.js"
@@ -957,6 +960,9 @@ def build_readiness_report(
     ci_workflow_source = _read_file_text(ci_workflow_path)
     cli_source = _read_file_text(cli_path)
     cli_gates_tests_source = _read_file_text(cli_gates_tests_path)
+    cli_clinical_hub_export_tests_source = _read_file_text(
+        cli_clinical_hub_export_tests_path
+    )
     ci_workflow_tests_source = _read_file_text(ci_workflow_tests_path)
     _check(
         checks,
@@ -1302,6 +1308,35 @@ def build_readiness_report(
         and "allows_derivatives_only_feature_manifest" in backend_capture_tests_source
         and "rejects_feature_manifest_raw_media_upload" in backend_capture_tests_source,
         f"paths={[str(capture_tests_path), str(backend_capture_tests_path)]}",
+    )
+    capture_payload_digest_requirements = {
+        "digest_field": "capture_payload_sha256" in clinical_hub_backend_source,
+        "canonical_digest_helper": "_capture_payload_sha256" in clinical_hub_backend_source
+        and "sort_keys=True" in clinical_hub_backend_source
+        and 'separators=(",", ":")' in clinical_hub_backend_source,
+        "schema_backfill": "_backfill_capture_payload_sha256"
+        in clinical_hub_backend_source,
+        "list_response_field": "capture_payload_sha256: str = Field"
+        in clinical_hub_backend_source,
+        "csv_export_field": '"capture_payload_sha256"' in clinical_hub_backend_source,
+    }
+    _check(
+        checks,
+        "capture_payload_digest_sources",
+        all(capture_payload_digest_requirements.values()),
+        f"requirements={capture_payload_digest_requirements!r}",
+    )
+    capture_payload_digest_test_requirements = {
+        "api_digest_test": "capture_payload_sha256" in clinical_hub_backend_tests_source
+        and "digest_backfilled_for_existing_db" in clinical_hub_backend_tests_source,
+        "joined_csv_digest_test": "capture_payload_sha256"
+        in cli_clinical_hub_export_tests_source,
+    }
+    _check(
+        checks,
+        "capture_payload_digest_unit_tests_present",
+        all(capture_payload_digest_test_requirements.values()),
+        f"requirements={capture_payload_digest_test_requirements!r}",
     )
     raw_media_cleanup_requirements = {
         "cleanup_source_file": raw_media_retention_source_path.is_file(),
