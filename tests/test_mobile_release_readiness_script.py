@@ -99,6 +99,8 @@ def test_mobile_release_readiness_reports_external_blockers(tmp_path: Path) -> N
         "file_system_dependency_locked",
         "ios_privacy_usage_descriptions",
         "app_config_unit_tests_present",
+        "mobile_claims_notice_sources",
+        "mobile_claims_notice_unit_tests_present",
         "paired_payload_unit_tests_present",
         "package_lock_matches_root",
         "runtime_config_data_residency_policy",

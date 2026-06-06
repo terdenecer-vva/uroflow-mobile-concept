@@ -802,6 +802,10 @@ def build_readiness_report(
     release_identity_component_path = (
         mobile_root / "src" / "components" / "ReleaseIdentitySection.tsx"
     )
+    claims_notice_source_path = mobile_root / "src" / "utils" / "claimsNotice.ts"
+    claims_notice_component_path = (
+        mobile_root / "src" / "components" / "ClinicalClaimsNotice.tsx"
+    )
     clinical_hub_source_path = mobile_root / "src" / "api" / "clinicalHub.ts"
     clinical_hub_preflight_source_path = (
         mobile_root / "src" / "api" / "clinicalHubPreflight.ts"
@@ -815,6 +819,7 @@ def build_readiness_report(
     pending_storage_source_path = mobile_root / "src" / "storage" / "pendingSubmissionStorage.ts"
     submit_outcome_source_path = mobile_root / "src" / "utils" / "submitOutcome.ts"
     helper_tests_path = mobile_root / "tests" / "appHelpers.test.js"
+    claims_notice_tests_path = mobile_root / "tests" / "claimsNotice.test.js"
     app_settings_storage_tests_path = mobile_root / "tests" / "appSettingsStorage.test.js"
     clinical_hub_api_tests_path = mobile_root / "tests" / "clinicalHub.test.js"
     clinical_hub_preflight_tests_path = (
@@ -895,6 +900,8 @@ def build_readiness_report(
     device_identity_source = _read_file_text(device_identity_source_path)
     release_identity_source = _read_file_text(release_identity_source_path)
     release_identity_component_source = _read_file_text(release_identity_component_path)
+    claims_notice_source = _read_file_text(claims_notice_source_path)
+    claims_notice_component_source = _read_file_text(claims_notice_component_path)
     clinical_hub_source = _read_file_text(clinical_hub_source_path)
     clinical_hub_preflight_source = _read_file_text(clinical_hub_preflight_source_path)
     connection_check_source = _read_file_text(connection_check_source_path)
@@ -908,6 +915,7 @@ def build_readiness_report(
     device_identity_tests_source = _read_file_text(device_identity_tests_path)
     release_identity_tests_path = mobile_root / "tests" / "releaseIdentity.test.js"
     release_identity_tests_source = _read_file_text(release_identity_tests_path)
+    claims_notice_tests_source = _read_file_text(claims_notice_tests_path)
     clinical_hub_tests_source = _read_file_text(clinical_hub_api_tests_path)
     clinical_hub_preflight_tests_source = _read_file_text(
         clinical_hub_preflight_tests_path
@@ -1054,6 +1062,44 @@ def build_readiness_report(
         "mobile_release_identity_unit_tests_present",
         all(release_identity_test_requirements.values()),
         f"requirements={release_identity_test_requirements!r}",
+    )
+    claims_notice_source_requirements = {
+        "policy_file": claims_notice_source_path.is_file(),
+        "component_file": claims_notice_component_path.is_file(),
+        "app_renders_component": "<ClinicalClaimsNotice />" in app_ts_source,
+        "comparison_only_title": "Pilot comparison only" in claims_notice_source,
+        "reference_uroflowmeter": "reference uroflowmeter" in claims_notice_source,
+        "non_diagnostic_notice": (
+            "does not diagnose" in claims_notice_source
+            and "recommend treatment" in claims_notice_source
+            and "standalone decision tool" in claims_notice_source
+        ),
+        "clinician_escalation": "qualified clinician" in claims_notice_source,
+        "blocked_claim_validator": (
+            "BLOCKED_DIAGNOSTIC_CLAIMS" in claims_notice_source
+            and "validateClaimsNoticeText" in claims_notice_source
+        ),
+        "component_uses_selectable_text": "selectable" in claims_notice_component_source,
+    }
+    _check(
+        checks,
+        "mobile_claims_notice_sources",
+        all(claims_notice_source_requirements.values()),
+        f"requirements={claims_notice_source_requirements!r}",
+    )
+    claims_notice_test_requirements = {
+        "unit_test_file": claims_notice_tests_path.is_file(),
+        "non_diagnostic_wording_test": "non-diagnostic wording"
+        in claims_notice_tests_source,
+        "blocked_claim_test": "validator flags missing safeguards"
+        in claims_notice_tests_source,
+        "unit_runner_compiles_policy": "src/utils/claimsNotice.ts" in unit_runner_source,
+    }
+    _check(
+        checks,
+        "mobile_claims_notice_unit_tests_present",
+        all(claims_notice_test_requirements.values()),
+        f"requirements={claims_notice_test_requirements!r}",
     )
     runtime_release_guard_requirements = {
         "guard_file": runtime_release_guard_source_path.is_file(),

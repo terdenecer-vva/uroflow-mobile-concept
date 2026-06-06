@@ -81,6 +81,7 @@ SLA review: до 5 рабочих дней для стандартного CCR.
 - [ ] Сверка UI-текстов с Claim Registry
 - [ ] Сверка маркетинговых материалов с approved claims
 - [ ] Проверка наличия обязательных дисклеймеров
+- [ ] Проверка `mobile_claims_notice_*` в mobile release readiness
 - [ ] Подпись RA/QA на claim-compliance checklist
 
 ## 9) Триггеры внепланового пересмотра

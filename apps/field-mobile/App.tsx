@@ -48,6 +48,7 @@ import { MeasurementFormSection } from "./src/components/MeasurementFormSection"
 import { ResponseAndSummarySection } from "./src/components/ResponseAndSummarySection";
 import { RuntimeCaptureSection } from "./src/components/RuntimeCaptureSection";
 import { ReleaseIdentitySection } from "./src/components/ReleaseIdentitySection";
+import { ClinicalClaimsNotice } from "./src/components/ClinicalClaimsNotice";
 import { styles } from "./src/styles/appStyles";
 import { usePendingSyncQueue } from "./src/hooks/usePendingSyncQueue";
 import { buildCapturePackagePayloadFromPaired } from "./src/payload/capturePackagePayload";
@@ -880,6 +881,8 @@ export default function App() {
           Capture contract auto-upload enabled: runtime audio/IMU samples are preferred, scaffold is
           fallback.
         </Text>
+
+        <ClinicalClaimsNotice />
 
         <ReleaseIdentitySection
           appModelId={appModelId}

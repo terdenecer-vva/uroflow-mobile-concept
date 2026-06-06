@@ -24,6 +24,38 @@ export const styles = StyleSheet.create({
     fontSize: 12,
     color: "#334155",
   },
+  claimsNoticeBox: {
+    marginBottom: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#0f766e",
+    backgroundColor: "#ecfdf5",
+    padding: 12,
+  },
+  claimsNoticeKicker: {
+    color: "#0f766e",
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 0.8,
+    marginBottom: 4,
+    textTransform: "uppercase",
+  },
+  claimsNoticeTitle: {
+    color: "#0f172a",
+    fontSize: 15,
+    fontWeight: "700",
+    marginBottom: 6,
+  },
+  claimsNoticeText: {
+    color: "#134e4a",
+    fontSize: 12,
+    marginBottom: 6,
+  },
+  claimsNoticeBullet: {
+    color: "#134e4a",
+    fontSize: 12,
+    marginTop: 2,
+  },
   preflightBox: {
     marginTop: 2,
     marginBottom: 10,
