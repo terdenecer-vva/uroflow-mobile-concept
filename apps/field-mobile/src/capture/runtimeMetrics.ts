@@ -23,6 +23,7 @@ export type RuntimeCaptureQuality = {
   lowConfidenceRatio: number;
   highMotionRatio: number;
   timingGapWarning: boolean;
+  alignmentDriftWarning: boolean;
 };
 
 export type RuntimeFlowPoint = {
@@ -228,6 +229,7 @@ export function scoreRuntimeCaptureQuality(input: {
   samples: CaptureContractSample[];
   averageMotionNorm: number;
   timingGapWarning?: boolean;
+  alignmentDriftWarning?: boolean;
 }): RuntimeCaptureQuality {
   const sampleCount = Math.max(1, input.samples.length);
   const roiValidCount = input.samples.filter((sample) => sample.roi_valid).length;
@@ -248,10 +250,18 @@ export function scoreRuntimeCaptureQuality(input: {
   if (input.timingGapWarning === true) {
     score -= 15;
   }
+  if (input.alignmentDriftWarning === true) {
+    score -= 50;
+  }
   score = clamp(score, 0, 100);
 
   let qualityStatus: RuntimeCaptureQuality["qualityStatus"] = "valid";
-  if (score < 50 || roiValidRatio < 0.55 || highMotionRatio > HIGH_MOTION_REJECT_RATIO) {
+  if (
+    input.alignmentDriftWarning === true ||
+    score < 50 ||
+    roiValidRatio < 0.55 ||
+    highMotionRatio > HIGH_MOTION_REJECT_RATIO
+  ) {
     qualityStatus = "reject";
   } else if (
     score < 75 ||
@@ -272,5 +282,6 @@ export function scoreRuntimeCaptureQuality(input: {
     lowConfidenceRatio: round4(lowConfidenceRatio),
     highMotionRatio: round4(highMotionRatio),
     timingGapWarning: input.timingGapWarning === true,
+    alignmentDriftWarning: input.alignmentDriftWarning === true,
   };
 }

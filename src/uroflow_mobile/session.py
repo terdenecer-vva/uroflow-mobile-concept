@@ -47,6 +47,7 @@ class CaptureSessionConfig:
     high_motion_threshold: float = 0.2
     max_high_motion_ratio: float = 0.15
     runtime_timeline_gap_penalty: float = 15.0
+    runtime_alignment_drift_penalty: float = 60.0
     audio_clip_dbfs: float = -3.0
     max_audio_clipping_ratio: float = 0.05
     min_representative_volume_ml: float = 150.0
@@ -67,6 +68,8 @@ class CaptureSessionQuality:
     low_depth_confidence_ratio: float
     high_motion_ratio: float
     runtime_timeline_gap_warning: bool
+    runtime_alignment_drift_warning: bool
+    runtime_alignment_max_stream_drift_ms: float | None
     motion_coverage_ratio: float
     audio_clipping_ratio: float
     audio_coverage_ratio: float
@@ -176,6 +179,24 @@ def _runtime_timeline_gap_warning(payload: dict[str, Any]) -> bool:
     return runtime_timeline.get("gap_warning") is True
 
 
+def _runtime_alignment_drift(payload: dict[str, Any]) -> tuple[bool, float | None]:
+    analysis = payload.get("analysis")
+    if not isinstance(analysis, dict):
+        return False, None
+    runtime_alignment = analysis.get("runtime_alignment")
+    if not isinstance(runtime_alignment, dict):
+        return False, None
+
+    max_stream_drift_raw = runtime_alignment.get("max_stream_drift_ms")
+    max_stream_drift_ms: float | None = None
+    if isinstance(max_stream_drift_raw, (int, float)) and not isinstance(
+        max_stream_drift_raw, bool
+    ):
+        max_stream_drift_ms = float(max_stream_drift_raw)
+
+    return runtime_alignment.get("drift_warning") is True, max_stream_drift_ms
+
+
 def _slice_fusion_result(
     fusion_result: FusionEstimationResult,
     indices: list[int],
@@ -223,6 +244,8 @@ def _compute_quality(
     validation: CaptureValidationReport,
     samples: list[dict[str, Any]],
     runtime_timeline_gap_warning: bool,
+    runtime_alignment_drift_warning: bool,
+    runtime_alignment_max_stream_drift_ms: float | None,
     config: CaptureSessionConfig,
 ) -> CaptureSessionQuality:
     if config.reject_quality_score >= config.valid_quality_score:
@@ -274,6 +297,16 @@ def _compute_quality(
     if runtime_timeline_gap_warning:
         score -= max(0.0, config.runtime_timeline_gap_penalty)
         reasons.append("runtime_timeline_gap_warning")
+
+    if runtime_alignment_drift_warning:
+        score -= max(0.0, config.runtime_alignment_drift_penalty)
+        if runtime_alignment_max_stream_drift_ms is None:
+            reasons.append("runtime_alignment_drift_warning")
+        else:
+            reasons.append(
+                "runtime_alignment_drift_warning"
+                f"({runtime_alignment_max_stream_drift_ms:.1f}ms)"
+            )
 
     if audio_clipping_ratio > config.max_audio_clipping_ratio:
         excess = (audio_clipping_ratio - config.max_audio_clipping_ratio) / max(
@@ -340,6 +373,8 @@ def _compute_quality(
         status = "repeat"
     if runtime_timeline_gap_warning and status == "valid":
         status = "repeat"
+    if runtime_alignment_drift_warning:
+        status = "reject"
 
     if not reasons:
         reasons.append("quality_within_limits")
@@ -352,6 +387,8 @@ def _compute_quality(
         low_depth_confidence_ratio=validation.low_depth_confidence_ratio,
         high_motion_ratio=high_motion_ratio,
         runtime_timeline_gap_warning=runtime_timeline_gap_warning,
+        runtime_alignment_drift_warning=runtime_alignment_drift_warning,
+        runtime_alignment_max_stream_drift_ms=runtime_alignment_max_stream_drift_ms,
         motion_coverage_ratio=motion_coverage_ratio,
         audio_clipping_ratio=audio_clipping_ratio,
         audio_coverage_ratio=audio_coverage_ratio,
@@ -411,6 +448,10 @@ def analyze_capture_session(
     if not isinstance(samples, list):
         raise ValueError("samples must be an array")
     runtime_timeline_gap_warning = _runtime_timeline_gap_warning(payload)
+    (
+        runtime_alignment_drift_warning,
+        runtime_alignment_max_stream_drift_ms,
+    ) = _runtime_alignment_drift(payload)
 
     roi_valid = [bool(sample["roi_valid"]) for sample in samples]
     audio_rms_dbfs = _extract_audio_series(samples)
@@ -456,6 +497,8 @@ def analyze_capture_session(
         validation=validation,
         samples=samples,
         runtime_timeline_gap_warning=runtime_timeline_gap_warning,
+        runtime_alignment_drift_warning=runtime_alignment_drift_warning,
+        runtime_alignment_max_stream_drift_ms=runtime_alignment_max_stream_drift_ms,
         config=cfg,
     )
 

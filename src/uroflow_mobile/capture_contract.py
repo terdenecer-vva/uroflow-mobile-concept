@@ -8,6 +8,7 @@ from typing import Any
 SUPPORTED_CAPTURE_MODES = {"water_impact", "jet_in_air", "porcelain_wall"}
 SCHEMA_VERSION = "ios_capture_v1"
 FEATURE_MANIFEST_VERSION = "mobile_feature_manifest_v0.1"
+RUNTIME_ALIGNMENT_SCHEMA_VERSION = "runtime_stream_alignment_v0.1"
 
 
 @dataclass(frozen=True)
@@ -134,6 +135,7 @@ def _validate_analysis(
         return
 
     runtime_timeline = analysis.get("runtime_timeline")
+    runtime_alignment = analysis.get("runtime_alignment")
     runtime_quality = analysis.get("runtime_quality")
     if (
         isinstance(runtime_quality, dict)
@@ -141,9 +143,34 @@ def _validate_analysis(
         and not isinstance(runtime_quality.get("timing_gap_warning"), bool)
     ):
         errors.append("analysis.runtime_quality.timing_gap_warning must be boolean")
+    if (
+        isinstance(runtime_quality, dict)
+        and "alignment_drift_warning" in runtime_quality
+        and not isinstance(runtime_quality.get("alignment_drift_warning"), bool)
+    ):
+        errors.append("analysis.runtime_quality.alignment_drift_warning must be boolean")
 
-    if runtime_timeline is None:
-        return
+    if runtime_timeline is not None:
+        _validate_runtime_timeline(
+            runtime_timeline,
+            sample_count=sample_count,
+            errors=errors,
+        )
+
+    if runtime_alignment is not None:
+        _validate_runtime_alignment(
+            runtime_alignment,
+            sample_count=sample_count,
+            errors=errors,
+        )
+
+
+def _validate_runtime_timeline(
+    runtime_timeline: Any,
+    *,
+    sample_count: int,
+    errors: list[str],
+) -> None:
     if not isinstance(runtime_timeline, dict):
         errors.append("analysis.runtime_timeline must be an object when provided")
         return
@@ -189,6 +216,93 @@ def _validate_analysis(
         errors.append("analysis.runtime_timeline.monotonic must be boolean")
     if not isinstance(runtime_timeline.get("gap_warning"), bool):
         errors.append("analysis.runtime_timeline.gap_warning must be boolean")
+
+
+def _validate_runtime_alignment(
+    runtime_alignment: Any,
+    *,
+    sample_count: int,
+    errors: list[str],
+) -> None:
+    if not isinstance(runtime_alignment, dict):
+        errors.append("analysis.runtime_alignment must be an object when provided")
+        return
+
+    if runtime_alignment.get("schema_version") != RUNTIME_ALIGNMENT_SCHEMA_VERSION:
+        errors.append(
+            "analysis.runtime_alignment.schema_version must be "
+            f"'{RUNTIME_ALIGNMENT_SCHEMA_VERSION}'"
+        )
+
+    aligned_streams = runtime_alignment.get("aligned_streams")
+    if not isinstance(aligned_streams, list) or not aligned_streams:
+        errors.append("analysis.runtime_alignment.aligned_streams must be a non-empty array")
+    else:
+        aligned_stream_names = {
+            value.strip() for value in aligned_streams if isinstance(value, str)
+        }
+        if {"samples", "runtime_flow_series"} - aligned_stream_names:
+            errors.append(
+                "analysis.runtime_alignment.aligned_streams must include "
+                "'samples' and 'runtime_flow_series'"
+            )
+
+    alignment_sample_count = runtime_alignment.get("sample_count")
+    if not isinstance(alignment_sample_count, int) or isinstance(
+        alignment_sample_count, bool
+    ):
+        errors.append("analysis.runtime_alignment.sample_count must be an integer")
+    elif alignment_sample_count != sample_count:
+        errors.append(
+            "analysis.runtime_alignment.sample_count must match samples length"
+        )
+
+    paired_sample_count = runtime_alignment.get("paired_sample_count")
+    if not isinstance(paired_sample_count, int) or isinstance(paired_sample_count, bool):
+        errors.append("analysis.runtime_alignment.paired_sample_count must be an integer")
+        paired_sample_count_value: int | None = None
+    elif paired_sample_count < 0:
+        errors.append("analysis.runtime_alignment.paired_sample_count must be >= 0")
+        paired_sample_count_value = None
+    else:
+        paired_sample_count_value = paired_sample_count
+
+    max_allowed_drift_ms = runtime_alignment.get("max_allowed_drift_ms")
+    if not _is_finite_number(max_allowed_drift_ms) or float(max_allowed_drift_ms) <= 0:
+        errors.append(
+            "analysis.runtime_alignment.max_allowed_drift_ms must be a positive finite number"
+        )
+        max_allowed_drift_value: float | None = None
+    else:
+        max_allowed_drift_value = float(max_allowed_drift_ms)
+
+    max_stream_drift_ms = runtime_alignment.get("max_stream_drift_ms")
+    _validate_nullable_non_negative_number(
+        max_stream_drift_ms,
+        field_name="analysis.runtime_alignment.max_stream_drift_ms",
+        errors=errors,
+    )
+    max_stream_drift_value = (
+        float(max_stream_drift_ms) if _is_finite_number(max_stream_drift_ms) else None
+    )
+
+    drift_warning = runtime_alignment.get("drift_warning")
+    if not isinstance(drift_warning, bool):
+        errors.append("analysis.runtime_alignment.drift_warning must be boolean")
+        return
+
+    if paired_sample_count_value is None or max_allowed_drift_value is None:
+        return
+
+    expected_warning = paired_sample_count_value != sample_count or (
+        max_stream_drift_value is not None
+        and max_stream_drift_value > max_allowed_drift_value
+    )
+    if drift_warning != expected_warning:
+        errors.append(
+            "analysis.runtime_alignment.drift_warning must reflect unpaired streams "
+            "or max_stream_drift_ms exceeding max_allowed_drift_ms"
+        )
 
 
 def validate_capture_payload(payload: dict[str, Any]) -> CaptureValidationReport:

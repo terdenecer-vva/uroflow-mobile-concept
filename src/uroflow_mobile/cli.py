@@ -156,6 +156,10 @@ def _session_quality_to_dict(quality: CaptureSessionQuality) -> dict[str, object
         "low_depth_confidence_ratio": quality.low_depth_confidence_ratio,
         "high_motion_ratio": quality.high_motion_ratio,
         "runtime_timeline_gap_warning": quality.runtime_timeline_gap_warning,
+        "runtime_alignment_drift_warning": quality.runtime_alignment_drift_warning,
+        "runtime_alignment_max_stream_drift_ms": (
+            quality.runtime_alignment_max_stream_drift_ms
+        ),
         "motion_coverage_ratio": quality.motion_coverage_ratio,
         "audio_clipping_ratio": quality.audio_clipping_ratio,
         "audio_coverage_ratio": quality.audio_coverage_ratio,

@@ -17,6 +17,7 @@ REQUIRED_SMOKE_CHECK_IDS = (
     "capture_start_stop",
     "contract_payload_ready",
     "runtime_timeline_integrity",
+    "runtime_alignment_integrity",
     "paired_measurement_submit",
     "capture_package_submit",
     "offline_queue_retains_jobs",
@@ -138,6 +139,71 @@ def _validate_runtime_timeline(
         )
 
 
+def _validate_runtime_alignment(
+    device: dict[str, Any],
+    prefix: str,
+    errors: list[str],
+) -> None:
+    alignment = _as_dict(device.get("runtime_alignment"))
+    if not alignment:
+        errors.append(f"{prefix}.runtime_alignment is required")
+        return
+
+    source_payload_path = _read_text(alignment.get("source_payload_path"))
+    if source_payload_path != "capture_payload.analysis.runtime_alignment":
+        errors.append(
+            f"{prefix}.runtime_alignment.source_payload_path must be "
+            "'capture_payload.analysis.runtime_alignment'"
+        )
+
+    if alignment.get("schema_version") != "runtime_stream_alignment_v0.1":
+        errors.append(
+            f"{prefix}.runtime_alignment.schema_version must be "
+            "'runtime_stream_alignment_v0.1'"
+        )
+
+    sample_count = alignment.get("sample_count")
+    paired_sample_count = alignment.get("paired_sample_count")
+    if not isinstance(sample_count, int) or isinstance(sample_count, bool):
+        errors.append(f"{prefix}.runtime_alignment.sample_count must be an integer")
+    elif sample_count < 2:
+        errors.append(f"{prefix}.runtime_alignment.sample_count must be >= 2")
+
+    if not isinstance(paired_sample_count, int) or isinstance(paired_sample_count, bool):
+        errors.append(f"{prefix}.runtime_alignment.paired_sample_count must be an integer")
+    elif isinstance(sample_count, int) and paired_sample_count != sample_count:
+        errors.append(
+            f"{prefix}.runtime_alignment.paired_sample_count must match sample_count"
+        )
+
+    for field in ("max_allowed_drift_ms", "max_stream_drift_ms"):
+        if not _is_non_negative_number(alignment.get(field)):
+            errors.append(
+                f"{prefix}.runtime_alignment.{field} must be a non-negative number"
+            )
+
+    max_allowed_drift_ms = alignment.get("max_allowed_drift_ms")
+    max_stream_drift_ms = alignment.get("max_stream_drift_ms")
+    if _is_non_negative_number(max_allowed_drift_ms) and float(max_allowed_drift_ms) > 50:
+        errors.append(
+            f"{prefix}.runtime_alignment.max_allowed_drift_ms must be <= 50 "
+            "for release smoke evidence"
+        )
+    if (
+        _is_non_negative_number(max_allowed_drift_ms)
+        and _is_non_negative_number(max_stream_drift_ms)
+        and float(max_stream_drift_ms) > float(max_allowed_drift_ms)
+    ):
+        errors.append(
+            f"{prefix}.runtime_alignment.max_stream_drift_ms must be <= max_allowed_drift_ms"
+        )
+
+    if alignment.get("drift_warning") is not False:
+        errors.append(
+            f"{prefix}.runtime_alignment.drift_warning must be false for release smoke evidence"
+        )
+
+
 def _validate_device(device: dict[str, Any], index: int, errors: list[str]) -> str:
     prefix = f"devices[{index}]"
     platform = _read_text(device.get("platform")).lower()
@@ -149,6 +215,7 @@ def _validate_device(device: dict[str, Any], index: int, errors: list[str]) -> s
             errors.append(f"{prefix}.{field} is required")
 
     _validate_runtime_timeline(device, prefix, errors)
+    _validate_runtime_alignment(device, prefix, errors)
 
     checks = _check_map(device)
     for check_id in REQUIRED_SMOKE_CHECK_IDS:

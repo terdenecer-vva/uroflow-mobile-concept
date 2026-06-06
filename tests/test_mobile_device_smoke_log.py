@@ -48,6 +48,7 @@ def test_mobile_device_smoke_log_template_validates(tmp_path: Path) -> None:
     assert "device_logs_reviewed_no_phi" in summary["required_check_ids"]
     assert "raw_media_temp_files_absent" in summary["required_check_ids"]
     assert "runtime_timeline_integrity" in summary["required_check_ids"]
+    assert "runtime_alignment_integrity" in summary["required_check_ids"]
     assert json.loads((tmp_path / "summary.json").read_text(encoding="utf-8")) == summary
 
 
@@ -125,5 +126,39 @@ def test_mobile_device_smoke_log_rejects_timeline_gap_warning(tmp_path: Path) ->
     assert summary["status"] == "fail"
     assert (
         "devices[0].runtime_timeline.gap_warning must be false for release smoke evidence"
+        in summary["errors"]
+    )
+
+
+def test_mobile_device_smoke_log_requires_runtime_alignment(tmp_path: Path) -> None:
+    payload = _valid_payload()
+    payload = copy.deepcopy(payload)
+    del payload["devices"][0]["runtime_alignment"]
+
+    result = _run_validator(tmp_path, payload, check=False)
+    summary = json.loads(result.stdout)
+
+    assert result.returncode == 1
+    assert summary["status"] == "fail"
+    assert "devices[0].runtime_alignment is required" in summary["errors"]
+
+
+def test_mobile_device_smoke_log_rejects_alignment_drift_warning(tmp_path: Path) -> None:
+    payload = _valid_payload()
+    payload = copy.deepcopy(payload)
+    payload["devices"][0]["runtime_alignment"]["max_stream_drift_ms"] = 80
+    payload["devices"][0]["runtime_alignment"]["drift_warning"] = True
+
+    result = _run_validator(tmp_path, payload, check=False)
+    summary = json.loads(result.stdout)
+
+    assert result.returncode == 1
+    assert summary["status"] == "fail"
+    assert (
+        "devices[0].runtime_alignment.max_stream_drift_ms must be <= max_allowed_drift_ms"
+        in summary["errors"]
+    )
+    assert (
+        "devices[0].runtime_alignment.drift_warning must be false for release smoke evidence"
         in summary["errors"]
     )

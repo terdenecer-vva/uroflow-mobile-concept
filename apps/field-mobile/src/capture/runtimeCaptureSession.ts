@@ -10,7 +10,12 @@ import {
 import { Accelerometer } from "expo-sensors";
 import { Camera } from "expo-camera";
 import * as Device from "expo-device";
-import { deriveRuntimeTimeline, type CaptureContractSample } from "./buildCaptureContract";
+import {
+  deriveRuntimeAlignment,
+  deriveRuntimeTimeline,
+  type CaptureContractRuntimeAlignment,
+  type CaptureContractSample,
+} from "./buildCaptureContract";
 import {
   calculateAverageMotionNorm,
   clamp,
@@ -43,6 +48,7 @@ export type RuntimeCaptureStopResult = {
   osVersion: string;
   samples: CaptureContractSample[];
   flowSeries: RuntimeFlowPoint[];
+  alignment: CaptureContractRuntimeAlignment;
   derived: RuntimeCaptureDerivedMetrics;
   quality: RuntimeCaptureQuality;
 };
@@ -207,6 +213,7 @@ export class RuntimeCaptureSession {
 
     const avgMotionNorm = calculateAverageMotionNorm(this.samples);
     const runtimeTimeline = deriveRuntimeTimeline(this.samples);
+    const runtimeAlignment = deriveRuntimeAlignment(this.samples, this.flowSeries);
     const derived = deriveRuntimeCaptureMetrics({
       samples: this.samples,
       flowSeries: this.flowSeries,
@@ -216,6 +223,7 @@ export class RuntimeCaptureSession {
       samples: this.samples,
       averageMotionNorm: avgMotionNorm,
       timingGapWarning: runtimeTimeline.gap_warning,
+      alignmentDriftWarning: runtimeAlignment.drift_warning,
     });
 
     return {
@@ -238,6 +246,7 @@ export class RuntimeCaptureSession {
       }),
       samples: [...this.samples],
       flowSeries: [...this.flowSeries],
+      alignment: runtimeAlignment,
       derived,
       quality,
     };
