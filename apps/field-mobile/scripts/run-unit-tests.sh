@@ -8,6 +8,7 @@ rm -rf "$BUILD_DIR"
 tsc --ignoreConfig \
   src/utils/appHelpers.ts \
   src/utils/deviceIdentity.ts \
+  src/utils/claimsNotice.ts \
   src/utils/pendingSyncQueue.ts \
   src/utils/releaseIdentity.ts \
   src/utils/submitOutcome.ts \

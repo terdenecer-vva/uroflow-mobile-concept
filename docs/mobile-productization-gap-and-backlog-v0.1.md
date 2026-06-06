@@ -27,6 +27,8 @@ Implemented now:
 - Mobile release readiness gate for single-region data residency policy (`us`, no cross-region sync, region-matched Clinical Hub required).
 - Clinical Hub API key policy map plus site/operator scope enforcement is covered by
   release readiness checks and backend unit tests.
+- In-app pilot claims notice states comparison-only, non-diagnostic, non-treatment
+  limitations, with mobile release readiness checks and unit tests.
 - Pending queue auto-sync on connectivity restore via NetInfo, with interval/AppState fallback.
 - Pending sync retry policy keeps network/transient and Clinical Hub auth/permission failures
   queued for credential repair while dropping validation/conflict errors.
@@ -80,6 +82,8 @@ Not yet implemented:
 
 ### G5. Verification gap
 - Mobile tests include TypeScript, unit, export, and deterministic sync replay coverage.
+- Claims notice text is unit-tested and release-gated locally; formal RA/QA claim-signoff
+  remains part of the external release governance package.
 - Deterministic replay tests cover capture contract generation and queued paired+capture sync; physical-device evidence now has a validator/template but still needs real-device execution.
 - Device-matrix smoke evidence requires at least one iPhone and one Android run in
   `mobile_device_smoke_log_v0.1`, including runtime timeline evidence from
