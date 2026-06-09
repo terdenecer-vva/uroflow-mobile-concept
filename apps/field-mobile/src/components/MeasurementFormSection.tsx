@@ -18,6 +18,7 @@ type MeasurementFormSectionProps = {
   appVvoid: string;
   attemptNumber: string;
   captureMode: string;
+  captureModeSubmissionWarning: string | null;
   deviceModel: string;
   measuredAt: string;
   notes: string;
@@ -78,6 +79,7 @@ export function MeasurementFormSection({
   appVvoid,
   attemptNumber,
   captureMode,
+  captureModeSubmissionWarning,
   deviceModel,
   measuredAt,
   notes,
@@ -143,6 +145,13 @@ export function MeasurementFormSection({
       <LabeledInput label="Device Model" value={deviceModel} onChangeText={onDeviceModelChange} />
       <LabeledInput label="App Version" value={appVersion} onChangeText={onAppVersionChange} />
       <LabeledInput label="Capture Mode" value={captureMode} onChangeText={onCaptureModeChange} />
+      {captureModeSubmissionWarning ? (
+        <View style={styles.qualityWarningBox}>
+          <Text selectable style={styles.qualityWarningText}>
+            {captureModeSubmissionWarning}
+          </Text>
+        </View>
+      ) : null}
 
       <Text style={styles.sectionTitle}>App Measurement</Text>
       <LabeledInput

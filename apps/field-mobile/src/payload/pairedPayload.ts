@@ -1,5 +1,9 @@
 import type { PairedPayload, QualityStatus } from "../types";
 import { parseNumber } from "../utils/appHelpers";
+import {
+  buildCaptureModeSubmissionError,
+  normalizeCaptureMode,
+} from "../utils/captureModePolicy";
 import { buildRuntimeQualitySubmissionError, isQualityStatus } from "../utils/qualityPolicy";
 
 export type PairedPayloadFormValues = {
@@ -45,7 +49,7 @@ export function buildPairedPayloadFromForm(values: PairedPayloadFormValues): Pai
       platform: values.platform,
       device_model: values.deviceModel.trim() || null,
       app_version: values.appVersion.trim() || null,
-      capture_mode: values.captureMode,
+      capture_mode: normalizeCaptureMode(values.captureMode),
     },
     app: {
       metrics: {
@@ -105,6 +109,13 @@ export function validatePairedPayloadForSubmission(
   }
   if (!payload.session.measured_at) {
     return "measured_at is required";
+  }
+  const captureModeError = buildCaptureModeSubmissionError(
+    payload.session.capture_mode,
+    options.runtimeCaptureContractPayload,
+  );
+  if (captureModeError) {
+    return captureModeError;
   }
   if (
     payload.app.metrics.qmax_ml_s == null ||

@@ -7,6 +7,7 @@ TEST_FILES=""
 rm -rf "$BUILD_DIR"
 tsc --ignoreConfig \
   src/utils/appHelpers.ts \
+  src/utils/captureModePolicy.ts \
   src/utils/deviceIdentity.ts \
   src/utils/claimsNotice.ts \
   src/utils/qualityPolicy.ts \
