@@ -271,6 +271,8 @@ python3 scripts/validate_mobile_store_rollout_handoff.py \
    - The smoke log must include `raw_media_temp_files_absent` evidence after device storage
      review, confirming no recorder temp audio files, raw video files, or exported media
      artifacts remain after stop/reset.
+   - The smoke log must include per-device `operator_sop_checklist_gate` evidence proving
+     `Start Capture` stayed blocked until all operator SOP confirmations were checked.
 9. Clinical Hub sample export (paired + capture package rows).
    - For `capture-packages`, archive `capture_payload.feature_manifest` and confirm `derivatives_only=true`, `raw_media.store_raw_video=false`, `raw_media.store_raw_audio=false`, `raw_media.upload_raw_video=false`, and `raw_media.upload_raw_audio=false`.
    - Archive `capture_payload_sha256` from Clinical Hub detail/list/CSV exports and verify

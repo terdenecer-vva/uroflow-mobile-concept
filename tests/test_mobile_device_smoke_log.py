@@ -46,6 +46,7 @@ def test_mobile_device_smoke_log_template_validates(tmp_path: Path) -> None:
     assert summary["platforms_seen"] == ["android", "ios"]
     assert "connectivity_restore_sync" in summary["required_check_ids"]
     assert "device_logs_reviewed_no_phi" in summary["required_check_ids"]
+    assert "operator_sop_checklist_gate" in summary["required_check_ids"]
     assert "raw_media_temp_files_absent" in summary["required_check_ids"]
     assert "runtime_timeline_integrity" in summary["required_check_ids"]
     assert "runtime_alignment_integrity" in summary["required_check_ids"]
@@ -97,6 +98,28 @@ def test_mobile_device_smoke_log_requires_raw_media_temp_cleanup_check(tmp_path:
     assert summary["status"] == "fail"
     assert (
         "devices[0].checks missing required check 'raw_media_temp_files_absent'"
+        in summary["errors"]
+    )
+
+
+def test_mobile_device_smoke_log_requires_operator_sop_checklist_gate(
+    tmp_path: Path,
+) -> None:
+    payload = _valid_payload()
+    payload = copy.deepcopy(payload)
+    payload["devices"][0]["checks"] = [
+        check
+        for check in payload["devices"][0]["checks"]
+        if check["id"] != "operator_sop_checklist_gate"
+    ]
+
+    result = _run_validator(tmp_path, payload, check=False)
+    summary = json.loads(result.stdout)
+
+    assert result.returncode == 1
+    assert summary["status"] == "fail"
+    assert (
+        "devices[0].checks missing required check 'operator_sop_checklist_gate'"
         in summary["errors"]
     )
 

@@ -51,6 +51,11 @@
           "evidence": "Test API returns auth context for site/operator."
         },
         {
+          "id": "operator_sop_checklist_gate",
+          "status": "pass",
+          "evidence": "Start Capture is blocked until the operator SOP checklist is fully confirmed; reference ready, phone stable, water-impact SOP, and metadata/privacy items were checked before capture."
+        },
+        {
           "id": "capture_start_stop",
           "status": "pass",
           "evidence": "Start Capture and Stop Capture complete without runtime exception."
@@ -143,6 +148,11 @@
           "id": "api_connection_check",
           "status": "pass",
           "evidence": "Test API returns auth context for site/operator."
+        },
+        {
+          "id": "operator_sop_checklist_gate",
+          "status": "pass",
+          "evidence": "Start Capture is blocked until the operator SOP checklist is fully confirmed; reference ready, phone stable, water-impact SOP, and metadata/privacy items were checked before capture."
         },
         {
           "id": "capture_start_stop",

@@ -45,7 +45,8 @@ Implemented now:
 - Clinical Hub capture package records include canonical `capture_payload_sha256` in
   detail/list/CSV exports, with migration backfill for existing SQLite rows.
 - Mobile Build release notes artifact and manifest traceability for operator-facing build handoff.
-- Physical-device smoke evidence JSON template and validator for iOS+Android release handoff.
+- Physical-device smoke evidence JSON template and validator for iOS+Android release handoff,
+  including per-device operator SOP checklist gate evidence.
 - Physical-device smoke evidence requires per-device runtime timeline integrity metadata
   with `gap_warning=false`.
 - Store rollout handoff JSON template, validator, and Mobile Build artifact for TestFlight/Play Internal traceability.
@@ -108,7 +109,7 @@ Not yet implemented:
 - Deterministic replay tests cover capture contract generation and queued paired+capture sync; physical-device evidence now has a validator/template but still needs real-device execution.
 - Device-matrix smoke evidence requires at least one iPhone and one Android run in
   `mobile_device_smoke_log_v0.1`, including runtime timeline evidence from
-  `capture_payload.analysis.runtime_timeline`.
+  `capture_payload.analysis.runtime_timeline` and operator SOP checklist gate evidence.
 
 ## 3) Backlog (implementation order)
 
