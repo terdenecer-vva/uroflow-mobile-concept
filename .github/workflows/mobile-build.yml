@@ -441,6 +441,9 @@ jobs:
                   "mobile_release_notes_sha256": sha256_file(
                       Path("/tmp/mobile-release-notes.md")
                   ),
+                  "mobile_device_smoke_template_summary_sha256": sha256_file(
+                      Path("/tmp/mobile-device-smoke-template-summary.json")
+                  ),
               }
           )
           Path("/tmp/mobile-store-rollout-handoff.json").write_text(
@@ -460,6 +463,7 @@ jobs:
             --manifest-json /tmp/mobile-release-manifest.json \
             --readiness-json /tmp/mobile-release-readiness.json \
             --release-notes /tmp/mobile-release-notes.md \
+            --smoke-template-summary-json /tmp/mobile-device-smoke-template-summary.json \
             --store-rollout-handoff-json /tmp/mobile-store-rollout-handoff.json \
             --store-rollout-summary-json /tmp/mobile-store-rollout-handoff-summary.json \
             --expect-git-sha "$GITHUB_SHA" \

@@ -9,7 +9,8 @@
     "build_channel": "preview",
     "mobile_release_manifest_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
     "mobile_release_readiness_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
-    "mobile_release_notes_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    "mobile_release_notes_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "mobile_device_smoke_template_summary_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
   },
   "handoff_checks": [
     {
@@ -26,6 +27,11 @@
       "id": "mobile_release_notes_archived",
       "status": "pass",
       "evidence": "Mobile release notes artifact is archived for this run."
+    },
+    {
+      "id": "mobile_device_smoke_template_validation_archived",
+      "status": "pass",
+      "evidence": "Mobile device smoke template validation artifact is archived for this run."
     },
     {
       "id": "device_smoke_evidence_linked",

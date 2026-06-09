@@ -99,6 +99,24 @@ def test_mobile_build_workflow_embeds_readiness_summary_in_release_manifest() ->
     assert "--release-notes /tmp/mobile-release-notes.md" in manifest_step["run"]
 
 
+def test_mobile_build_workflow_traces_smoke_template_summary_digest() -> None:
+    payload = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
+    steps = payload["jobs"]["preflight"]["steps"]
+    handoff_step = next(
+        step for step in steps if step.get("name") == "Build store rollout handoff artifact"
+    )
+    verifier_step = next(
+        step for step in steps if step.get("name") == "Verify release artifact bundle"
+    )
+
+    assert "mobile_device_smoke_template_summary_sha256" in handoff_step["run"]
+    assert "/tmp/mobile-device-smoke-template-summary.json" in handoff_step["run"]
+    assert (
+        "--smoke-template-summary-json /tmp/mobile-device-smoke-template-summary.json"
+        in verifier_step["run"]
+    )
+
+
 def test_mobile_build_workflow_uploads_release_notes_artifact() -> None:
     payload = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
     steps = payload["jobs"]["preflight"]["steps"]

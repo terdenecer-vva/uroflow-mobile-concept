@@ -26,6 +26,16 @@ def _valid_bundle(tmp_path: Path) -> dict[str, Path]:
         "# Uroflow Field Mobile Release Notes\n\nBundle verifier test notes.\n",
         encoding="utf-8",
     )
+    smoke_template_summary = {
+        "schema_version": "mobile_device_smoke_log_v0.1",
+        "status": "pass",
+        "device_count": 2,
+        "platforms_seen": ["android", "ios"],
+        "required_check_ids": ["app_launch"],
+        "errors": [],
+    }
+    smoke_template_summary_path = tmp_path / "mobile-device-smoke-template-summary.json"
+    _write_json(smoke_template_summary_path, smoke_template_summary)
 
     readiness = {
         "status": "ready_except_external_credentials",
@@ -110,6 +120,9 @@ def _valid_bundle(tmp_path: Path) -> dict[str, Path]:
             "mobile_release_manifest_sha256": _sha256(manifest_path),
             "mobile_release_readiness_sha256": _sha256(readiness_path),
             "mobile_release_notes_sha256": _sha256(notes_path),
+            "mobile_device_smoke_template_summary_sha256": _sha256(
+                smoke_template_summary_path
+            ),
         }
     }
     handoff_path = tmp_path / "mobile-store-rollout-handoff.json"
@@ -134,6 +147,7 @@ def _valid_bundle(tmp_path: Path) -> dict[str, Path]:
         "manifest": manifest_path,
         "readiness": readiness_path,
         "notes": notes_path,
+        "smoke_template_summary": smoke_template_summary_path,
         "handoff": handoff_path,
         "handoff_summary": handoff_summary_path,
     }
@@ -155,6 +169,8 @@ def _run_verifier(
         str(paths["readiness"]),
         "--release-notes",
         str(paths["notes"]),
+        "--smoke-template-summary-json",
+        str(paths["smoke_template_summary"]),
         "--store-rollout-handoff-json",
         str(paths["handoff"]),
         "--store-rollout-summary-json",
@@ -183,6 +199,7 @@ def test_mobile_release_bundle_verifier_accepts_consistent_bundle(tmp_path: Path
         "android:play_internal_testing",
         "ios:testflight_internal",
     ]
+    assert "mobile_device_smoke_template_summary" in summary["artifact_sha256"]
     assert json.loads((tmp_path / "bundle-summary.json").read_text()) == summary
 
 
@@ -216,6 +233,48 @@ def test_mobile_release_bundle_verifier_rejects_readiness_count_mismatch(
     assert result.returncode == 1
     assert summary["status"] == "fail"
     assert any("local_check_counts mismatch" in error for error in summary["errors"])
+
+
+def test_mobile_release_bundle_verifier_rejects_smoke_template_digest_mismatch(
+    tmp_path: Path,
+) -> None:
+    paths = _valid_bundle(tmp_path)
+    handoff = json.loads(paths["handoff"].read_text(encoding="utf-8"))
+    handoff["release"]["mobile_device_smoke_template_summary_sha256"] = "0" * 64
+    _write_json(paths["handoff"], handoff)
+
+    result = _run_verifier(paths, check=False)
+    summary = json.loads(result.stdout)
+
+    assert result.returncode == 1
+    assert summary["status"] == "fail"
+    assert any(
+        "mobile_device_smoke_template_summary_sha256 mismatch" in error
+        for error in summary["errors"]
+    )
+
+
+def test_mobile_release_bundle_verifier_rejects_failed_smoke_template_summary(
+    tmp_path: Path,
+) -> None:
+    paths = _valid_bundle(tmp_path)
+    summary_payload = json.loads(paths["smoke_template_summary"].read_text(encoding="utf-8"))
+    summary_payload["status"] = "fail"
+    summary_payload["errors"] = ["template failure"]
+    _write_json(paths["smoke_template_summary"], summary_payload)
+    handoff = json.loads(paths["handoff"].read_text(encoding="utf-8"))
+    handoff["release"]["mobile_device_smoke_template_summary_sha256"] = _sha256(
+        paths["smoke_template_summary"]
+    )
+    _write_json(paths["handoff"], handoff)
+
+    result = _run_verifier(paths, check=False)
+    summary = json.loads(result.stdout)
+
+    assert result.returncode == 1
+    assert summary["status"] == "fail"
+    assert "mobile_device_smoke_template_summary.status must be 'pass'" in summary["errors"]
+    assert "mobile_device_smoke_template_summary.errors must be empty" in summary["errors"]
 
 
 def test_mobile_release_bundle_verifier_rejects_expected_git_sha_mismatch(
