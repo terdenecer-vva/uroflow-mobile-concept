@@ -41,6 +41,13 @@ function buildPendingSubmission(overrides = {}) {
   };
 }
 
+test("parseNumber rejects blank, malformed, and non-finite numeric input", () => {
+  assert.equal(helpers.parseNumber(" 12.5 "), 12.5);
+  assert.equal(helpers.parseNumber(""), null);
+  assert.equal(helpers.parseNumber("not-a-number"), null);
+  assert.equal(helpers.parseNumber("1e309"), null);
+});
+
 test("classifyRetryable separates transient and non-retryable statuses", () => {
   assert.equal(helpers.classifyRetryable(null), true);
   assert.equal(helpers.classifyRetryable(408), true);

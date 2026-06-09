@@ -1226,6 +1226,66 @@ def build_readiness_report(
         all(capture_mode_submission_guard_test_requirements.values()),
         f"requirements={capture_mode_submission_guard_test_requirements!r}",
     )
+    paired_submission_contract_requirements = {
+        "finite_number_parser": "Number.isFinite(parsed)" in app_helpers_source,
+        "platform_normalization": "platform.trim().toLowerCase()" in paired_payload_source,
+        "platform_guard": "platform must be ios or android" in paired_payload_source,
+        "iso_timestamp_guard": "hasIsoTimestampWithTimezone" in paired_payload_source,
+        "integer_attempt_guard": "attempt_number must be an integer >= 1"
+        in paired_payload_source,
+        "required_app_metrics": (
+            "qmax/qavg/vvoid/flow_time/tqmax must be finite and non-negative"
+            in paired_payload_source
+        ),
+        "required_reference_metrics": (
+            "qmax/qavg/vvoid/flow_time must be finite and non-negative"
+            in paired_payload_source
+        ),
+        "qmax_qavg_guard": (
+            "App metric qmax must be >= qavg" in paired_payload_source
+            and "Reference metric qmax must be >= qavg" in paired_payload_source
+        ),
+        "quality_score_guard": "quality_score is required and must be 0-100"
+        in paired_payload_source,
+    }
+    _check(
+        checks,
+        "mobile_paired_submission_contract_guard_sources",
+        all(paired_submission_contract_requirements.values()),
+        f"requirements={paired_submission_contract_requirements!r}",
+    )
+    paired_submission_contract_test_requirements = {
+        "parse_number_nonfinite_test": (
+            "rejects blank, malformed, and non-finite numeric input"
+            in helper_tests_source
+        ),
+        "attempt_integer_test": "attemptNumber: \"1.5\"" in paired_payload_tests_source,
+        "measured_at_iso_test": "measured_at must be ISO-8601 with timezone"
+        in paired_payload_tests_source,
+        "platform_enum_test": "platform must be ios or android"
+        in paired_payload_tests_source,
+        "app_metrics_required_test": (
+            "qmax/qavg/vvoid/flow_time/tqmax must be finite and non-negative"
+            in paired_payload_tests_source
+        ),
+        "quality_score_range_test": "quality_score is required and must be 0-100"
+        in paired_payload_tests_source,
+        "reference_metrics_required_test": (
+            "qmax/qavg/vvoid/flow_time must be finite and non-negative"
+            in paired_payload_tests_source
+        ),
+        "qmax_qavg_tests": (
+            "App metric qmax must be >= qavg" in paired_payload_tests_source
+            and "Reference metric qmax must be >= qavg"
+            in paired_payload_tests_source
+        ),
+    }
+    _check(
+        checks,
+        "mobile_paired_submission_contract_guard_unit_tests_present",
+        all(paired_submission_contract_test_requirements.values()),
+        f"requirements={paired_submission_contract_test_requirements!r}",
+    )
     runtime_release_guard_requirements = {
         "guard_file": runtime_release_guard_source_path.is_file(),
         "supported_schema": "SUPPORTED_CAPTURE_SCHEMA_VERSIONS"
