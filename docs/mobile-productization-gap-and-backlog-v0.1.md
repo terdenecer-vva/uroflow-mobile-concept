@@ -19,6 +19,8 @@ Implemented now:
   with a 50 ms drift limit; mobile and backend quality gates reject drift failures.
 - Runtime quality scoring gates timing gaps with `runtime_quality.timing_gap_warning`,
   forcing at least `repeat` when capture sampling stalls.
+- Mobile submission blocks operator edits that would mark a runtime `repeat/reject`
+  capture as `valid`, and shows a low-quality warning for `repeat/reject` uploads.
 - Derivatives-only feature/media manifest in mobile `ios_capture_v1` payloads, with backend validation that raw media storage/upload flags remain disabled.
 - Runtime audio recorder temp files are deleted best-effort after stop/reset; payloads retain
   derived metering/flow features only.
@@ -84,6 +86,8 @@ Not yet implemented:
 - Mobile tests include TypeScript, unit, export, and deterministic sync replay coverage.
 - Claims notice text is unit-tested and release-gated locally; formal RA/QA claim-signoff
   remains part of the external release governance package.
+- Runtime quality submission guard is unit-tested and release-gated locally; physical-device
+  usability evidence still needs real operator execution.
 - Deterministic replay tests cover capture contract generation and queued paired+capture sync; physical-device evidence now has a validator/template but still needs real-device execution.
 - Device-matrix smoke evidence requires at least one iPhone and one Android run in
   `mobile_device_smoke_log_v0.1`, including runtime timeline evidence from

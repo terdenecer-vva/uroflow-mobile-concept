@@ -1,5 +1,6 @@
 import type { PairedPayload, QualityStatus } from "../types";
 import { parseNumber } from "../utils/appHelpers";
+import { buildRuntimeQualitySubmissionError, isQualityStatus } from "../utils/qualityPolicy";
 
 export type PairedPayloadFormValues = {
   sessionId: string;
@@ -75,10 +76,23 @@ export function buildPairedPayloadFromForm(values: PairedPayloadFormValues): Pai
 
 export function validatePairedPayloadForSubmission(
   payload: PairedPayload,
-  options: { captureRunning: boolean },
+  options: {
+    captureRunning: boolean;
+    runtimeCaptureContractPayload?: Record<string, unknown> | null;
+  },
 ): string | null {
   if (options.captureRunning) {
     return "Stop runtime capture before submitting.";
+  }
+  if (!isQualityStatus(payload.app.quality_status)) {
+    return "quality_status must be valid, repeat, or reject";
+  }
+  const runtimeQualityError = buildRuntimeQualitySubmissionError(
+    payload.app.quality_status,
+    options.runtimeCaptureContractPayload,
+  );
+  if (runtimeQualityError) {
+    return runtimeQualityError;
   }
   if (!payload.session.session_id) {
     return "session_id is required";

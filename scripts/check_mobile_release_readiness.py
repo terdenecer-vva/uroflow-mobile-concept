@@ -806,6 +806,7 @@ def build_readiness_report(
     claims_notice_component_path = (
         mobile_root / "src" / "components" / "ClinicalClaimsNotice.tsx"
     )
+    quality_policy_source_path = mobile_root / "src" / "utils" / "qualityPolicy.ts"
     clinical_hub_source_path = mobile_root / "src" / "api" / "clinicalHub.ts"
     clinical_hub_preflight_source_path = (
         mobile_root / "src" / "api" / "clinicalHubPreflight.ts"
@@ -817,9 +818,14 @@ def build_readiness_report(
     pending_sync_queue_source_path = mobile_root / "src" / "utils" / "pendingSyncQueue.ts"
     pending_sync_hook_source_path = mobile_root / "src" / "hooks" / "usePendingSyncQueue.ts"
     pending_storage_source_path = mobile_root / "src" / "storage" / "pendingSubmissionStorage.ts"
+    paired_payload_source_path = mobile_root / "src" / "payload" / "pairedPayload.ts"
+    measurement_form_source_path = (
+        mobile_root / "src" / "components" / "MeasurementFormSection.tsx"
+    )
     submit_outcome_source_path = mobile_root / "src" / "utils" / "submitOutcome.ts"
     helper_tests_path = mobile_root / "tests" / "appHelpers.test.js"
     claims_notice_tests_path = mobile_root / "tests" / "claimsNotice.test.js"
+    quality_policy_tests_path = mobile_root / "tests" / "qualityPolicy.test.js"
     app_settings_storage_tests_path = mobile_root / "tests" / "appSettingsStorage.test.js"
     clinical_hub_api_tests_path = mobile_root / "tests" / "clinicalHub.test.js"
     clinical_hub_preflight_tests_path = (
@@ -902,6 +908,7 @@ def build_readiness_report(
     release_identity_component_source = _read_file_text(release_identity_component_path)
     claims_notice_source = _read_file_text(claims_notice_source_path)
     claims_notice_component_source = _read_file_text(claims_notice_component_path)
+    quality_policy_source = _read_file_text(quality_policy_source_path)
     clinical_hub_source = _read_file_text(clinical_hub_source_path)
     clinical_hub_preflight_source = _read_file_text(clinical_hub_preflight_source_path)
     connection_check_source = _read_file_text(connection_check_source_path)
@@ -909,6 +916,8 @@ def build_readiness_report(
     pending_sync_queue_source = _read_file_text(pending_sync_queue_source_path)
     pending_sync_hook_source = _read_file_text(pending_sync_hook_source_path)
     pending_storage_source = _read_file_text(pending_storage_source_path)
+    paired_payload_source = _read_file_text(paired_payload_source_path)
+    measurement_form_source = _read_file_text(measurement_form_source_path)
     submit_outcome_source = _read_file_text(submit_outcome_source_path)
     helper_tests_source = _read_file_text(helper_tests_path)
     device_identity_tests_path = mobile_root / "tests" / "deviceIdentity.test.js"
@@ -916,11 +925,13 @@ def build_readiness_report(
     release_identity_tests_path = mobile_root / "tests" / "releaseIdentity.test.js"
     release_identity_tests_source = _read_file_text(release_identity_tests_path)
     claims_notice_tests_source = _read_file_text(claims_notice_tests_path)
+    quality_policy_tests_source = _read_file_text(quality_policy_tests_path)
     clinical_hub_tests_source = _read_file_text(clinical_hub_api_tests_path)
     clinical_hub_preflight_tests_source = _read_file_text(
         clinical_hub_preflight_tests_path
     )
     connection_check_tests_source = _read_file_text(connection_check_tests_path)
+    paired_payload_tests_source = _read_file_text(paired_payload_tests_path)
     pending_sync_queue_tests_source = _read_file_text(pending_sync_queue_tests_path)
     pending_submission_storage_tests_source = _read_file_text(
         pending_submission_storage_tests_path
@@ -1100,6 +1111,53 @@ def build_readiness_report(
         "mobile_claims_notice_unit_tests_present",
         all(claims_notice_test_requirements.values()),
         f"requirements={claims_notice_test_requirements!r}",
+    )
+    quality_submission_guard_requirements = {
+        "policy_file": quality_policy_source_path.is_file(),
+        "runtime_quality_extractor": "extractRuntimeQualityStatus" in quality_policy_source,
+        "submission_error_helper": "buildRuntimeQualitySubmissionError"
+        in quality_policy_source,
+        "low_quality_warning_helper": "buildLowQualitySubmissionWarning"
+        in quality_policy_source,
+        "blocks_quality_upgrade": "app quality_status cannot be"
+        in quality_policy_source,
+        "paired_payload_uses_guard": (
+            "buildRuntimeQualitySubmissionError" in paired_payload_source
+            and "runtimeCaptureContractPayload" in paired_payload_source
+        ),
+        "app_passes_runtime_contract": (
+            "runtimeCaptureContractPayload" in app_ts_source
+            and "buildLowQualitySubmissionWarning" in app_ts_source
+        ),
+        "form_displays_warning": (
+            "qualitySubmissionWarning" in measurement_form_source
+            and "qualityWarningBox" in measurement_form_source
+            and "selectable" in measurement_form_source
+        ),
+    }
+    _check(
+        checks,
+        "mobile_quality_submission_guard_sources",
+        all(quality_submission_guard_requirements.values()),
+        f"requirements={quality_submission_guard_requirements!r}",
+    )
+    quality_submission_guard_test_requirements = {
+        "policy_test_file": quality_policy_tests_path.is_file(),
+        "extractor_test": "extractRuntimeQualityStatus reads runtime contract quality status"
+        in quality_policy_tests_source,
+        "upgrade_block_test": "blocks app quality upgrades above runtime capture quality"
+        in quality_policy_tests_source,
+        "warning_test": "warns when app or runtime quality is repeat or reject"
+        in quality_policy_tests_source,
+        "paired_payload_guard_test": "blocks runtime low-quality status upgrades"
+        in paired_payload_tests_source,
+        "unit_runner_compiles_policy": "src/utils/qualityPolicy.ts" in unit_runner_source,
+    }
+    _check(
+        checks,
+        "mobile_quality_submission_guard_unit_tests_present",
+        all(quality_submission_guard_test_requirements.values()),
+        f"requirements={quality_submission_guard_test_requirements!r}",
     )
     runtime_release_guard_requirements = {
         "guard_file": runtime_release_guard_source_path.is_file(),
