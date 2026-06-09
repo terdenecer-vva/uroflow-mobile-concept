@@ -874,6 +874,13 @@ def build_readiness_report(
     mobile_release_bundle_verifier_tests_path = (
         repo_root / "tests" / "test_mobile_release_bundle_verifier.py"
     )
+    mobile_dependency_review_path = (
+        repo_root / "scripts" / "build_mobile_dependency_review.py"
+    )
+    mobile_dependency_review_tests_path = (
+        repo_root / "tests" / "test_mobile_dependency_review.py"
+    )
+    mobile_build_workflow_path = repo_root / ".github" / "workflows" / "mobile-build.yml"
     clinical_hub_backend_path = repo_root / "src" / "uroflow_mobile" / "clinical_hub.py"
     clinical_hub_nightly_snapshot_builder_path = (
         repo_root / "scripts" / "build_clinical_hub_nightly_snapshot.py"
@@ -974,6 +981,11 @@ def build_readiness_report(
     mobile_release_bundle_verifier_tests_source = _read_file_text(
         mobile_release_bundle_verifier_tests_path
     )
+    mobile_dependency_review_source = _read_file_text(mobile_dependency_review_path)
+    mobile_dependency_review_tests_source = _read_file_text(
+        mobile_dependency_review_tests_path
+    )
+    mobile_build_workflow_source = _read_file_text(mobile_build_workflow_path)
     clinical_hub_backend_source = _read_file_text(clinical_hub_backend_path)
     clinical_hub_nightly_snapshot_builder_source = _read_file_text(
         clinical_hub_nightly_snapshot_builder_path
@@ -2002,6 +2014,60 @@ def build_readiness_report(
         "mobile_release_bundle_verifier_unit_tests_present",
         all(mobile_release_bundle_verifier_test_requirements.values()),
         f"requirements={mobile_release_bundle_verifier_test_requirements!r}",
+    )
+    mobile_dependency_review_requirements = {
+        "builder_file": mobile_dependency_review_path.is_file(),
+        "schema_version": "mobile_dependency_review_v0.1"
+        in mobile_dependency_review_source,
+        "sec003_traceability": "SEC-003" in mobile_dependency_review_source,
+        "audit_guard": "production_audit_no_known_vulnerabilities"
+        in mobile_dependency_review_source,
+        "direct_lock_guard": "direct_dependencies_locked"
+        in mobile_dependency_review_source,
+        "integrity_guard": "direct_dependency_integrity_present"
+        in mobile_dependency_review_source,
+        "native_surface_review": "native_sensitive_dependency_surface"
+        in mobile_dependency_review_source,
+    }
+    _check(
+        checks,
+        "mobile_dependency_review_sources",
+        all(mobile_dependency_review_requirements.values()),
+        f"requirements={mobile_dependency_review_requirements!r}",
+    )
+    mobile_dependency_review_ci_requirements = {
+        "workflow_file": mobile_build_workflow_path.is_file(),
+        "trigger_script_path": "scripts/build_mobile_dependency_review.py"
+        in mobile_build_workflow_source,
+        "trigger_test_path": "tests/test_mobile_dependency_review.py"
+        in mobile_build_workflow_source,
+        "build_step": "Build dependency review report" in mobile_build_workflow_source,
+        "audit_json": "npm audit --omit=dev --json" in mobile_build_workflow_source,
+        "upload_artifact": "mobile-dependency-review" in mobile_build_workflow_source,
+        "failure_gate": "Fail on dependency review errors" in mobile_build_workflow_source,
+    }
+    _check(
+        checks,
+        "mobile_dependency_review_ci_artifact",
+        all(mobile_dependency_review_ci_requirements.values()),
+        f"requirements={mobile_dependency_review_ci_requirements!r}",
+    )
+    mobile_dependency_review_test_requirements = {
+        "test_file": mobile_dependency_review_tests_path.is_file(),
+        "valid_package_test": "accepts_locked_zero_vulnerability_package"
+        in mobile_dependency_review_tests_source,
+        "missing_lock_test": "rejects_missing_direct_lock_entry"
+        in mobile_dependency_review_tests_source,
+        "audit_vulnerability_test": "rejects_production_audit_vulnerabilities"
+        in mobile_dependency_review_tests_source,
+        "native_surface_test": "rejects_unreviewed_native_dependency"
+        in mobile_dependency_review_tests_source,
+    }
+    _check(
+        checks,
+        "mobile_dependency_review_unit_tests_present",
+        all(mobile_dependency_review_test_requirements.values()),
+        f"requirements={mobile_dependency_review_test_requirements!r}",
     )
     clinical_hub_nightly_snapshot_requirements = {
         "builder_file": clinical_hub_nightly_snapshot_builder_path.is_file(),

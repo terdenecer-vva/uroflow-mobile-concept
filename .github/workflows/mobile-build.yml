@@ -60,11 +60,13 @@ on:
       - "apps/field-mobile/**"
       - "docs/mobile-device-smoke-log-template-v0.1.json"
       - "docs/mobile-store-rollout-handoff-template-v0.1.json"
+      - "scripts/build_mobile_dependency_review.py"
       - "scripts/build_mobile_release_manifest.py"
       - "scripts/check_mobile_release_readiness.py"
       - "scripts/validate_mobile_device_smoke_log.py"
       - "scripts/validate_mobile_store_rollout_handoff.py"
       - "scripts/verify_mobile_release_bundle.py"
+      - "tests/test_mobile_dependency_review.py"
       - "tests/test_mobile_device_smoke_log.py"
       - "tests/test_mobile_release_bundle_verifier.py"
       - "tests/test_mobile_store_rollout_handoff.py"
@@ -74,11 +76,13 @@ on:
       - "apps/field-mobile/**"
       - "docs/mobile-device-smoke-log-template-v0.1.json"
       - "docs/mobile-store-rollout-handoff-template-v0.1.json"
+      - "scripts/build_mobile_dependency_review.py"
       - "scripts/build_mobile_release_manifest.py"
       - "scripts/check_mobile_release_readiness.py"
       - "scripts/validate_mobile_device_smoke_log.py"
       - "scripts/validate_mobile_store_rollout_handoff.py"
       - "scripts/verify_mobile_release_bundle.py"
+      - "tests/test_mobile_dependency_review.py"
       - "tests/test_mobile_device_smoke_log.py"
       - "tests/test_mobile_release_bundle_verifier.py"
       - "tests/test_mobile_store_rollout_handoff.py"
@@ -113,6 +117,68 @@ jobs:
 
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
+
+      - name: Build dependency review report
+        shell: bash
+        run: |
+          set +e
+          npm audit --omit=dev --json > /tmp/mobile-npm-audit-prod.json
+          audit_exit_code=$?
+          python3 ../../scripts/build_mobile_dependency_review.py \
+            --package-json package.json \
+            --package-lock package-lock.json \
+            --audit-json /tmp/mobile-npm-audit-prod.json \
+            --output /tmp/mobile-dependency-review.json
+          review_exit_code=$?
+          set -e
+          echo "$audit_exit_code" > /tmp/mobile-npm-audit-prod-exit-code
+          echo "$review_exit_code" > /tmp/mobile-dependency-review-exit-code
+
+      - name: Publish dependency review summary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          payload = json.loads(Path("/tmp/mobile-dependency-review.json").read_text(encoding="utf-8"))
+          failed = payload.get("failed_checks", [])
+          vulnerabilities = payload.get("audit", {}).get("vulnerabilities", {})
+          lines = [
+              "## Mobile Dependency Review",
+              f"- Status: `{payload.get('status')}`",
+              f"- Risk traceability: `{payload.get('risk_traceability', {}).get('risk_id')}`",
+              f"- Production vulnerabilities: `{vulnerabilities.get('total', 'unknown')}`",
+              f"- Direct production dependencies: `{payload.get('lockfile', {}).get('direct_production_dependency_count')}`",
+              f"- Direct development dependencies: `{payload.get('lockfile', {}).get('direct_development_dependency_count')}`",
+              f"- Failed checks: `{', '.join(failed) if failed else 'none'}`",
+          ]
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as handle:
+              handle.write("\n".join(lines) + "\n")
+          PY
+
+      - name: Upload dependency review
+        uses: actions/upload-artifact@v7
+        with:
+          name: mobile-dependency-review
+          path: |
+            /tmp/mobile-dependency-review.json
+            /tmp/mobile-npm-audit-prod.json
+            /tmp/mobile-npm-audit-prod-exit-code
+          if-no-files-found: error
+
+      - name: Fail on dependency review errors
+        shell: bash
+        run: |
+          set -euo pipefail
+          review_exit_code="$(cat /tmp/mobile-dependency-review-exit-code 2>/dev/null || echo 1)"
+          if [[ "$review_exit_code" != "0" ]]; then
+            echo "Mobile dependency review failed with exit code $review_exit_code."
+            echo "See the mobile-dependency-review artifact for dependency/audit evidence."
+            exit "$review_exit_code"
+          fi
 
       - name: Validate Expo project
         run: npm run validate:ci
@@ -257,6 +323,7 @@ jobs:
               "- Download `mobile-release-manifest`.",
               "- Download `mobile-release-readiness`.",
               "- Download `mobile-release-bundle-verification`.",
+              "- Download `mobile-dependency-review`.",
               "- Download `mobile-store-rollout-handoff` and fill in TestFlight/Play evidence after external account setup.",
               "- Archive iOS/Android EAS build links when authenticated EAS build runs.",
               "- Archive physical-device smoke log with device model and OS version.",
