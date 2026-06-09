@@ -285,9 +285,11 @@ jobs:
       - name: Build smoke template validation artifact
         shell: bash
         run: |
+          cp ../../docs/mobile-device-smoke-log-template-v0.1.json \
+            /tmp/mobile-device-smoke-log-template-v0.1.json
           set +e
           python3 ../../scripts/validate_mobile_device_smoke_log.py \
-            ../../docs/mobile-device-smoke-log-template-v0.1.json \
+            /tmp/mobile-device-smoke-log-template-v0.1.json \
             --output /tmp/mobile-device-smoke-template-summary.json
           smoke_template_exit_code=$?
           set -e
@@ -507,7 +509,7 @@ jobs:
         with:
           name: mobile-device-smoke-template-validation
           path: |
-            docs/mobile-device-smoke-log-template-v0.1.json
+            /tmp/mobile-device-smoke-log-template-v0.1.json
             /tmp/mobile-device-smoke-template-summary.json
             /tmp/mobile-device-smoke-template-exit-code
           if-no-files-found: error
