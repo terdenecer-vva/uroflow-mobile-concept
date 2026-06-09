@@ -48,6 +48,8 @@ Implemented now:
   with `gap_warning=false`.
 - Store rollout handoff JSON template, validator, and Mobile Build artifact for TestFlight/Play Internal traceability.
 - Mobile release bundle verifier for manifest/readiness/notes/store-handoff artifact consistency.
+- Mobile dependency review artifact for direct dependency lockfile integrity, production
+  `npm audit` summary, native sensitive dependency surface review, and SEC-003 remediation hints.
 - In-app Release Identity panel for app/model/schema/runtime/privacy/data-residency evidence on device.
 - Runtime release guard blocks capture/API/submit/sync actions when app/model/schema/runtime
   config, endpoint set, privacy, data-residency, or debug gates are incompatible.
@@ -81,6 +83,8 @@ Not yet implemented:
   deployment still needs access-review evidence and production key provisioning.
 - Mobile response/submit-exception/runtime-exception redaction tests are present; device log PHI review is now required in the physical-device smoke log format, but real logs still need archival.
 - Mobile data residency policy controls are present; live Clinical Hub region mapping still needs deployment/account evidence.
+- Mobile dependency review is generated in Mobile Build; formal vulnerability-management
+  review cadence and release sign-off remain part of external security governance.
 
 ### G4. Build/release gap
 - EAS profiles are added but CI does not yet publish artifacts to testers automatically.

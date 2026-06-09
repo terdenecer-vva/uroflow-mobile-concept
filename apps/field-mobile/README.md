@@ -165,6 +165,7 @@ CI:
   - `mobile-release-manifest` (version + runtime release metadata/config + release notes digest + capture contract feature-manifest evidence + readiness gate summary + git SHA + model/schema traceability)
   - `mobile-release-readiness` (git traceability + local readiness checks + explicit external credential blockers)
   - `mobile-release-notes` (operator-facing release notes and required evidence reminders)
+  - `mobile-dependency-review` (direct mobile dependency lockfile review, production `npm audit` summary, native sensitive dependency surface, and SEC-003 remediation hints)
   - `mobile-release-bundle-verification` (manifest/readiness/notes/store-handoff digest and traceability consistency summary)
   - `mobile-store-rollout-handoff` (per-run TestFlight/Play Internal handoff template + validation summary with current external blockers)
   - `mobile-eas-build-result-<run_id>` (raw EAS JSON response for build IDs/URLs)
@@ -189,7 +190,7 @@ secret blockers. The artifact has separate machine-readable gates:
   runtime capture preflight guard, runtime motion quality gates, raw audio temp-file cleanup,
   derivatives-only feature/media manifest gates, pending sync connectivity-restore trigger,
   device-smoke evidence template/validator,
-  store rollout handoff template/validator, release bundle verifier,
+  store rollout handoff template/validator, dependency review artifact builder, release bundle verifier,
   API response + submit exception + runtime exception PHI redaction, and non-localhost API URL defaults,
   store privacy declarations,
   launch/icon assets, dependency lock alignment, and unit-test evidence that can be verified
