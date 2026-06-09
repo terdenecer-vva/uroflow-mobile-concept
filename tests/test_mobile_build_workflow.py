@@ -81,11 +81,15 @@ def test_mobile_build_workflow_uploads_smoke_template_validation_before_failure(
 
     assert build_index < summary_index < notes_index < upload_index
     assert upload_index < smoke_fail_index < readiness_fail_index
+    assert "cp ../../docs/mobile-device-smoke-log-template-v0.1.json" in steps[build_index][
+        "run"
+    ]
     assert "validate_mobile_device_smoke_log.py" in steps[build_index]["run"]
+    assert "/tmp/mobile-device-smoke-log-template-v0.1.json" in steps[build_index]["run"]
     assert "mobile-device-smoke-template-summary.json" in steps[build_index]["run"]
     assert "mobile-device-smoke-template-summary.json" in steps[summary_index]["run"]
     assert upload_step["with"]["name"] == "mobile-device-smoke-template-validation"
-    assert "docs/mobile-device-smoke-log-template-v0.1.json" in upload_step["with"]["path"]
+    assert "/tmp/mobile-device-smoke-log-template-v0.1.json" in upload_step["with"]["path"]
     assert "/tmp/mobile-device-smoke-template-summary.json" in upload_step["with"]["path"]
     assert "mobile-device-smoke-template-validation artifact" in steps[smoke_fail_index]["run"]
 
