@@ -100,6 +100,12 @@ test("buildPairedPayloadFromForm converts blank optional fields to null", () => 
   assert.equal(payload.notes, null);
 });
 
+test("buildPairedPayloadFromForm canonicalizes capture mode", () => {
+  const payload = paired.buildPairedPayloadFromForm(buildForm({ captureMode: " Water_Impact " }));
+
+  assert.equal(payload.session.capture_mode, "water_impact");
+});
+
 test("validatePairedPayloadForSubmission reports required field failures", () => {
   const validPayload = paired.buildPairedPayloadFromForm(buildForm());
 
@@ -120,6 +126,34 @@ test("validatePairedPayloadForSubmission reports required field failures", () =>
       { captureRunning: false },
     ),
     "attempt_number must be >= 1",
+  );
+  assert.equal(
+    paired.validatePairedPayloadForSubmission(
+      paired.buildPairedPayloadFromForm(buildForm({ captureMode: "" })),
+      { captureRunning: false },
+    ),
+    "capture_mode is required; pilot submissions must use water_impact.",
+  );
+  assert.match(
+    paired.validatePairedPayloadForSubmission(
+      paired.buildPairedPayloadFromForm(buildForm({ captureMode: "fallback_nonwater" })),
+      { captureRunning: false },
+    ),
+    /capture_mode must be water_impact/,
+  );
+  assert.match(
+    paired.validatePairedPayloadForSubmission(
+      paired.buildPairedPayloadFromForm(buildForm({ captureMode: "water_impact" })),
+      {
+        captureRunning: false,
+        runtimeCaptureContractPayload: {
+          session: {
+            mode: "fallback_nonwater",
+          },
+        },
+      },
+    ),
+    /Runtime capture mode is fallback_nonwater/,
   );
   assert.equal(
     paired.validatePairedPayloadForSubmission(

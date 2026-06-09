@@ -88,6 +88,10 @@ import {
   formatSafeExceptionMessage,
   formatSafeResponseProblem,
 } from "./src/utils/appHelpers";
+import {
+  buildCaptureModeSubmissionError,
+  buildCaptureModeSubmissionWarning,
+} from "./src/utils/captureModePolicy";
 import { buildDeviceModelLabel } from "./src/utils/deviceIdentity";
 import { buildLowQualitySubmissionWarning } from "./src/utils/qualityPolicy";
 
@@ -196,6 +200,10 @@ export default function App() {
   const qualitySubmissionWarning = useMemo(
     () => buildLowQualitySubmissionWarning(appQualityStatus, runtimeCaptureContractPayload),
     [appQualityStatus, runtimeCaptureContractPayload],
+  );
+  const captureModeSubmissionWarning = useMemo(
+    () => buildCaptureModeSubmissionWarning(captureMode),
+    [captureMode],
   );
 
   const {
@@ -432,6 +440,12 @@ export default function App() {
     if (!isRuntimeReleaseGuardActionAllowed(runtimeReleaseGuard)) {
       setCaptureStatus(runtimeReleaseGuard.message);
       Alert.alert("Release guard blocked", runtimeReleaseGuard.message);
+      return;
+    }
+    const captureModeError = buildCaptureModeSubmissionError(captureMode);
+    if (captureModeError) {
+      setCaptureStatus(`Capture mode blocked: ${captureModeError}`);
+      Alert.alert("Capture mode blocked", captureModeError);
       return;
     }
 
@@ -965,6 +979,7 @@ export default function App() {
           appVvoid={appVvoid}
           attemptNumber={attemptNumber}
           captureMode={captureMode}
+          captureModeSubmissionWarning={captureModeSubmissionWarning}
           deviceModel={deviceModel}
           measuredAt={measuredAt}
           notes={notes}

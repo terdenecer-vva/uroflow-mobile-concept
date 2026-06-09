@@ -806,6 +806,9 @@ def build_readiness_report(
     claims_notice_component_path = (
         mobile_root / "src" / "components" / "ClinicalClaimsNotice.tsx"
     )
+    capture_mode_policy_source_path = (
+        mobile_root / "src" / "utils" / "captureModePolicy.ts"
+    )
     quality_policy_source_path = mobile_root / "src" / "utils" / "qualityPolicy.ts"
     clinical_hub_source_path = mobile_root / "src" / "api" / "clinicalHub.ts"
     clinical_hub_preflight_source_path = (
@@ -825,6 +828,9 @@ def build_readiness_report(
     submit_outcome_source_path = mobile_root / "src" / "utils" / "submitOutcome.ts"
     helper_tests_path = mobile_root / "tests" / "appHelpers.test.js"
     claims_notice_tests_path = mobile_root / "tests" / "claimsNotice.test.js"
+    capture_mode_policy_tests_path = (
+        mobile_root / "tests" / "captureModePolicy.test.js"
+    )
     quality_policy_tests_path = mobile_root / "tests" / "qualityPolicy.test.js"
     app_settings_storage_tests_path = mobile_root / "tests" / "appSettingsStorage.test.js"
     clinical_hub_api_tests_path = mobile_root / "tests" / "clinicalHub.test.js"
@@ -908,6 +914,7 @@ def build_readiness_report(
     release_identity_component_source = _read_file_text(release_identity_component_path)
     claims_notice_source = _read_file_text(claims_notice_source_path)
     claims_notice_component_source = _read_file_text(claims_notice_component_path)
+    capture_mode_policy_source = _read_file_text(capture_mode_policy_source_path)
     quality_policy_source = _read_file_text(quality_policy_source_path)
     clinical_hub_source = _read_file_text(clinical_hub_source_path)
     clinical_hub_preflight_source = _read_file_text(clinical_hub_preflight_source_path)
@@ -925,6 +932,7 @@ def build_readiness_report(
     release_identity_tests_path = mobile_root / "tests" / "releaseIdentity.test.js"
     release_identity_tests_source = _read_file_text(release_identity_tests_path)
     claims_notice_tests_source = _read_file_text(claims_notice_tests_path)
+    capture_mode_policy_tests_source = _read_file_text(capture_mode_policy_tests_path)
     quality_policy_tests_source = _read_file_text(quality_policy_tests_path)
     clinical_hub_tests_source = _read_file_text(clinical_hub_api_tests_path)
     clinical_hub_preflight_tests_source = _read_file_text(
@@ -1158,6 +1166,65 @@ def build_readiness_report(
         "mobile_quality_submission_guard_unit_tests_present",
         all(quality_submission_guard_test_requirements.values()),
         f"requirements={quality_submission_guard_test_requirements!r}",
+    )
+    capture_mode_submission_guard_requirements = {
+        "policy_file": capture_mode_policy_source_path.is_file(),
+        "supported_mode_constant": "SUPPORTED_PILOT_CAPTURE_MODE"
+        in capture_mode_policy_source,
+        "runtime_mode_extractor": "extractRuntimeCaptureMode"
+        in capture_mode_policy_source,
+        "submission_error_helper": "buildCaptureModeSubmissionError"
+        in capture_mode_policy_source,
+        "warning_helper": "buildCaptureModeSubmissionWarning"
+        in capture_mode_policy_source,
+        "water_impact_only_message": "capture_mode must be"
+        in capture_mode_policy_source
+        and "water-impact SOP" in capture_mode_policy_source,
+        "paired_payload_uses_guard": (
+            "buildCaptureModeSubmissionError" in paired_payload_source
+            and "normalizeCaptureMode" in paired_payload_source
+        ),
+        "app_builds_warning": "buildCaptureModeSubmissionWarning" in app_ts_source,
+        "app_blocks_capture_start": (
+            "buildCaptureModeSubmissionError" in app_ts_source
+            and "Capture mode blocked" in app_ts_source
+        ),
+        "form_displays_warning": (
+            "captureModeSubmissionWarning" in measurement_form_source
+            and "selectable" in measurement_form_source
+        ),
+    }
+    _check(
+        checks,
+        "mobile_capture_mode_submission_guard_sources",
+        all(capture_mode_submission_guard_requirements.values()),
+        f"requirements={capture_mode_submission_guard_requirements!r}",
+    )
+    capture_mode_submission_guard_test_requirements = {
+        "policy_test_file": capture_mode_policy_tests_path.is_file(),
+        "canonicalization_test": (
+            "canonicalizes operator-entered capture modes"
+            in capture_mode_policy_tests_source
+        ),
+        "extractor_test": "extractRuntimeCaptureMode reads runtime contract session mode"
+        in capture_mode_policy_tests_source,
+        "water_impact_only_test": "allows only water_impact pilot mode"
+        in capture_mode_policy_tests_source,
+        "warning_test": "unsupported pilot modes before submission"
+        in capture_mode_policy_tests_source,
+        "paired_payload_canonicalization_test": "canonicalizes capture mode"
+        in paired_payload_tests_source,
+        "paired_payload_blocks_fallback": "fallback_nonwater" in paired_payload_tests_source,
+        "paired_payload_blocks_runtime_mode": "Runtime capture mode is fallback_nonwater"
+        in paired_payload_tests_source,
+        "unit_runner_compiles_policy": "src/utils/captureModePolicy.ts"
+        in unit_runner_source,
+    }
+    _check(
+        checks,
+        "mobile_capture_mode_submission_guard_unit_tests_present",
+        all(capture_mode_submission_guard_test_requirements.values()),
+        f"requirements={capture_mode_submission_guard_test_requirements!r}",
     )
     runtime_release_guard_requirements = {
         "guard_file": runtime_release_guard_source_path.is_file(),

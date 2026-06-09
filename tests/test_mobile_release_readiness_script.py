@@ -101,6 +101,8 @@ def test_mobile_release_readiness_reports_external_blockers(tmp_path: Path) -> N
         "app_config_unit_tests_present",
         "mobile_claims_notice_sources",
         "mobile_claims_notice_unit_tests_present",
+        "mobile_capture_mode_submission_guard_sources",
+        "mobile_capture_mode_submission_guard_unit_tests_present",
         "mobile_quality_submission_guard_sources",
         "mobile_quality_submission_guard_unit_tests_present",
         "paired_payload_unit_tests_present",
