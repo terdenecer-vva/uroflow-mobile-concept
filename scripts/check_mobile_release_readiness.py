@@ -810,6 +810,9 @@ def build_readiness_report(
         mobile_root / "src" / "utils" / "captureModePolicy.ts"
     )
     quality_policy_source_path = mobile_root / "src" / "utils" / "qualityPolicy.ts"
+    operator_sop_checklist_source_path = (
+        mobile_root / "src" / "utils" / "operatorSopChecklist.ts"
+    )
     clinical_hub_source_path = mobile_root / "src" / "api" / "clinicalHub.ts"
     clinical_hub_preflight_source_path = (
         mobile_root / "src" / "api" / "clinicalHubPreflight.ts"
@@ -817,6 +820,9 @@ def build_readiness_report(
     connection_check_source_path = mobile_root / "src" / "api" / "connectionCheck.ts"
     api_connection_section_path = (
         mobile_root / "src" / "components" / "ApiConnectionSection.tsx"
+    )
+    runtime_capture_section_path = (
+        mobile_root / "src" / "components" / "RuntimeCaptureSection.tsx"
     )
     pending_sync_queue_source_path = mobile_root / "src" / "utils" / "pendingSyncQueue.ts"
     pending_sync_hook_source_path = mobile_root / "src" / "hooks" / "usePendingSyncQueue.ts"
@@ -832,6 +838,9 @@ def build_readiness_report(
         mobile_root / "tests" / "captureModePolicy.test.js"
     )
     quality_policy_tests_path = mobile_root / "tests" / "qualityPolicy.test.js"
+    operator_sop_checklist_tests_path = (
+        mobile_root / "tests" / "operatorSopChecklist.test.js"
+    )
     app_settings_storage_tests_path = mobile_root / "tests" / "appSettingsStorage.test.js"
     clinical_hub_api_tests_path = mobile_root / "tests" / "clinicalHub.test.js"
     clinical_hub_preflight_tests_path = (
@@ -923,10 +932,12 @@ def build_readiness_report(
     claims_notice_component_source = _read_file_text(claims_notice_component_path)
     capture_mode_policy_source = _read_file_text(capture_mode_policy_source_path)
     quality_policy_source = _read_file_text(quality_policy_source_path)
+    operator_sop_checklist_source = _read_file_text(operator_sop_checklist_source_path)
     clinical_hub_source = _read_file_text(clinical_hub_source_path)
     clinical_hub_preflight_source = _read_file_text(clinical_hub_preflight_source_path)
     connection_check_source = _read_file_text(connection_check_source_path)
     api_connection_section_source = _read_file_text(api_connection_section_path)
+    runtime_capture_section_source = _read_file_text(runtime_capture_section_path)
     pending_sync_queue_source = _read_file_text(pending_sync_queue_source_path)
     pending_sync_hook_source = _read_file_text(pending_sync_hook_source_path)
     pending_storage_source = _read_file_text(pending_storage_source_path)
@@ -941,6 +952,9 @@ def build_readiness_report(
     claims_notice_tests_source = _read_file_text(claims_notice_tests_path)
     capture_mode_policy_tests_source = _read_file_text(capture_mode_policy_tests_path)
     quality_policy_tests_source = _read_file_text(quality_policy_tests_path)
+    operator_sop_checklist_tests_source = _read_file_text(
+        operator_sop_checklist_tests_path
+    )
     clinical_hub_tests_source = _read_file_text(clinical_hub_api_tests_path)
     clinical_hub_preflight_tests_source = _read_file_text(
         clinical_hub_preflight_tests_path
@@ -1237,6 +1251,48 @@ def build_readiness_report(
         "mobile_capture_mode_submission_guard_unit_tests_present",
         all(capture_mode_submission_guard_test_requirements.values()),
         f"requirements={capture_mode_submission_guard_test_requirements!r}",
+    )
+    operator_sop_checklist_requirements = {
+        "policy_file": operator_sop_checklist_source_path.is_file(),
+        "reference_ready_item": "reference_uroflowmeter_ready"
+        in operator_sop_checklist_source,
+        "phone_stable_item": "phone_stable" in operator_sop_checklist_source,
+        "water_impact_item": "water_impact_sop_confirmed"
+        in operator_sop_checklist_source,
+        "metadata_privacy_item": "metadata_privacy_checked"
+        in operator_sop_checklist_source,
+        "readiness_helper": "buildOperatorSopReadiness"
+        in operator_sop_checklist_source,
+        "app_blocks_capture": "Operator SOP blocked" in app_ts_source
+        and "operatorSopReadiness.ready" in app_ts_source,
+        "capture_section_renders_checklist": "Operator SOP checklist"
+        in runtime_capture_section_source
+        and "operatorSopChecklistItems.map" in runtime_capture_section_source,
+        "unit_runner_compiles_policy": "src/utils/operatorSopChecklist.ts"
+        in unit_runner_source,
+    }
+    _check(
+        checks,
+        "mobile_operator_sop_checklist_sources",
+        all(operator_sop_checklist_requirements.values()),
+        f"requirements={operator_sop_checklist_requirements!r}",
+    )
+    operator_sop_checklist_test_requirements = {
+        "unit_test_file": operator_sop_checklist_tests_path.is_file(),
+        "blocks_until_complete_test": (
+            "blocks capture until every item is confirmed"
+            in operator_sop_checklist_tests_source
+        ),
+        "ready_test": "passes after all required confirmations"
+        in operator_sop_checklist_tests_source,
+        "toggle_test": "updates one checklist item immutably"
+        in operator_sop_checklist_tests_source,
+    }
+    _check(
+        checks,
+        "mobile_operator_sop_checklist_unit_tests_present",
+        all(operator_sop_checklist_test_requirements.values()),
+        f"requirements={operator_sop_checklist_test_requirements!r}",
     )
     paired_submission_contract_requirements = {
         "finite_number_parser": "Number.isFinite(parsed)" in app_helpers_source,

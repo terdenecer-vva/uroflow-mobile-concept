@@ -105,7 +105,7 @@ Workflow also generates artifact `mobile-dependency-review` containing:
 
 Workflow also generates artifact `mobile-release-readiness` containing:
 - git SHA/ref/run-id/workflow traceability,
-- local mobile readiness checks (`app.json`, `eas.json`, EAS build/submit profile shape, runtime release metadata/config/defaults, endpoint set/data residency/debug gates, runtime release guard, Expo Device identity defaults, Clinical Hub preflight guard, Clinical Hub RBAC/site/operator scope, Clinical Hub runtime trace headers, Clinical Hub nightly comparison/gate snapshot wiring, mobile dependency review artifact wiring, pilot gate report mobile build/schema traceability, in-app release identity evidence, in-app claims notice, runtime quality submission guard, capture mode submission guard, paired submission contract guard, pending sync connectivity restore, pending sync auth/permission retry policy, deterministic mobile E2E sync smoke, physical-device smoke log template/validator, store rollout handoff template/validator, release bundle verifier, runtime motion quality gates, runtime timeline integrity metadata and quality gating, runtime raw-media temp-file cleanup, derivatives-only feature/media manifest gates, package scripts, lockfile, pinned tooling, API response + submit exception + runtime exception PHI redaction, unit-test coverage wiring),
+- local mobile readiness checks (`app.json`, `eas.json`, EAS build/submit profile shape, runtime release metadata/config/defaults, endpoint set/data residency/debug gates, runtime release guard, Expo Device identity defaults, Clinical Hub preflight guard, Clinical Hub RBAC/site/operator scope, Clinical Hub runtime trace headers, Clinical Hub nightly comparison/gate snapshot wiring, mobile dependency review artifact wiring, pilot gate report mobile build/schema traceability, in-app release identity evidence, in-app claims notice, operator SOP checklist gate, runtime quality submission guard, capture mode submission guard, paired submission contract guard, pending sync connectivity restore, pending sync auth/permission retry policy, deterministic mobile E2E sync smoke, physical-device smoke log template/validator, store rollout handoff template/validator, release bundle verifier, runtime motion quality gates, runtime timeline integrity metadata and quality gating, runtime raw-media temp-file cleanup, derivatives-only feature/media manifest gates, package scripts, lockfile, pinned tooling, API response + submit exception + runtime exception PHI redaction, unit-test coverage wiring),
 - external credential state without secret values,
 - authenticated EAS readiness status and specific EAS blockers,
 - live Clinical Hub API readiness status (`present`, `missing`, or `invalid`),
@@ -241,15 +241,17 @@ python3 scripts/validate_mobile_store_rollout_handoff.py \
 3. API block shows Clinical Hub preflight status; missing URL is blocked, local/LAN smoke URL is warning-only, and live URL is confirmed against the configured region policy.
 4. Clinical Hub request logs include non-secret `x-uroflow-*` release/runtime/data-residency trace headers, and backend contract tests reject a deliberate mismatched region header.
 5. `Device Model` is auto-filled from the physical device model or a platform fallback, and matches the smoke-log device entry after any field correction.
-6. `Start Capture` and `Stop Capture` work on real device.
-7. `Contract payload: ready` after stop, with `analysis.runtime_timeline.gap_warning=false`
+6. Operator SOP checklist is visible and blocks `Start Capture` until all confirmations
+   are checked.
+7. `Start Capture` and `Stop Capture` work on real device.
+8. `Contract payload: ready` after stop, with `analysis.runtime_timeline.gap_warning=false`
    and `analysis.runtime_alignment.drift_warning=false`.
    Repeat or mark the run failed if foreground/device load creates a timing gap warning or
    stream drift exceeds 50 ms.
-8. Submit produces `paired-measurements` and `capture-packages` records.
-9. Offline mode queues both endpoint jobs.
-10. Returning online triggers successful auto-sync through connectivity restore, interval, or AppState fallback; if Clinical Hub returns `401/403`, fix API key/site/role credentials and retry without clearing queued payloads.
-11. Repository-level deterministic smoke confirms queued paired+capture replay drains after network restore.
+9. Submit produces `paired-measurements` and `capture-packages` records.
+10. Offline mode queues both endpoint jobs.
+11. Returning online triggers successful auto-sync through connectivity restore, interval, or AppState fallback; if Clinical Hub returns `401/403`, fix API key/site/role credentials and retry without clearing queued payloads.
+12. Repository-level deterministic smoke confirms queued paired+capture replay drains after network restore.
 
 ## 6) Evidence to archive per build
 

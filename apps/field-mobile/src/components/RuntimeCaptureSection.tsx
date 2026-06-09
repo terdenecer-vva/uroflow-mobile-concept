@@ -4,6 +4,11 @@ import { CameraView } from "expo-camera";
 
 import type { RuntimeFlowPoint } from "../capture/runtimeCaptureSession";
 import { styles } from "../styles/appStyles";
+import type {
+  OperatorSopChecklistItem,
+  OperatorSopChecklistKey,
+  OperatorSopChecklistState,
+} from "../utils/operatorSopChecklist";
 import { RuntimeCurvePreview } from "./RuntimeCurvePreview";
 
 type RuntimeCaptureSectionProps = {
@@ -21,6 +26,10 @@ type RuntimeCaptureSectionProps = {
   captureTimingGapWarning: boolean;
   flowSeries: RuntimeFlowPoint[];
   manualAppMetricsOverride: boolean;
+  operatorSopChecklistItems: OperatorSopChecklistItem[];
+  operatorSopChecklist: OperatorSopChecklistState;
+  operatorSopReadinessMessage: string;
+  operatorSopReady: boolean;
   roiFrameCount: number;
   roiFrameValid: boolean;
   roiLocked: boolean;
@@ -32,6 +41,7 @@ type RuntimeCaptureSectionProps = {
   onRequestCameraPermission: () => Promise<unknown>;
   onStartRuntimeCapture: () => Promise<void>;
   onStopRuntimeCapture: () => Promise<void>;
+  onToggleOperatorSopChecklistItem: (key: OperatorSopChecklistKey) => void;
   onToggleManualAppMetricsOverride: () => void;
   onToggleRoiLock: () => void;
 };
@@ -51,6 +61,10 @@ export function RuntimeCaptureSection({
   captureTimingGapWarning,
   flowSeries,
   manualAppMetricsOverride,
+  operatorSopChecklistItems,
+  operatorSopChecklist,
+  operatorSopReadinessMessage,
+  operatorSopReady,
   roiFrameCount,
   roiFrameValid,
   roiLocked,
@@ -62,6 +76,7 @@ export function RuntimeCaptureSection({
   onRequestCameraPermission,
   onStartRuntimeCapture,
   onStopRuntimeCapture,
+  onToggleOperatorSopChecklistItem,
   onToggleManualAppMetricsOverride,
   onToggleRoiLock,
 }: RuntimeCaptureSectionProps) {
@@ -118,6 +133,31 @@ export function RuntimeCaptureSection({
           App metrics mode: {manualAppMetricsOverride ? "manual" : "runtime auto-fill"}
         </Text>
       </Pressable>
+      <View style={styles.sopChecklistBox}>
+        <Text style={styles.sopChecklistTitle}>Operator SOP checklist</Text>
+        {operatorSopChecklistItems.map((item) => (
+          <Pressable
+            key={item.key}
+            style={styles.sopChecklistItem}
+            onPress={() => onToggleOperatorSopChecklistItem(item.key)}
+          >
+            <Text style={styles.sopChecklistItemText}>
+              {operatorSopChecklist[item.key] ? "[x]" : "[ ]"} {item.label}
+            </Text>
+            <Text style={styles.sopChecklistHintText}>{item.evidenceHint}</Text>
+          </Pressable>
+        ))}
+        <Text
+          style={[
+            styles.sopChecklistStatusText,
+            operatorSopReady
+              ? styles.sopChecklistReadyText
+              : styles.sopChecklistBlockedText,
+          ]}
+        >
+          {operatorSopReadinessMessage}
+        </Text>
+      </View>
       <View style={styles.buttonRow}>
         <Pressable
           style={[

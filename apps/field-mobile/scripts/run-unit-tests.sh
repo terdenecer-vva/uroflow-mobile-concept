@@ -11,6 +11,7 @@ tsc --ignoreConfig \
   src/utils/deviceIdentity.ts \
   src/utils/claimsNotice.ts \
   src/utils/qualityPolicy.ts \
+  src/utils/operatorSopChecklist.ts \
   src/utils/pendingSyncQueue.ts \
   src/utils/releaseIdentity.ts \
   src/utils/submitOutcome.ts \
