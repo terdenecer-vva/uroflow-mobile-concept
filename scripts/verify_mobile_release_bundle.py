@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 TRACEABILITY_FIELDS = ("git_sha", "git_ref", "git_run_id", "workflow")
+SMOKE_TEMPLATE_SUMMARY_SCHEMA_VERSION = "mobile_device_smoke_log_v0.1"
 READINESS_SUMMARY_FIELDS = (
     "status",
     "local_checks_status",
@@ -237,11 +238,28 @@ def _validate_release_notes(
     return actual_sha
 
 
+def _validate_smoke_template_summary(
+    smoke_template_summary: Path, errors: list[str]
+) -> str:
+    summary = _load_json(smoke_template_summary)
+    if summary.get("schema_version") != SMOKE_TEMPLATE_SUMMARY_SCHEMA_VERSION:
+        errors.append(
+            "mobile_device_smoke_template_summary.schema_version must be "
+            f"{SMOKE_TEMPLATE_SUMMARY_SCHEMA_VERSION!r}"
+        )
+    if summary.get("status") != "pass":
+        errors.append("mobile_device_smoke_template_summary.status must be 'pass'")
+    if summary.get("errors") not in ([], None):
+        errors.append("mobile_device_smoke_template_summary.errors must be empty")
+    return _sha256_file(smoke_template_summary)
+
+
 def _validate_store_rollout_handoff(
     manifest: dict[str, Any],
     readiness: Path,
     manifest_path: Path,
     release_notes_sha: str,
+    smoke_template_summary_sha: str,
     handoff: dict[str, Any],
     handoff_summary: dict[str, Any],
     errors: list[str],
@@ -283,6 +301,13 @@ def _validate_store_rollout_handoff(
         handoff_release.get("mobile_release_notes_sha256"),
         release_notes_sha,
     )
+    _compare_field(
+        errors,
+        "store_rollout_handoff.release",
+        "mobile_device_smoke_template_summary_sha256",
+        handoff_release.get("mobile_device_smoke_template_summary_sha256"),
+        smoke_template_summary_sha,
+    )
 
     if handoff_summary.get("status") != "pass":
         errors.append("store_rollout_handoff.summary.status must be 'pass'")
@@ -298,6 +323,7 @@ def verify_release_bundle(
     manifest_json: Path,
     readiness_json: Path,
     release_notes: Path,
+    smoke_template_summary_json: Path,
     store_rollout_handoff_json: Path,
     store_rollout_summary_json: Path,
     expect_git_sha: str | None = None,
@@ -319,11 +345,15 @@ def verify_release_bundle(
     )
     _validate_manifest_readiness_summary(manifest, readiness, errors)
     release_notes_sha = _validate_release_notes(manifest, release_notes, errors)
+    smoke_template_summary_sha = _validate_smoke_template_summary(
+        smoke_template_summary_json, errors
+    )
     _validate_store_rollout_handoff(
         manifest,
         readiness_json,
         manifest_json,
         release_notes_sha,
+        smoke_template_summary_sha,
         handoff,
         handoff_summary,
         errors,
@@ -341,6 +371,7 @@ def verify_release_bundle(
             "mobile_release_manifest": _sha256_file(manifest_json),
             "mobile_release_readiness": _sha256_file(readiness_json),
             "mobile_release_notes": release_notes_sha,
+            "mobile_device_smoke_template_summary": smoke_template_summary_sha,
             "mobile_store_rollout_handoff": _sha256_file(store_rollout_handoff_json),
             "mobile_store_rollout_handoff_summary": _sha256_file(
                 store_rollout_summary_json
@@ -357,6 +388,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--manifest-json", type=Path, required=True)
     parser.add_argument("--readiness-json", type=Path, required=True)
     parser.add_argument("--release-notes", type=Path, required=True)
+    parser.add_argument("--smoke-template-summary-json", type=Path, required=True)
     parser.add_argument("--store-rollout-handoff-json", type=Path, required=True)
     parser.add_argument("--store-rollout-summary-json", type=Path, required=True)
     parser.add_argument("--expect-git-sha")
@@ -371,6 +403,7 @@ def main() -> int:
         manifest_json=args.manifest_json,
         readiness_json=args.readiness_json,
         release_notes=args.release_notes,
+        smoke_template_summary_json=args.smoke_template_summary_json,
         store_rollout_handoff_json=args.store_rollout_handoff_json,
         store_rollout_summary_json=args.store_rollout_summary_json,
         expect_git_sha=args.expect_git_sha,

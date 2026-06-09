@@ -53,6 +53,10 @@ def test_mobile_store_rollout_handoff_template_validates(tmp_path: Path) -> None
         "ios:testflight_internal",
     ]
     assert "mobile_release_manifest_archived" in summary["required_handoff_check_ids"]
+    assert (
+        "mobile_device_smoke_template_validation_archived"
+        in summary["required_handoff_check_ids"]
+    )
     assert "eas_ios_build_uploaded" in summary["required_channel_check_ids"][
         "ios:testflight_internal"
     ]
@@ -122,3 +126,20 @@ def test_mobile_store_rollout_handoff_rejects_invalid_release_sha(
         "release.mobile_release_manifest_sha256 must be a lowercase SHA-256 hex digest"
         in summary["errors"]
     )
+
+
+def test_mobile_store_rollout_handoff_rejects_invalid_smoke_template_sha(
+    tmp_path: Path,
+) -> None:
+    payload = _valid_payload()
+    payload["release"]["mobile_device_smoke_template_summary_sha256"] = "A" * 64
+
+    result = _run_validator(tmp_path, payload, check=False)
+    summary = json.loads(result.stdout)
+
+    assert result.returncode == 1
+    assert summary["status"] == "fail"
+    assert (
+        "release.mobile_device_smoke_template_summary_sha256 must be a lowercase "
+        "SHA-256 hex digest"
+    ) in summary["errors"]

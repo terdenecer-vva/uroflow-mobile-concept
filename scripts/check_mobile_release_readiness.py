@@ -2030,6 +2030,8 @@ def build_readiness_report(
         in mobile_store_rollout_template_source,
         "release_manifest_traceability": "mobile_release_manifest_sha256"
         in mobile_store_rollout_template_source,
+        "smoke_template_traceability": "mobile_device_smoke_template_summary_sha256"
+        in mobile_store_rollout_template_source,
     }
     _check(
         checks,
@@ -2044,6 +2046,12 @@ def build_readiness_report(
         "play_internal_testing": "play_internal_testing" in mobile_store_rollout_validator_source,
         "sha256_traceability": "mobile_release_manifest_sha256"
         in mobile_store_rollout_validator_source,
+        "smoke_template_sha": "mobile_device_smoke_template_summary_sha256"
+        in mobile_store_rollout_validator_source,
+        "smoke_template_handoff_check": (
+            "mobile_device_smoke_template_validation_archived"
+            in mobile_store_rollout_validator_source
+        ),
         "blocked_external_support": "BLOCKED_STATUS" in mobile_store_rollout_validator_source,
     }
     _check(
@@ -2061,6 +2069,8 @@ def build_readiness_report(
         in mobile_store_rollout_validator_tests_source,
         "release_sha_test": "rejects_invalid_release_sha"
         in mobile_store_rollout_validator_tests_source,
+        "smoke_template_sha_test": "rejects_invalid_smoke_template_sha"
+        in mobile_store_rollout_validator_tests_source,
     }
     _check(
         checks,
@@ -2075,6 +2085,12 @@ def build_readiness_report(
         "readiness_count_validation": "local_check_counts"
         in mobile_release_bundle_verifier_source,
         "store_handoff_digest_validation": "mobile_release_manifest_sha256"
+        in mobile_release_bundle_verifier_source,
+        "smoke_template_summary_digest_validation": (
+            "mobile_device_smoke_template_summary_sha256"
+            in mobile_release_bundle_verifier_source
+        ),
+        "smoke_template_summary_input": "smoke_template_summary_json"
         in mobile_release_bundle_verifier_source,
         "expected_run_validation": "expect_run_id" in mobile_release_bundle_verifier_source,
     }
@@ -2093,6 +2109,14 @@ def build_readiness_report(
         in mobile_release_bundle_verifier_tests_source,
         "expected_git_sha_mismatch_test": "rejects_expected_git_sha_mismatch"
         in mobile_release_bundle_verifier_tests_source,
+        "smoke_template_digest_mismatch_test": (
+            "rejects_smoke_template_digest_mismatch"
+            in mobile_release_bundle_verifier_tests_source
+        ),
+        "failed_smoke_template_summary_test": (
+            "rejects_failed_smoke_template_summary"
+            in mobile_release_bundle_verifier_tests_source
+        ),
     }
     _check(
         checks,

@@ -48,7 +48,8 @@ Implemented now:
 - Physical-device smoke evidence JSON template and validator for iOS+Android release handoff,
   including per-device operator SOP checklist gate evidence.
 - Mobile Build publishes a smoke-template validation artifact with the current template and
-  validator summary before real-device smoke evidence is filled in.
+  validator summary before real-device smoke evidence is filled in, and store rollout
+  handoff/bundle verification trace its SHA-256 digest.
 - Physical-device smoke evidence requires per-device runtime timeline integrity metadata
   with `gap_warning=false`.
 - Store rollout handoff JSON template, validator, and Mobile Build artifact for TestFlight/Play Internal traceability.
