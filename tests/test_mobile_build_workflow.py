@@ -17,10 +17,13 @@ def test_mobile_build_workflow_runs_for_release_script_changes() -> None:
     triggers = _workflow_triggers()
     required_paths = {
         "apps/field-mobile/**",
+        "docs/mobile-device-smoke-log-template-v0.1.json",
         "scripts/build_mobile_dependency_review.py",
         "scripts/build_mobile_release_manifest.py",
         "scripts/check_mobile_release_readiness.py",
+        "scripts/validate_mobile_device_smoke_log.py",
         "tests/test_mobile_dependency_review.py",
+        "tests/test_mobile_device_smoke_log.py",
         ".github/workflows/mobile-build.yml",
     }
 
@@ -63,6 +66,30 @@ def test_mobile_build_workflow_uploads_dependency_review_before_validation() -> 
     assert "mobile-dependency-review artifact" in steps[fail_index]["run"]
 
 
+def test_mobile_build_workflow_uploads_smoke_template_validation_before_failure() -> None:
+    payload = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
+    steps = payload["jobs"]["preflight"]["steps"]
+    step_names = [step.get("name") for step in steps]
+
+    build_index = step_names.index("Build smoke template validation artifact")
+    summary_index = step_names.index("Publish smoke template validation summary")
+    notes_index = step_names.index("Build release notes artifact")
+    upload_index = step_names.index("Upload smoke template validation")
+    smoke_fail_index = step_names.index("Fail on smoke template validation errors")
+    readiness_fail_index = step_names.index("Fail on local release readiness errors")
+    upload_step = steps[upload_index]
+
+    assert build_index < summary_index < notes_index < upload_index
+    assert upload_index < smoke_fail_index < readiness_fail_index
+    assert "validate_mobile_device_smoke_log.py" in steps[build_index]["run"]
+    assert "mobile-device-smoke-template-summary.json" in steps[build_index]["run"]
+    assert "mobile-device-smoke-template-summary.json" in steps[summary_index]["run"]
+    assert upload_step["with"]["name"] == "mobile-device-smoke-template-validation"
+    assert "docs/mobile-device-smoke-log-template-v0.1.json" in upload_step["with"]["path"]
+    assert "/tmp/mobile-device-smoke-template-summary.json" in upload_step["with"]["path"]
+    assert "mobile-device-smoke-template-validation artifact" in steps[smoke_fail_index]["run"]
+
+
 def test_mobile_build_workflow_embeds_readiness_summary_in_release_manifest() -> None:
     payload = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
     steps = payload["jobs"]["preflight"]["steps"]
@@ -86,6 +113,7 @@ def test_mobile_build_workflow_uploads_release_notes_artifact() -> None:
     assert "WORKFLOW_RELEASE_NOTES" in steps[notes_index]["env"]
     assert notes_upload_step["with"]["name"] == "mobile-release-notes"
     assert notes_upload_step["with"]["path"] == "/tmp/mobile-release-notes.md"
+    assert "mobile-device-smoke-template-validation" in steps[notes_index]["run"]
 
 
 def test_mobile_build_workflow_summary_reports_invalid_external_items() -> None:

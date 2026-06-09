@@ -105,7 +105,7 @@ Workflow also generates artifact `mobile-dependency-review` containing:
 
 Workflow also generates artifact `mobile-release-readiness` containing:
 - git SHA/ref/run-id/workflow traceability,
-- local mobile readiness checks (`app.json`, `eas.json`, EAS build/submit profile shape, runtime release metadata/config/defaults, endpoint set/data residency/debug gates, runtime release guard, Expo Device identity defaults, Clinical Hub preflight guard, Clinical Hub RBAC/site/operator scope, Clinical Hub runtime trace headers, Clinical Hub nightly comparison/gate snapshot wiring, mobile dependency review artifact wiring, pilot gate report mobile build/schema traceability, in-app release identity evidence, in-app claims notice, operator SOP checklist gate, runtime quality submission guard, capture mode submission guard, paired submission contract guard, pending sync connectivity restore, pending sync auth/permission retry policy, deterministic mobile E2E sync smoke, physical-device smoke log template/validator, store rollout handoff template/validator, release bundle verifier, runtime motion quality gates, runtime timeline integrity metadata and quality gating, runtime raw-media temp-file cleanup, derivatives-only feature/media manifest gates, package scripts, lockfile, pinned tooling, API response + submit exception + runtime exception PHI redaction, unit-test coverage wiring),
+- local mobile readiness checks (`app.json`, `eas.json`, EAS build/submit profile shape, runtime release metadata/config/defaults, endpoint set/data residency/debug gates, runtime release guard, Expo Device identity defaults, Clinical Hub preflight guard, Clinical Hub RBAC/site/operator scope, Clinical Hub runtime trace headers, Clinical Hub nightly comparison/gate snapshot wiring, mobile dependency review artifact wiring, pilot gate report mobile build/schema traceability, in-app release identity evidence, in-app claims notice, operator SOP checklist gate, runtime quality submission guard, capture mode submission guard, paired submission contract guard, pending sync connectivity restore, pending sync auth/permission retry policy, deterministic mobile E2E sync smoke, physical-device smoke log template/validator/CI artifact, store rollout handoff template/validator, release bundle verifier, runtime motion quality gates, runtime timeline integrity metadata and quality gating, runtime raw-media temp-file cleanup, derivatives-only feature/media manifest gates, package scripts, lockfile, pinned tooling, API response + submit exception + runtime exception PHI redaction, unit-test coverage wiring),
 - external credential state without secret values,
 - authenticated EAS readiness status and specific EAS blockers,
 - live Clinical Hub API readiness status (`present`, `missing`, or `invalid`),
@@ -117,7 +117,14 @@ Workflow also generates artifact `mobile-release-notes` containing:
 - selected build profile/platform,
 - selected store-submit request/platform,
 - operator-facing release notes from workflow input or an explicit placeholder when not supplied,
-- required evidence reminders for manifest, readiness, EAS build links, and physical-device smoke logs.
+- required evidence reminders for manifest, readiness, smoke-template validation, EAS build links, and physical-device smoke logs.
+
+Workflow also generates artifact `mobile-device-smoke-template-validation` containing:
+- the repository smoke log template used for the run,
+- validator summary JSON proving the template currently satisfies
+  `mobile_device_smoke_log_v0.1` before clinic operators replace placeholder values with
+  real iPhone/Android smoke evidence,
+- validator exit code for diagnosis if the template contract breaks.
 
 Workflow also generates artifact `mobile-store-rollout-handoff` containing:
 - per-run git SHA, app version, build profile/channel, and SHA-256 digests for `mobile-release-manifest`, `mobile-release-readiness`, and `mobile-release-notes`,
@@ -260,9 +267,10 @@ python3 scripts/validate_mobile_store_rollout_handoff.py \
 3. Mobile release bundle verification JSON.
 4. Mobile store rollout handoff JSON and validation summary.
 5. Mobile dependency review JSON.
-6. Build links (iOS + Android).
-7. Smoke test log with device model and OS version.
-8. Validated smoke summary JSON from `scripts/validate_mobile_device_smoke_log.py`.
+6. Mobile device smoke template validation artifact.
+7. Build links (iOS + Android).
+8. Smoke test log with device model and OS version.
+9. Validated real-device smoke summary JSON from `scripts/validate_mobile_device_smoke_log.py`.
    - The smoke log must include per-device `runtime_timeline` evidence copied from
      `capture_payload.analysis.runtime_timeline`, with `gap_warning=false`.
    - The smoke log must include per-device `runtime_alignment` evidence copied from
@@ -273,7 +281,7 @@ python3 scripts/validate_mobile_store_rollout_handoff.py \
      artifacts remain after stop/reset.
    - The smoke log must include per-device `operator_sop_checklist_gate` evidence proving
      `Start Capture` stayed blocked until all operator SOP confirmations were checked.
-9. Clinical Hub sample export (paired + capture package rows).
+10. Clinical Hub sample export (paired + capture package rows).
    - For `capture-packages`, archive `capture_payload.feature_manifest` and confirm `derivatives_only=true`, `raw_media.store_raw_video=false`, `raw_media.store_raw_audio=false`, `raw_media.upload_raw_video=false`, and `raw_media.upload_raw_audio=false`.
    - Archive `capture_payload_sha256` from Clinical Hub detail/list/CSV exports and verify
      it stays stable across idempotent replay.
@@ -281,4 +289,4 @@ python3 scripts/validate_mobile_store_rollout_handoff.py \
      `gap_warning=true` or unexpectedly large `max_sample_gap_s`.
    - Archive `capture_payload.analysis.runtime_alignment` and reject runs with
      `drift_warning=true` or `max_stream_drift_ms > 50`.
-10. Go/No-Go note for pilot usage.
+11. Go/No-Go note for pilot usage.

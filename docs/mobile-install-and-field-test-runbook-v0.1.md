@@ -118,8 +118,9 @@ Per subject/attempt:
 8. If network failed, ensure queue item exists and run `Sync Queue` later.
 9. For retry/audit troubleshooting, match the pending item `request_id` to Clinical Hub request logs.
 
-For release handoff, copy `docs/mobile-device-smoke-log-template-v0.1.json`, fill one
-iPhone and one Android run, then validate it:
+For release handoff, download the Mobile Build `mobile-device-smoke-template-validation`
+artifact, copy `docs/mobile-device-smoke-log-template-v0.1.json`, fill one iPhone and
+one Android run, then validate it:
 
 ```bash
 python3 scripts/validate_mobile_device_smoke_log.py \
@@ -128,8 +129,8 @@ python3 scripts/validate_mobile_device_smoke_log.py \
 ```
 
 The validator requires all mandatory smoke checks to pass on both platforms, including
-offline queue retention, connectivity-restore sync, raw media disabled, and device-log
-review for PHI/secret leakage.
+operator SOP checklist gating, offline queue retention, connectivity-restore sync, raw
+media disabled, and device-log review for PHI/secret leakage.
 
 ## 6. Daily Export For Analysis
 

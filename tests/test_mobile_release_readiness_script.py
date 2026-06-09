@@ -146,6 +146,7 @@ def test_mobile_release_readiness_reports_external_blockers(tmp_path: Path) -> N
         "mobile_device_smoke_log_template_present",
         "mobile_device_smoke_log_validator_sources",
         "mobile_device_smoke_log_validator_unit_tests_present",
+        "mobile_device_smoke_log_ci_artifact",
         "mobile_dependency_review_sources",
         "mobile_dependency_review_ci_artifact",
         "mobile_dependency_review_unit_tests_present",

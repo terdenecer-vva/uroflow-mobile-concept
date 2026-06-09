@@ -1995,6 +1995,29 @@ def build_readiness_report(
         all(mobile_device_smoke_validator_test_requirements.values()),
         f"requirements={mobile_device_smoke_validator_test_requirements!r}",
     )
+    mobile_device_smoke_ci_requirements = {
+        "workflow_file": mobile_build_workflow_path.is_file(),
+        "trigger_template_path": "docs/mobile-device-smoke-log-template-v0.1.json"
+        in mobile_build_workflow_source,
+        "trigger_validator_path": "scripts/validate_mobile_device_smoke_log.py"
+        in mobile_build_workflow_source,
+        "build_step": "Build smoke template validation artifact"
+        in mobile_build_workflow_source,
+        "summary_step": "Publish smoke template validation summary"
+        in mobile_build_workflow_source,
+        "summary_json": "mobile-device-smoke-template-summary.json"
+        in mobile_build_workflow_source,
+        "upload_artifact": "mobile-device-smoke-template-validation"
+        in mobile_build_workflow_source,
+        "failure_gate": "Fail on smoke template validation errors"
+        in mobile_build_workflow_source,
+    }
+    _check(
+        checks,
+        "mobile_device_smoke_log_ci_artifact",
+        all(mobile_device_smoke_ci_requirements.values()),
+        f"requirements={mobile_device_smoke_ci_requirements!r}",
+    )
     mobile_store_rollout_template_requirements = {
         "template_file": mobile_store_rollout_template_path.is_file(),
         "schema_version": "mobile_store_rollout_handoff_v0.1"
