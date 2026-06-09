@@ -282,6 +282,43 @@ jobs:
               handle.write("\n".join(lines) + "\n")
           PY
 
+      - name: Build smoke template validation artifact
+        shell: bash
+        run: |
+          set +e
+          python3 ../../scripts/validate_mobile_device_smoke_log.py \
+            ../../docs/mobile-device-smoke-log-template-v0.1.json \
+            --output /tmp/mobile-device-smoke-template-summary.json
+          smoke_template_exit_code=$?
+          set -e
+          echo "$smoke_template_exit_code" > /tmp/mobile-device-smoke-template-exit-code
+
+      - name: Publish smoke template validation summary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          payload = json.loads(
+              Path("/tmp/mobile-device-smoke-template-summary.json").read_text(
+                  encoding="utf-8"
+              )
+          )
+          lines = [
+              "## Mobile Device Smoke Template Validation",
+              f"- Status: `{payload.get('status')}`",
+              f"- Device count: `{payload.get('device_count')}`",
+              f"- Platforms: `{', '.join(payload.get('platforms_seen', [])) or 'none'}`",
+              f"- Required check IDs: `{', '.join(payload.get('required_check_ids', []))}`",
+              f"- Errors: `{', '.join(payload.get('errors', [])) if payload.get('errors') else 'none'}`",
+          ]
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as handle:
+              handle.write("\n".join(lines) + "\n")
+          PY
+
       - name: Build release notes artifact
         env:
           WORKFLOW_BUILD_PROFILE: ${{ github.event.inputs.build_profile || 'preview' }}
@@ -324,6 +361,7 @@ jobs:
               "- Download `mobile-release-readiness`.",
               "- Download `mobile-release-bundle-verification`.",
               "- Download `mobile-dependency-review`.",
+              "- Download `mobile-device-smoke-template-validation` before filling real-device smoke evidence.",
               "- Download `mobile-store-rollout-handoff` and fill in TestFlight/Play evidence after external account setup.",
               "- Archive iOS/Android EAS build links when authenticated EAS build runs.",
               "- Archive physical-device smoke log with device model and OS version.",
@@ -459,6 +497,27 @@ jobs:
           path: |
             /tmp/mobile-store-rollout-handoff.json
             /tmp/mobile-store-rollout-handoff-summary.json
+
+      - name: Upload smoke template validation
+        uses: actions/upload-artifact@v7
+        with:
+          name: mobile-device-smoke-template-validation
+          path: |
+            docs/mobile-device-smoke-log-template-v0.1.json
+            /tmp/mobile-device-smoke-template-summary.json
+            /tmp/mobile-device-smoke-template-exit-code
+          if-no-files-found: error
+
+      - name: Fail on smoke template validation errors
+        shell: bash
+        run: |
+          set -euo pipefail
+          smoke_template_exit_code="$(cat /tmp/mobile-device-smoke-template-exit-code 2>/dev/null || echo 1)"
+          if [[ "$smoke_template_exit_code" != "0" ]]; then
+            echo "Mobile device smoke template validation failed with exit code $smoke_template_exit_code."
+            echo "See the mobile-device-smoke-template-validation artifact for template summary details."
+            exit "$smoke_template_exit_code"
+          fi
 
       - name: Fail on local release readiness errors
         shell: bash
