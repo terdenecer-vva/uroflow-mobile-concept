@@ -13,6 +13,8 @@ Implemented now:
 - Runtime capture quality gates for ROI validity, low-confidence depth, and high-motion IMU artifacts.
 - Runtime capture preflight blocks start until camera permission, camera preview readiness,
   ROI lock, and a valid ROI frame are confirmed on device.
+- In-app operator SOP checklist blocks capture start until reference readiness, phone
+  stability, water-impact workflow, and metadata/privacy confirmations are checked.
 - Runtime capture contracts include `analysis.runtime_timeline` timing integrity metadata
   for duration, sample count, median sample step, max gap, and gap warnings.
 - Runtime capture contracts include `analysis.runtime_alignment` stream-alignment metadata
@@ -99,6 +101,8 @@ Not yet implemented:
   usability evidence still needs real operator execution.
 - Capture mode submission guard is unit-tested and release-gated locally; operator SOP
   drill evidence still needs real site execution.
+- Operator SOP checklist is unit-tested and release-gated locally; site monitoring and
+  training evidence still need real operator execution.
 - Paired submission contract guard is unit-tested and release-gated locally; formal
   data-management QC remains part of pilot operations.
 - Deterministic replay tests cover capture contract generation and queued paired+capture sync; physical-device evidence now has a validator/template but still needs real-device execution.

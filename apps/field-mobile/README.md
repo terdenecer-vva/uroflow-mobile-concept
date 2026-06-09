@@ -32,8 +32,8 @@ Cross-platform mobile client (Expo React Native) for collecting paired measureme
 - `Device Model` defaults from Expo Device metadata with platform fallback and remains editable for field correction.
 - On successful paired upload, app posts `capture_contract_json` to `POST /api/v1/capture-packages`
 - Runtime capture mode collects live audio + IMU samples (camera permission used for ROI validity flag)
-- `Start Capture` is blocked until camera permission, camera preview readiness, ROI lock,
-  and at least one valid ROI frame are confirmed.
+- `Start Capture` is blocked until the operator SOP checklist, camera permission, camera
+  preview readiness, ROI lock, and at least one valid ROI frame are confirmed.
 - In-app `Release Identity` panel shows canonical app version, model/schema, runtime config, privacy/data-residency flags, platform, and payload traceability alignment.
 - Runtime release guard blocks capture/API/submit/sync actions when model ID, capture schema,
   endpoint set, privacy, data-residency, or debug-gate configuration is incompatible.

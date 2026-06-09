@@ -188,6 +188,45 @@ export const styles = StyleSheet.create({
     fontSize: 12,
     marginBottom: 4,
   },
+  sopChecklistBox: {
+    marginTop: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#bfdbfe",
+    backgroundColor: "#eff6ff",
+    padding: 10,
+  },
+  sopChecklistTitle: {
+    color: "#1e3a8a",
+    fontSize: 13,
+    fontWeight: "700",
+    marginBottom: 6,
+  },
+  sopChecklistItem: {
+    borderRadius: 8,
+    paddingVertical: 6,
+  },
+  sopChecklistItemText: {
+    color: "#0f172a",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  sopChecklistHintText: {
+    color: "#334155",
+    fontSize: 11,
+    marginTop: 2,
+  },
+  sopChecklistStatusText: {
+    marginTop: 6,
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  sopChecklistReadyText: {
+    color: "#166534",
+  },
+  sopChecklistBlockedText: {
+    color: "#92400e",
+  },
   cameraPreviewWrap: {
     marginTop: 8,
     marginBottom: 8,

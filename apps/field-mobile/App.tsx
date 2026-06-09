@@ -89,6 +89,12 @@ import {
   formatSafeResponseProblem,
 } from "./src/utils/appHelpers";
 import {
+  DEFAULT_OPERATOR_SOP_CHECKLIST,
+  OPERATOR_SOP_CHECKLIST_ITEMS,
+  buildOperatorSopReadiness,
+  toggleOperatorSopChecklistItem,
+} from "./src/utils/operatorSopChecklist";
+import {
   buildCaptureModeSubmissionError,
   buildCaptureModeSubmissionWarning,
 } from "./src/utils/captureModePolicy";
@@ -171,6 +177,9 @@ export default function App() {
   const [roiFrameValid, setRoiFrameValid] = useState(false);
   const [roiFrameCount, setRoiFrameCount] = useState(0);
   const [manualAppMetricsOverride, setManualAppMetricsOverride] = useState(false);
+  const [operatorSopChecklist, setOperatorSopChecklist] = useState(
+    DEFAULT_OPERATOR_SOP_CHECKLIST,
+  );
   const [runtimeCaptureContractPayload, setRuntimeCaptureContractPayload] = useState<
     Record<string, unknown> | null
   >(null);
@@ -204,6 +213,10 @@ export default function App() {
   const captureModeSubmissionWarning = useMemo(
     () => buildCaptureModeSubmissionWarning(captureMode),
     [captureMode],
+  );
+  const operatorSopReadiness = useMemo(
+    () => buildOperatorSopReadiness(operatorSopChecklist),
+    [operatorSopChecklist],
   );
 
   const {
@@ -446,6 +459,11 @@ export default function App() {
     if (captureModeError) {
       setCaptureStatus(`Capture mode blocked: ${captureModeError}`);
       Alert.alert("Capture mode blocked", captureModeError);
+      return;
+    }
+    if (!operatorSopReadiness.ready) {
+      setCaptureStatus(`Operator SOP blocked: ${operatorSopReadiness.message}`);
+      Alert.alert("Operator SOP blocked", operatorSopReadiness.message);
       return;
     }
 
@@ -947,6 +965,10 @@ export default function App() {
           captureStatus={captureStatus}
           flowSeries={runtimeFlowSeries}
           manualAppMetricsOverride={manualAppMetricsOverride}
+          operatorSopChecklistItems={OPERATOR_SOP_CHECKLIST_ITEMS}
+          operatorSopChecklist={operatorSopChecklist}
+          operatorSopReadinessMessage={operatorSopReadiness.message}
+          operatorSopReady={operatorSopReadiness.ready}
           roiFrameCount={roiFrameCount}
           roiFrameValid={roiFrameValid}
           roiLocked={roiLocked}
@@ -961,6 +983,11 @@ export default function App() {
           onRequestCameraPermission={requestCameraPermission}
           onStartRuntimeCapture={startRuntimeCapture}
           onStopRuntimeCapture={stopRuntimeCapture}
+          onToggleOperatorSopChecklistItem={(key) =>
+            setOperatorSopChecklist((current) =>
+              toggleOperatorSopChecklistItem(current, key),
+            )
+          }
           onToggleManualAppMetricsOverride={() =>
             setManualAppMetricsOverride((current) => !current)
           }
