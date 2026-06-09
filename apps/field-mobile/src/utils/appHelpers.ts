@@ -16,7 +16,7 @@ export function parseNumber(value: string): number | null {
     return null;
   }
   const parsed = Number(trimmed);
-  if (Number.isNaN(parsed)) {
+  if (!Number.isFinite(parsed)) {
     return null;
   }
   return parsed;

@@ -14,7 +14,7 @@ function buildForm(overrides = {}) {
     operatorId: " OP-001 ",
     attemptNumber: "2",
     measuredAt: " 2026-06-04T00:00:00Z ",
-    platform: "ios",
+    platform: " ios ",
     deviceModel: " iPhone 15 ",
     appVersion: " 0.1.0 ",
     captureMode: "water_impact",
@@ -125,7 +125,28 @@ test("validatePairedPayloadForSubmission reports required field failures", () =>
       paired.buildPairedPayloadFromForm(buildForm({ attemptNumber: "0" })),
       { captureRunning: false },
     ),
-    "attempt_number must be >= 1",
+    "attempt_number must be an integer >= 1",
+  );
+  assert.equal(
+    paired.validatePairedPayloadForSubmission(
+      paired.buildPairedPayloadFromForm(buildForm({ attemptNumber: "1.5" })),
+      { captureRunning: false },
+    ),
+    "attempt_number must be an integer >= 1",
+  );
+  assert.equal(
+    paired.validatePairedPayloadForSubmission(
+      paired.buildPairedPayloadFromForm(buildForm({ measuredAt: "2026-06-04 00:00:00" })),
+      { captureRunning: false },
+    ),
+    "measured_at must be ISO-8601 with timezone",
+  );
+  assert.equal(
+    paired.validatePairedPayloadForSubmission(
+      paired.buildPairedPayloadFromForm(buildForm({ platform: "web" })),
+      { captureRunning: false },
+    ),
+    "platform must be ios or android",
   );
   assert.equal(
     paired.validatePairedPayloadForSubmission(
@@ -160,14 +181,49 @@ test("validatePairedPayloadForSubmission reports required field failures", () =>
       paired.buildPairedPayloadFromForm(buildForm({ appQmax: "" })),
       { captureRunning: false },
     ),
-    "App metrics qmax/qavg/vvoid are required",
+    "App metrics qmax/qavg/vvoid/flow_time/tqmax must be finite and non-negative",
+  );
+  assert.equal(
+    paired.validatePairedPayloadForSubmission(
+      paired.buildPairedPayloadFromForm(buildForm({ appFlowTime: "" })),
+      { captureRunning: false },
+    ),
+    "App metrics qmax/qavg/vvoid/flow_time/tqmax must be finite and non-negative",
+  );
+  assert.equal(
+    paired.validatePairedPayloadForSubmission(
+      paired.buildPairedPayloadFromForm(buildForm({ appQmax: "7", appQavg: "8" })),
+      { captureRunning: false },
+    ),
+    "App metric qmax must be >= qavg",
+  );
+  assert.equal(
+    paired.validatePairedPayloadForSubmission(
+      paired.buildPairedPayloadFromForm(buildForm({ appQualityScore: "" })),
+      { captureRunning: false },
+    ),
+    "quality_score is required and must be 0-100",
+  );
+  assert.equal(
+    paired.validatePairedPayloadForSubmission(
+      paired.buildPairedPayloadFromForm(buildForm({ appQualityScore: "101" })),
+      { captureRunning: false },
+    ),
+    "quality_score is required and must be 0-100",
   );
   assert.equal(
     paired.validatePairedPayloadForSubmission(
       paired.buildPairedPayloadFromForm(buildForm({ refVvoid: "" })),
       { captureRunning: false },
     ),
-    "Reference metrics qmax/qavg/vvoid are required",
+    "Reference metrics qmax/qavg/vvoid/flow_time must be finite and non-negative",
+  );
+  assert.equal(
+    paired.validatePairedPayloadForSubmission(
+      paired.buildPairedPayloadFromForm(buildForm({ refQmax: "8", refQavg: "9" })),
+      { captureRunning: false },
+    ),
+    "Reference metric qmax must be >= qavg",
   );
 });
 

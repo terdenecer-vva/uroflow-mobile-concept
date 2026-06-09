@@ -23,6 +23,9 @@ Implemented now:
   capture as `valid`, and shows a low-quality warning for `repeat/reject` uploads.
 - Mobile submission blocks unsupported pilot `capture_mode` values, keeping the
   field workflow constrained to validated `water_impact` submissions.
+- Mobile paired submission validates Clinical Hub/eCRF contract fields before upload:
+  ISO timestamp, `ios/android` platform, integer attempt number, finite non-negative
+  required metrics, `qmax >= qavg`, and `quality_score` in `0..100`.
 - Derivatives-only feature/media manifest in mobile `ios_capture_v1` payloads, with backend validation that raw media storage/upload flags remain disabled.
 - Runtime audio recorder temp files are deleted best-effort after stop/reset; payloads retain
   derived metering/flow features only.
@@ -92,6 +95,8 @@ Not yet implemented:
   usability evidence still needs real operator execution.
 - Capture mode submission guard is unit-tested and release-gated locally; operator SOP
   drill evidence still needs real site execution.
+- Paired submission contract guard is unit-tested and release-gated locally; formal
+  data-management QC remains part of pilot operations.
 - Deterministic replay tests cover capture contract generation and queued paired+capture sync; physical-device evidence now has a validator/template but still needs real-device execution.
 - Device-matrix smoke evidence requires at least one iPhone and one Android run in
   `mobile_device_smoke_log_v0.1`, including runtime timeline evidence from
