@@ -1932,6 +1932,8 @@ def build_readiness_report(
         "ios_platform": '"platform": "ios"' in mobile_device_smoke_template_source,
         "android_platform": '"platform": "android"' in mobile_device_smoke_template_source,
         "restore_sync_check": "connectivity_restore_sync" in mobile_device_smoke_template_source,
+        "operator_sop_checklist_gate": "operator_sop_checklist_gate"
+        in mobile_device_smoke_template_source,
         "raw_media_temp_cleanup_check": "raw_media_temp_files_absent"
         in mobile_device_smoke_template_source,
         "log_phi_review_check": "device_logs_reviewed_no_phi"
@@ -1952,6 +1954,8 @@ def build_readiness_report(
         "validator_file": mobile_device_smoke_validator_path.is_file(),
         "required_platforms": "REQUIRED_PLATFORMS" in mobile_device_smoke_validator_source,
         "required_checks": "REQUIRED_SMOKE_CHECK_IDS" in mobile_device_smoke_validator_source,
+        "operator_sop_checklist_gate": "operator_sop_checklist_gate"
+        in mobile_device_smoke_validator_source,
         "sha256_traceability": "mobile_release_manifest_sha256"
         in mobile_device_smoke_validator_source,
         "no_phi_log_review": "device_logs_reviewed_no_phi"
@@ -1977,6 +1981,8 @@ def build_readiness_report(
         "required_checks_test": "requires_passing_required_checks"
         in mobile_device_smoke_validator_tests_source,
         "raw_media_temp_cleanup_test": "requires_raw_media_temp_cleanup_check"
+        in mobile_device_smoke_validator_tests_source,
+        "operator_sop_checklist_gate_test": "requires_operator_sop_checklist_gate"
         in mobile_device_smoke_validator_tests_source,
         "runtime_timeline_required_test": "requires_runtime_timeline"
         in mobile_device_smoke_validator_tests_source,

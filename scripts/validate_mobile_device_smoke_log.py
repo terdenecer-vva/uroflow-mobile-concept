@@ -14,6 +14,7 @@ REQUIRED_PLATFORMS = ("ios", "android")
 REQUIRED_SMOKE_CHECK_IDS = (
     "app_launch",
     "api_connection_check",
+    "operator_sop_checklist_gate",
     "capture_start_stop",
     "contract_payload_ready",
     "runtime_timeline_integrity",
