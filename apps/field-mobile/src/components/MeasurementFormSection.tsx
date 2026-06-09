@@ -1,5 +1,5 @@
 import React from "react";
-import { Pressable, Text } from "react-native";
+import { Pressable, Text, View } from "react-native";
 
 import type { QualityStatus } from "../types";
 import { styles } from "../styles/appStyles";
@@ -12,6 +12,7 @@ type MeasurementFormSectionProps = {
   appQmax: string;
   appQualityScore: string;
   appQualityStatus: QualityStatus;
+  qualitySubmissionWarning: string | null;
   appTqmax: string;
   appVersion: string;
   appVvoid: string;
@@ -71,6 +72,7 @@ export function MeasurementFormSection({
   appQmax,
   appQualityScore,
   appQualityStatus,
+  qualitySubmissionWarning,
   appTqmax,
   appVersion,
   appVvoid,
@@ -184,6 +186,13 @@ export function MeasurementFormSection({
         onChangeText={onAppQualityScoreChange}
         keyboardType="decimal-pad"
       />
+      {qualitySubmissionWarning ? (
+        <View style={styles.qualityWarningBox}>
+          <Text selectable style={styles.qualityWarningText}>
+            {qualitySubmissionWarning}
+          </Text>
+        </View>
+      ) : null}
       <LabeledInput label="Model ID" value={appModelId} onChangeText={onAppModelIdChange} />
 
       <Text style={styles.sectionTitle}>Reference Uroflowmeter</Text>

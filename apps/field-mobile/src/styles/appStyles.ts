@@ -56,6 +56,20 @@ export const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 2,
   },
+  qualityWarningBox: {
+    marginTop: 4,
+    marginBottom: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#f59e0b",
+    backgroundColor: "#fffbeb",
+    padding: 10,
+  },
+  qualityWarningText: {
+    color: "#92400e",
+    fontSize: 12,
+    fontWeight: "600",
+  },
   preflightBox: {
     marginTop: 2,
     marginBottom: 10,

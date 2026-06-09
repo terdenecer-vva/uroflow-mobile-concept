@@ -89,6 +89,7 @@ import {
   formatSafeResponseProblem,
 } from "./src/utils/appHelpers";
 import { buildDeviceModelLabel } from "./src/utils/deviceIdentity";
+import { buildLowQualitySubmissionWarning } from "./src/utils/qualityPolicy";
 
 const defaultMeasuredAt = new Date().toISOString().slice(0, 19) + "Z";
 
@@ -192,6 +193,10 @@ export default function App() {
     [apiBaseUrl],
   );
   const runtimeReleaseGuard = useMemo(() => buildRuntimeReleaseGuard(), []);
+  const qualitySubmissionWarning = useMemo(
+    () => buildLowQualitySubmissionWarning(appQualityStatus, runtimeCaptureContractPayload),
+    [appQualityStatus, runtimeCaptureContractPayload],
+  );
 
   const {
     pendingQueue,
@@ -629,7 +634,10 @@ export default function App() {
     if (!isClinicalHubPreflightActionAllowed(clinicalHubPreflight)) {
       return clinicalHubPreflight.message;
     }
-    return validatePairedPayloadForSubmission(payload, { captureRunning });
+    return validatePairedPayloadForSubmission(payload, {
+      captureRunning,
+      runtimeCaptureContractPayload,
+    });
   }
 
   async function syncPendingQueueWithConfiguredApi(): Promise<void> {
@@ -962,6 +970,7 @@ export default function App() {
           notes={notes}
           operatorId={operatorId}
           platform={platform}
+          qualitySubmissionWarning={qualitySubmissionWarning}
           refDeviceModel={refDeviceModel}
           refDeviceSerial={refDeviceSerial}
           refFlowTime={refFlowTime}

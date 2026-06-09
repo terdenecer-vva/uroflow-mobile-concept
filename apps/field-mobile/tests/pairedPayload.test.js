@@ -137,6 +137,31 @@ test("validatePairedPayloadForSubmission reports required field failures", () =>
   );
 });
 
+test("validatePairedPayloadForSubmission blocks runtime low-quality status upgrades", () => {
+  const runtimeRepeatPayload = {
+    analysis: {
+      runtime_quality: {
+        quality_status: "repeat",
+      },
+    },
+  };
+
+  assert.match(
+    paired.validatePairedPayloadForSubmission(
+      paired.buildPairedPayloadFromForm(buildForm({ appQualityStatus: "valid" })),
+      { captureRunning: false, runtimeCaptureContractPayload: runtimeRepeatPayload },
+    ),
+    /app quality_status cannot be valid/,
+  );
+  assert.equal(
+    paired.validatePairedPayloadForSubmission(
+      paired.buildPairedPayloadFromForm(buildForm({ appQualityStatus: "repeat" })),
+      { captureRunning: false, runtimeCaptureContractPayload: runtimeRepeatPayload },
+    ),
+    null,
+  );
+});
+
 test("validatePairedPayloadForSubmission accepts a complete payload", () => {
   assert.equal(
     paired.validatePairedPayloadForSubmission(
