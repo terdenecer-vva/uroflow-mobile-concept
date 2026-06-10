@@ -164,6 +164,7 @@ CI:
 - `mobile-build` uploads:
   - `mobile-release-manifest` (version + runtime release metadata/config + release notes digest + capture contract feature-manifest evidence + readiness gate summary + git SHA + model/schema traceability)
   - `mobile-release-readiness` (git traceability + local readiness checks + explicit external credential blockers)
+  - `mobile-external-readiness-packet` (sanitized credential/account handoff checklist with placeholder commands and no secret values)
   - `mobile-release-notes` (operator-facing release notes and required evidence reminders)
   - `mobile-dependency-review` (direct mobile dependency lockfile review, production `npm audit` summary, native sensitive dependency surface, and SEC-003 remediation hints)
   - `mobile-release-bundle-verification` (manifest/readiness/notes/store-handoff digest and traceability consistency summary)
@@ -200,7 +201,9 @@ secret blockers. The artifact has separate machine-readable gates:
 - `external_readiness_status`: aggregate external status across Expo/EAS + Clinical Hub.
 
 When status is `ready_except_external_credentials`, use `next_actions` in the artifact as the
-release handoff checklist:
+release handoff checklist. Mobile Build also publishes the same handoff as
+`mobile-external-readiness-packet`, split into JSON and Markdown so account owners can act without
+opening the full readiness report.
 
 | next action | Required setup | Verification |
 | --- | --- | --- |

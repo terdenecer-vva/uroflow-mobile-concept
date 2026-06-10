@@ -61,6 +61,7 @@ on:
       - "docs/mobile-device-smoke-log-template-v0.1.json"
       - "docs/mobile-store-rollout-handoff-template-v0.1.json"
       - "scripts/build_mobile_dependency_review.py"
+      - "scripts/build_mobile_external_readiness_packet.py"
       - "scripts/build_mobile_release_manifest.py"
       - "scripts/check_mobile_release_readiness.py"
       - "scripts/validate_mobile_device_smoke_log.py"
@@ -68,6 +69,7 @@ on:
       - "scripts/verify_mobile_release_bundle.py"
       - "tests/test_mobile_dependency_review.py"
       - "tests/test_mobile_device_smoke_log.py"
+      - "tests/test_mobile_external_readiness_packet.py"
       - "tests/test_mobile_release_bundle_verifier.py"
       - "tests/test_mobile_store_rollout_handoff.py"
       - ".github/workflows/mobile-build.yml"
@@ -77,6 +79,7 @@ on:
       - "docs/mobile-device-smoke-log-template-v0.1.json"
       - "docs/mobile-store-rollout-handoff-template-v0.1.json"
       - "scripts/build_mobile_dependency_review.py"
+      - "scripts/build_mobile_external_readiness_packet.py"
       - "scripts/build_mobile_release_manifest.py"
       - "scripts/check_mobile_release_readiness.py"
       - "scripts/validate_mobile_device_smoke_log.py"
@@ -84,6 +87,7 @@ on:
       - "scripts/verify_mobile_release_bundle.py"
       - "tests/test_mobile_dependency_review.py"
       - "tests/test_mobile_device_smoke_log.py"
+      - "tests/test_mobile_external_readiness_packet.py"
       - "tests/test_mobile_release_bundle_verifier.py"
       - "tests/test_mobile_store_rollout_handoff.py"
       - ".github/workflows/mobile-build.yml"
@@ -282,6 +286,42 @@ jobs:
               handle.write("\n".join(lines) + "\n")
           PY
 
+      - name: Build external readiness packet
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 ../../scripts/build_mobile_external_readiness_packet.py \
+            --readiness-json /tmp/mobile-release-readiness.json \
+            --output /tmp/mobile-external-readiness-packet.json \
+            --markdown-output /tmp/mobile-external-readiness-packet.md
+
+      - name: Publish external readiness packet summary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          packet = json.loads(
+              Path("/tmp/mobile-external-readiness-packet.json").read_text(
+                  encoding="utf-8"
+              )
+          )
+          summary = packet.get("summary", {})
+          lines = [
+              "## Mobile External Readiness Packet",
+              f"- Status: `{packet.get('status')}`",
+              f"- Required actions: `{summary.get('required_action_count')}`",
+              f"- Secrets to provision: `{', '.join(summary.get('secret_names', [])) if summary.get('secret_names') else 'none'}`",
+              f"- Variables to provision: `{', '.join(summary.get('variable_names', [])) if summary.get('variable_names') else 'none'}`",
+              f"- Handoff docs: `{', '.join(summary.get('docs', [])) if summary.get('docs') else 'none'}`",
+          ]
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as handle:
+              handle.write("\n".join(lines) + "\n")
+          PY
+
       - name: Build smoke template validation artifact
         shell: bash
         run: |
@@ -361,6 +401,7 @@ jobs:
               "",
               "- Download `mobile-release-manifest`.",
               "- Download `mobile-release-readiness`.",
+              "- Download `mobile-external-readiness-packet` for credential/account handoff.",
               "- Download `mobile-release-bundle-verification`.",
               "- Download `mobile-dependency-review`.",
               "- Download `mobile-device-smoke-template-validation` before filling real-device smoke evidence.",
@@ -493,6 +534,15 @@ jobs:
         with:
           name: mobile-release-readiness
           path: /tmp/mobile-release-readiness.json
+
+      - name: Upload external readiness packet
+        uses: actions/upload-artifact@v7
+        with:
+          name: mobile-external-readiness-packet
+          path: |
+            /tmp/mobile-external-readiness-packet.json
+            /tmp/mobile-external-readiness-packet.md
+          if-no-files-found: error
 
       - name: Upload release bundle verification
         uses: actions/upload-artifact@v7

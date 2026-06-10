@@ -112,6 +112,13 @@ Workflow also generates artifact `mobile-release-readiness` containing:
 - manual release requirements for Apple Developer and Google Play accounts,
 - machine-readable `next_actions` for configuring missing GitHub secrets/variables and manual store-account handoff.
 
+Workflow also generates artifact `mobile-external-readiness-packet` containing:
+- sanitized external readiness status derived from `mobile-release-readiness`,
+- required GitHub secret and variable names without secret values,
+- placeholder provisioning commands for Expo, EAS project identity, Clinical Hub, and Google Play service-account file secret,
+- manual Apple Developer/App Store Connect and Google Play account handoff actions,
+- Markdown and JSON copies suitable for account-owner release handoff.
+
 Workflow also generates artifact `mobile-release-notes` containing:
 - git SHA/ref/run-id,
 - selected build profile/platform,
@@ -203,6 +210,15 @@ python3 ../../scripts/build_mobile_dependency_review.py \
   --package-lock package-lock.json \
   --audit-json /tmp/mobile-npm-audit-prod.json \
   --output /tmp/mobile-dependency-review.json
+```
+
+External readiness packet:
+
+```bash
+python3 scripts/build_mobile_external_readiness_packet.py \
+  --readiness-json /tmp/mobile-release-readiness.json \
+  --output /tmp/mobile-external-readiness-packet.json \
+  --markdown-output /tmp/mobile-external-readiness-packet.md
 ```
 
 External handoff commands, using placeholders only:

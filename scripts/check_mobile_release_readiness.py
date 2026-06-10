@@ -889,6 +889,12 @@ def build_readiness_report(
     mobile_dependency_review_tests_path = (
         repo_root / "tests" / "test_mobile_dependency_review.py"
     )
+    mobile_external_readiness_packet_path = (
+        repo_root / "scripts" / "build_mobile_external_readiness_packet.py"
+    )
+    mobile_external_readiness_packet_tests_path = (
+        repo_root / "tests" / "test_mobile_external_readiness_packet.py"
+    )
     mobile_build_workflow_path = repo_root / ".github" / "workflows" / "mobile-build.yml"
     clinical_hub_backend_path = repo_root / "src" / "uroflow_mobile" / "clinical_hub.py"
     clinical_hub_nightly_snapshot_builder_path = (
@@ -998,6 +1004,12 @@ def build_readiness_report(
     mobile_dependency_review_source = _read_file_text(mobile_dependency_review_path)
     mobile_dependency_review_tests_source = _read_file_text(
         mobile_dependency_review_tests_path
+    )
+    mobile_external_readiness_packet_source = _read_file_text(
+        mobile_external_readiness_packet_path
+    )
+    mobile_external_readiness_packet_tests_source = _read_file_text(
+        mobile_external_readiness_packet_tests_path
     )
     mobile_build_workflow_source = _read_file_text(mobile_build_workflow_path)
     clinical_hub_backend_source = _read_file_text(clinical_hub_backend_path)
@@ -2197,6 +2209,61 @@ def build_readiness_report(
         "mobile_dependency_review_unit_tests_present",
         all(mobile_dependency_review_test_requirements.values()),
         f"requirements={mobile_dependency_review_test_requirements!r}",
+    )
+    mobile_external_readiness_packet_requirements = {
+        "builder_file": mobile_external_readiness_packet_path.is_file(),
+        "schema_version": "mobile_external_readiness_packet_v0.1"
+        in mobile_external_readiness_packet_source,
+        "readiness_input": "readiness_json" in mobile_external_readiness_packet_source,
+        "secret_redaction": "SECRET_LIKE_RE" in mobile_external_readiness_packet_source,
+        "placeholder_commands": "SECRET_COMMANDS" in mobile_external_readiness_packet_source
+        and "VARIABLE_COMMANDS" in mobile_external_readiness_packet_source,
+        "markdown_output": "markdown_output" in mobile_external_readiness_packet_source,
+    }
+    _check(
+        checks,
+        "mobile_external_readiness_packet_sources",
+        all(mobile_external_readiness_packet_requirements.values()),
+        f"requirements={mobile_external_readiness_packet_requirements!r}",
+    )
+    mobile_external_readiness_packet_ci_requirements = {
+        "workflow_file": mobile_build_workflow_path.is_file(),
+        "trigger_script_path": "scripts/build_mobile_external_readiness_packet.py"
+        in mobile_build_workflow_source,
+        "trigger_test_path": "tests/test_mobile_external_readiness_packet.py"
+        in mobile_build_workflow_source,
+        "build_step": "Build external readiness packet" in mobile_build_workflow_source,
+        "summary_step": "Publish external readiness packet summary"
+        in mobile_build_workflow_source,
+        "upload_artifact": "mobile-external-readiness-packet"
+        in mobile_build_workflow_source,
+        "json_artifact": "mobile-external-readiness-packet.json"
+        in mobile_build_workflow_source,
+        "markdown_artifact": "mobile-external-readiness-packet.md"
+        in mobile_build_workflow_source,
+    }
+    _check(
+        checks,
+        "mobile_external_readiness_packet_ci_artifact",
+        all(mobile_external_readiness_packet_ci_requirements.values()),
+        f"requirements={mobile_external_readiness_packet_ci_requirements!r}",
+    )
+    mobile_external_readiness_packet_test_requirements = {
+        "test_file": mobile_external_readiness_packet_tests_path.is_file(),
+        "blocked_packet_test": "test_mobile_external_readiness_packet_sanitizes_blockers"
+        in mobile_external_readiness_packet_tests_source,
+        "ready_packet_test": "test_mobile_external_readiness_packet_marks_ready_without_actions"
+        in mobile_external_readiness_packet_tests_source,
+        "secret_redaction_assertion": "super-secret-value"
+        in mobile_external_readiness_packet_tests_source,
+        "placeholder_command_assertion": "gh variable set EAS_PROJECT_ID"
+        in mobile_external_readiness_packet_tests_source,
+    }
+    _check(
+        checks,
+        "mobile_external_readiness_packet_unit_tests_present",
+        all(mobile_external_readiness_packet_test_requirements.values()),
+        f"requirements={mobile_external_readiness_packet_test_requirements!r}",
     )
     clinical_hub_nightly_snapshot_requirements = {
         "builder_file": clinical_hub_nightly_snapshot_builder_path.is_file(),
