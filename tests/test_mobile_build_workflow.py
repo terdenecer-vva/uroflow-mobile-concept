@@ -19,11 +19,13 @@ def test_mobile_build_workflow_runs_for_release_script_changes() -> None:
         "apps/field-mobile/**",
         "docs/mobile-device-smoke-log-template-v0.1.json",
         "scripts/build_mobile_dependency_review.py",
+        "scripts/build_mobile_external_readiness_packet.py",
         "scripts/build_mobile_release_manifest.py",
         "scripts/check_mobile_release_readiness.py",
         "scripts/validate_mobile_device_smoke_log.py",
         "tests/test_mobile_dependency_review.py",
         "tests/test_mobile_device_smoke_log.py",
+        "tests/test_mobile_external_readiness_packet.py",
         ".github/workflows/mobile-build.yml",
     }
 
@@ -44,6 +46,28 @@ def test_mobile_build_workflow_uploads_readiness_before_local_failure() -> None:
     assert build_index < upload_index < fail_index
     assert "mobile-release-readiness-exit-code" in steps[build_index]["run"]
     assert "mobile-release-readiness artifact" in steps[fail_index]["run"]
+
+
+def test_mobile_build_workflow_uploads_external_readiness_packet_before_failure() -> None:
+    payload = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
+    steps = payload["jobs"]["preflight"]["steps"]
+    step_names = [step.get("name") for step in steps]
+
+    readiness_index = step_names.index("Build release readiness report")
+    build_index = step_names.index("Build external readiness packet")
+    summary_index = step_names.index("Publish external readiness packet summary")
+    upload_index = step_names.index("Upload external readiness packet")
+    fail_index = step_names.index("Fail on local release readiness errors")
+    upload_step = steps[upload_index]
+
+    assert readiness_index < build_index < summary_index < upload_index < fail_index
+    assert "build_mobile_external_readiness_packet.py" in steps[build_index]["run"]
+    assert "--readiness-json /tmp/mobile-release-readiness.json" in steps[build_index]["run"]
+    assert "--output /tmp/mobile-external-readiness-packet.json" in steps[build_index]["run"]
+    assert "mobile-external-readiness-packet.json" in steps[summary_index]["run"]
+    assert upload_step["with"]["name"] == "mobile-external-readiness-packet"
+    assert "/tmp/mobile-external-readiness-packet.json" in upload_step["with"]["path"]
+    assert "/tmp/mobile-external-readiness-packet.md" in upload_step["with"]["path"]
 
 
 def test_mobile_build_workflow_uploads_dependency_review_before_validation() -> None:
@@ -139,6 +163,7 @@ def test_mobile_build_workflow_uploads_release_notes_artifact() -> None:
     assert notes_upload_step["with"]["name"] == "mobile-release-notes"
     assert notes_upload_step["with"]["path"] == "/tmp/mobile-release-notes.md"
     assert "mobile-device-smoke-template-validation" in steps[notes_index]["run"]
+    assert "mobile-external-readiness-packet" in steps[notes_index]["run"]
 
 
 def test_mobile_build_workflow_summary_reports_invalid_external_items() -> None:
