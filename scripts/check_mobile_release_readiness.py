@@ -2098,6 +2098,14 @@ def build_readiness_report(
         ),
         "device_smoke_evidence_summary": "device_smoke_evidence_status"
         in mobile_store_rollout_validator_source,
+        "device_smoke_evidence_summary_receipt": (
+            "device_smoke_evidence_validator_summary_status"
+            in mobile_store_rollout_validator_source
+            and "device_smoke_evidence_platforms_seen"
+            in mobile_store_rollout_validator_source
+            and "device_smoke_evidence_summary_sha256"
+            in mobile_store_rollout_validator_source
+        ),
         "blocked_external_support": "BLOCKED_STATUS" in mobile_store_rollout_validator_source,
     }
     _check(
@@ -2131,6 +2139,12 @@ def build_readiness_report(
         ),
         "device_smoke_evidence_sha_test": (
             "rejects_invalid_device_smoke_evidence_sha"
+            in mobile_store_rollout_validator_tests_source
+        ),
+        "device_smoke_evidence_summary_receipt_test": (
+            "device_smoke_evidence_platforms_seen"
+            in mobile_store_rollout_validator_tests_source
+            and "device_smoke_evidence_summary_sha256"
             in mobile_store_rollout_validator_tests_source
         ),
         "smoke_template_sha_test": "rejects_invalid_smoke_template_sha"
@@ -2168,6 +2182,14 @@ def build_readiness_report(
         in mobile_release_bundle_verifier_source,
         "device_smoke_evidence_summary_validation": (
             "device_smoke_evidence_status"
+            in mobile_release_bundle_verifier_source
+        ),
+        "device_smoke_evidence_receipt_validation": (
+            "device_smoke_evidence_validator_summary_status"
+            in mobile_release_bundle_verifier_source
+            and "device_smoke_evidence_platforms_seen"
+            in mobile_release_bundle_verifier_source
+            and "device_smoke_evidence_summary_sha256"
             in mobile_release_bundle_verifier_source
         ),
         "device_smoke_evidence_handoff_validation": (
@@ -2209,6 +2231,10 @@ def build_readiness_report(
         ),
         "device_smoke_evidence_status_mismatch_test": (
             "rejects_device_smoke_evidence_status_mismatch"
+            in mobile_release_bundle_verifier_tests_source
+        ),
+        "device_smoke_evidence_receipt_mismatch_test": (
+            "rejects_device_smoke_evidence_receipt_mismatch"
             in mobile_release_bundle_verifier_tests_source
         ),
         "failed_dependency_review_test": (

@@ -75,6 +75,13 @@ def test_mobile_store_rollout_handoff_template_validates(tmp_path: Path) -> None
         "ios:testflight_internal",
     ]
     assert summary["device_smoke_evidence_status"] == "blocked_external"
+    assert (
+        summary["device_smoke_evidence_validator_summary_status"]
+        == "blocked_external"
+    )
+    assert summary["device_smoke_evidence_platforms_seen"] == []
+    assert summary["device_smoke_evidence_log_sha256"] == ""
+    assert summary["device_smoke_evidence_summary_sha256"] == ""
     assert "mobile_release_manifest_archived" in summary["required_handoff_check_ids"]
     assert "mobile_dependency_review_archived" in summary["required_handoff_check_ids"]
     assert (
@@ -150,6 +157,10 @@ def test_mobile_store_rollout_handoff_accepts_linked_device_smoke_evidence(
 
     assert summary["status"] == "pass"
     assert summary["device_smoke_evidence_status"] == "pass"
+    assert summary["device_smoke_evidence_validator_summary_status"] == "pass"
+    assert summary["device_smoke_evidence_platforms_seen"] == ["android", "ios"]
+    assert summary["device_smoke_evidence_log_sha256"] == SHA256_ZERO
+    assert summary["device_smoke_evidence_summary_sha256"] == "1" * 64
 
 
 def test_mobile_store_rollout_handoff_requires_device_smoke_evidence_for_distribution(
