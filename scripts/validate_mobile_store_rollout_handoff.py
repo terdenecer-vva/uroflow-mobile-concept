@@ -327,13 +327,20 @@ def validate_rollout_handoff(payload: dict[str, Any]) -> dict[str, Any]:
         errors.append(f"rollout_status must be one of {sorted(ALLOWED_CHANNEL_STATUSES)!r}")
 
     handoff_checks = _as_list(payload.get("handoff_checks"))
+    device_smoke_evidence = _as_dict(payload.get("device_smoke_evidence"))
     _validate_release(_as_dict(payload.get("release")), errors)
     _validate_handoff_checks(handoff_checks, rollout_status, errors)
     device_smoke_evidence_status = _validate_device_smoke_evidence(
-        _as_dict(payload.get("device_smoke_evidence")),
+        device_smoke_evidence,
         handoff_checks,
         rollout_status,
         errors,
+    )
+    device_smoke_evidence_platforms_seen = sorted(
+        {
+            platform.lower()
+            for platform in _string_list(device_smoke_evidence.get("platforms_seen"))
+        }
     )
 
     channels = [_as_dict(channel) for channel in _as_list(payload.get("channels"))]
@@ -365,6 +372,16 @@ def validate_rollout_handoff(payload: dict[str, Any]) -> dict[str, Any]:
         "channels_seen": sorted(f"{platform}:{channel}" for platform, channel in channels_seen),
         "blocked_channels": sorted(blocked_channels),
         "device_smoke_evidence_status": device_smoke_evidence_status,
+        "device_smoke_evidence_validator_summary_status": _read_text(
+            device_smoke_evidence.get("validator_summary_status")
+        ).lower(),
+        "device_smoke_evidence_platforms_seen": device_smoke_evidence_platforms_seen,
+        "device_smoke_evidence_log_sha256": _read_text(
+            device_smoke_evidence.get("mobile_device_smoke_log_sha256")
+        ).lower(),
+        "device_smoke_evidence_summary_sha256": _read_text(
+            device_smoke_evidence.get("mobile_device_smoke_summary_sha256")
+        ).lower(),
         "required_channels": sorted(
             f"{platform}:{channel}" for platform, channel in REQUIRED_CHANNELS
         ),

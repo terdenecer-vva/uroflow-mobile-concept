@@ -40,6 +40,10 @@ def _string_list(value: Any) -> list[str]:
     return [item for item in _as_list(value) if isinstance(item, str)]
 
 
+def _read_text(value: Any) -> str:
+    return value.strip() if isinstance(value, str) else ""
+
+
 def _sha256_file(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
@@ -501,6 +505,40 @@ def _validate_store_rollout_handoff(
         handoff_summary.get("device_smoke_evidence_status"),
         device_smoke_evidence_status,
     )
+    _compare_field(
+        errors,
+        "store_rollout_handoff.summary",
+        "device_smoke_evidence_validator_summary_status",
+        handoff_summary.get("device_smoke_evidence_validator_summary_status"),
+        _read_text(device_smoke_evidence.get("validator_summary_status")).lower(),
+    )
+    _compare_field(
+        errors,
+        "store_rollout_handoff.summary",
+        "device_smoke_evidence_platforms_seen",
+        handoff_summary.get("device_smoke_evidence_platforms_seen"),
+        sorted(
+            {
+                platform.strip().lower()
+                for platform in _string_list(device_smoke_evidence.get("platforms_seen"))
+                if platform.strip()
+            }
+        ),
+    )
+    _compare_field(
+        errors,
+        "store_rollout_handoff.summary",
+        "device_smoke_evidence_log_sha256",
+        handoff_summary.get("device_smoke_evidence_log_sha256"),
+        _read_text(device_smoke_evidence.get("mobile_device_smoke_log_sha256")).lower(),
+    )
+    _compare_field(
+        errors,
+        "store_rollout_handoff.summary",
+        "device_smoke_evidence_summary_sha256",
+        handoff_summary.get("device_smoke_evidence_summary_sha256"),
+        _read_text(device_smoke_evidence.get("mobile_device_smoke_summary_sha256")).lower(),
+    )
 
 
 def verify_release_bundle(
@@ -564,6 +602,18 @@ def verify_release_bundle(
         "store_rollout_blocked_channels": handoff_summary.get("blocked_channels", []),
         "device_smoke_evidence_status": handoff_summary.get(
             "device_smoke_evidence_status"
+        ),
+        "device_smoke_evidence_validator_summary_status": handoff_summary.get(
+            "device_smoke_evidence_validator_summary_status"
+        ),
+        "device_smoke_evidence_platforms_seen": handoff_summary.get(
+            "device_smoke_evidence_platforms_seen", []
+        ),
+        "device_smoke_evidence_log_sha256": handoff_summary.get(
+            "device_smoke_evidence_log_sha256"
+        ),
+        "device_smoke_evidence_summary_sha256": handoff_summary.get(
+            "device_smoke_evidence_summary_sha256"
         ),
         "artifact_sha256": {
             "mobile_release_manifest": _sha256_file(manifest_json),

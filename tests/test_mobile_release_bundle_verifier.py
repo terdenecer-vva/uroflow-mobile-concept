@@ -254,6 +254,10 @@ def _valid_bundle(tmp_path: Path) -> dict[str, Path]:
             "ios:testflight_internal",
         ],
         "device_smoke_evidence_status": "blocked_external",
+        "device_smoke_evidence_validator_summary_status": "blocked_external",
+        "device_smoke_evidence_platforms_seen": [],
+        "device_smoke_evidence_log_sha256": "",
+        "device_smoke_evidence_summary_sha256": "",
         "required_channels": [
             "android:play_internal_testing",
             "ios:testflight_internal",
@@ -325,6 +329,13 @@ def test_mobile_release_bundle_verifier_accepts_consistent_bundle(tmp_path: Path
         "ios:testflight_internal",
     ]
     assert summary["device_smoke_evidence_status"] == "blocked_external"
+    assert (
+        summary["device_smoke_evidence_validator_summary_status"]
+        == "blocked_external"
+    )
+    assert summary["device_smoke_evidence_platforms_seen"] == []
+    assert summary["device_smoke_evidence_log_sha256"] == ""
+    assert summary["device_smoke_evidence_summary_sha256"] == ""
     assert "mobile_dependency_review" in summary["artifact_sha256"]
     assert "mobile_external_readiness_packet" in summary["artifact_sha256"]
     assert "mobile_device_smoke_template_summary" in summary["artifact_sha256"]
@@ -459,6 +470,34 @@ def test_mobile_release_bundle_verifier_rejects_device_smoke_evidence_status_mis
     assert summary["status"] == "fail"
     assert any(
         "store_rollout_handoff.summary.device_smoke_evidence_status mismatch" in error
+        for error in summary["errors"]
+    )
+
+
+def test_mobile_release_bundle_verifier_rejects_device_smoke_evidence_receipt_mismatch(
+    tmp_path: Path,
+) -> None:
+    paths = _valid_bundle(tmp_path)
+    handoff_summary = json.loads(paths["handoff_summary"].read_text(encoding="utf-8"))
+    handoff_summary["device_smoke_evidence_validator_summary_status"] = "pass"
+    handoff_summary["device_smoke_evidence_platforms_seen"] = ["android", "ios"]
+    handoff_summary["device_smoke_evidence_log_sha256"] = "0" * 64
+    handoff_summary["device_smoke_evidence_summary_sha256"] = "1" * 64
+    _write_json(paths["handoff_summary"], handoff_summary)
+
+    result = _run_verifier(paths, check=False)
+    summary = json.loads(result.stdout)
+
+    assert result.returncode == 1
+    assert summary["status"] == "fail"
+    assert any(
+        "store_rollout_handoff.summary.device_smoke_evidence_platforms_seen mismatch"
+        in error
+        for error in summary["errors"]
+    )
+    assert any(
+        "store_rollout_handoff.summary.device_smoke_evidence_summary_sha256 mismatch"
+        in error
         for error in summary["errors"]
     )
 

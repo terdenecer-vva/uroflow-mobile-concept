@@ -167,8 +167,8 @@ CI:
   - `mobile-external-readiness-packet` (sanitized credential/account handoff checklist with placeholder commands, no secret values, and bundle SHA-256 traceability)
   - `mobile-release-notes` (operator-facing release notes and required evidence reminders)
   - `mobile-dependency-review` (direct mobile dependency lockfile review, production `npm audit` summary, native sensitive dependency surface, and SEC-003 remediation hints)
-  - `mobile-release-bundle-verification` (manifest/readiness/notes/external-readiness/device-smoke/store-handoff digest and traceability consistency summary)
-  - `mobile-store-rollout-handoff` (per-run TestFlight/Play Internal handoff template + validation summary with current external blockers and physical-device smoke evidence digest placeholders)
+  - `mobile-release-bundle-verification` (manifest/readiness/notes/external-readiness/device-smoke/store-handoff digest, evidence receipt, and traceability consistency summary)
+  - `mobile-store-rollout-handoff` (per-run TestFlight/Play Internal handoff template + validation summary with current external blockers and physical-device smoke evidence status/platform/digest receipt)
   - `mobile-eas-build-result-<run_id>` (raw EAS JSON response for build IDs/URLs)
   - `mobile-eas-submit-result-<run_id>` (raw EAS submit log + exit code when `submit_to_store=true`)
 - Workflow summary includes release readiness status and direct EAS build links for operator/release use.
