@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
 import re
@@ -40,6 +41,10 @@ def _as_list(value: Any) -> list[Any]:
 
 def _read_text(value: Any) -> str:
     return value.strip() if isinstance(value, str) else ""
+
+
+def _sha256_file(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def _is_iso_timestamp(value: str) -> bool:
@@ -284,6 +289,7 @@ def main() -> int:
         raise SystemExit("smoke log root must be a JSON object")
 
     summary = validate_smoke_log(payload)
+    summary["smoke_log_sha256"] = _sha256_file(args.smoke_log)
     encoded = json.dumps(summary, ensure_ascii=False, indent=2)
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)

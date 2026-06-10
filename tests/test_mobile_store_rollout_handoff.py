@@ -15,6 +15,28 @@ def _valid_payload() -> dict:
     return json.loads(TEMPLATE.read_text(encoding="utf-8"))
 
 
+def _set_handoff_check_status(payload: dict, check_id: str, status: str) -> None:
+    for check in payload["handoff_checks"]:
+        if check["id"] == check_id:
+            check["status"] = status
+            return
+    raise AssertionError(f"missing handoff check {check_id!r}")
+
+
+def _mark_device_smoke_evidence_pass(payload: dict) -> None:
+    _set_handoff_check_status(payload, "device_smoke_evidence_linked", "pass")
+    payload["device_smoke_evidence"] = {
+        "status": "pass",
+        "mobile_device_smoke_log_sha256": SHA256_ZERO,
+        "mobile_device_smoke_summary_sha256": "1" * 64,
+        "summary_url": "https://github.com/example/run/artifacts/mobile-device-smoke-summary",
+        "validated_at_utc": "2026-06-05T21:30:00Z",
+        "validator_summary_status": "pass",
+        "platforms_seen": ["android", "ios"],
+        "blockers": [],
+    }
+
+
 def _run_validator(
     tmp_path: Path,
     payload: dict,
@@ -52,6 +74,7 @@ def test_mobile_store_rollout_handoff_template_validates(tmp_path: Path) -> None
         "android:play_internal_testing",
         "ios:testflight_internal",
     ]
+    assert summary["device_smoke_evidence_status"] == "blocked_external"
     assert "mobile_release_manifest_archived" in summary["required_handoff_check_ids"]
     assert "mobile_dependency_review_archived" in summary["required_handoff_check_ids"]
     assert (
@@ -114,6 +137,43 @@ def test_mobile_store_rollout_handoff_requires_pass_checks_for_distribution(
     assert "channels[0].checks[apple_developer_access].status must be 'pass'" in summary[
         "errors"
     ]
+
+
+def test_mobile_store_rollout_handoff_accepts_linked_device_smoke_evidence(
+    tmp_path: Path,
+) -> None:
+    payload = _valid_payload()
+    _mark_device_smoke_evidence_pass(payload)
+
+    result = _run_validator(tmp_path, payload)
+    summary = json.loads(result.stdout)
+
+    assert summary["status"] == "pass"
+    assert summary["device_smoke_evidence_status"] == "pass"
+
+
+def test_mobile_store_rollout_handoff_requires_device_smoke_evidence_for_distribution(
+    tmp_path: Path,
+) -> None:
+    payload = copy.deepcopy(_valid_payload())
+    payload["rollout_status"] = "submitted"
+    payload["handoff_checks"] = [
+        {**check, "status": "pass"} for check in payload["handoff_checks"]
+    ]
+
+    result = _run_validator(tmp_path, payload, check=False)
+    summary = json.loads(result.stdout)
+
+    assert result.returncode == 1
+    assert summary["status"] == "fail"
+    assert (
+        "device_smoke_evidence.status must match "
+        "handoff_checks[device_smoke_evidence_linked].status"
+    ) in summary["errors"]
+    assert (
+        "device_smoke_evidence.status must be 'pass' for distributable rollout"
+        in summary["errors"]
+    )
 
 
 def test_mobile_store_rollout_handoff_rejects_invalid_release_sha(
@@ -182,3 +242,40 @@ def test_mobile_store_rollout_handoff_rejects_invalid_external_readiness_packet_
         "release.mobile_external_readiness_packet_sha256 must be a lowercase "
         "SHA-256 hex digest"
     ) in summary["errors"]
+
+
+def test_mobile_store_rollout_handoff_rejects_invalid_device_smoke_evidence_sha(
+    tmp_path: Path,
+) -> None:
+    payload = _valid_payload()
+    _mark_device_smoke_evidence_pass(payload)
+    payload["device_smoke_evidence"]["mobile_device_smoke_log_sha256"] = "A" * 64
+
+    result = _run_validator(tmp_path, payload, check=False)
+    summary = json.loads(result.stdout)
+
+    assert result.returncode == 1
+    assert summary["status"] == "fail"
+    assert (
+        "device_smoke_evidence.mobile_device_smoke_log_sha256 must be a lowercase "
+        "SHA-256 hex digest"
+    ) in summary["errors"]
+
+
+def test_mobile_store_rollout_handoff_rejects_incomplete_device_smoke_evidence(
+    tmp_path: Path,
+) -> None:
+    payload = _valid_payload()
+    _mark_device_smoke_evidence_pass(payload)
+    payload["device_smoke_evidence"]["platforms_seen"] = ["ios"]
+    payload["device_smoke_evidence"]["summary_url"] = "http://example.invalid/summary"
+
+    result = _run_validator(tmp_path, payload, check=False)
+    summary = json.loads(result.stdout)
+
+    assert result.returncode == 1
+    assert summary["status"] == "fail"
+    assert "device_smoke_evidence.summary_url must be an https URL" in summary["errors"]
+    assert "device_smoke_evidence.platforms_seen must include android" in summary[
+        "errors"
+    ]
