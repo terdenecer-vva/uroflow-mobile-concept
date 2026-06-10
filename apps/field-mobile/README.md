@@ -164,10 +164,10 @@ CI:
 - `mobile-build` uploads:
   - `mobile-release-manifest` (version + runtime release metadata/config + release notes digest + capture contract feature-manifest evidence + readiness gate summary + git SHA + model/schema traceability)
   - `mobile-release-readiness` (git traceability + local readiness checks + explicit external credential blockers)
-  - `mobile-external-readiness-packet` (sanitized credential/account handoff checklist with placeholder commands and no secret values)
+  - `mobile-external-readiness-packet` (sanitized credential/account handoff checklist with placeholder commands, no secret values, and bundle SHA-256 traceability)
   - `mobile-release-notes` (operator-facing release notes and required evidence reminders)
   - `mobile-dependency-review` (direct mobile dependency lockfile review, production `npm audit` summary, native sensitive dependency surface, and SEC-003 remediation hints)
-  - `mobile-release-bundle-verification` (manifest/readiness/notes/store-handoff digest and traceability consistency summary)
+  - `mobile-release-bundle-verification` (manifest/readiness/notes/external-readiness/store-handoff digest and traceability consistency summary)
   - `mobile-store-rollout-handoff` (per-run TestFlight/Play Internal handoff template + validation summary with current external blockers)
   - `mobile-eas-build-result-<run_id>` (raw EAS JSON response for build IDs/URLs)
   - `mobile-eas-submit-result-<run_id>` (raw EAS submit log + exit code when `submit_to_store=true`)
@@ -203,7 +203,8 @@ secret blockers. The artifact has separate machine-readable gates:
 When status is `ready_except_external_credentials`, use `next_actions` in the artifact as the
 release handoff checklist. Mobile Build also publishes the same handoff as
 `mobile-external-readiness-packet`, split into JSON and Markdown so account owners can act without
-opening the full readiness report.
+opening the full readiness report. The store rollout handoff and release bundle verifier also trace
+the packet SHA-256 digest, so stale credential handoff data fails the release artifact bundle check.
 
 | next action | Required setup | Verification |
 | --- | --- | --- |
