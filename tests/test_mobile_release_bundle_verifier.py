@@ -26,6 +26,30 @@ def _valid_bundle(tmp_path: Path) -> dict[str, Path]:
         "# Uroflow Field Mobile Release Notes\n\nBundle verifier test notes.\n",
         encoding="utf-8",
     )
+    dependency_review = {
+        "schema_version": "mobile_dependency_review_v0.1",
+        "status": "pass",
+        "failed_checks": [],
+        "traceability": {
+            "git_sha": GIT_SHA,
+            "git_ref": "refs/heads/main",
+            "git_run_id": RUN_ID,
+            "workflow": "Mobile Build",
+        },
+        "audit": {
+            "status": "pass",
+            "vulnerabilities": {
+                "info": 0,
+                "low": 0,
+                "moderate": 0,
+                "high": 0,
+                "critical": 0,
+                "total": 0,
+            },
+        },
+    }
+    dependency_review_path = tmp_path / "mobile-dependency-review.json"
+    _write_json(dependency_review_path, dependency_review)
     smoke_template_summary = {
         "schema_version": "mobile_device_smoke_log_v0.1",
         "status": "pass",
@@ -120,6 +144,7 @@ def _valid_bundle(tmp_path: Path) -> dict[str, Path]:
             "mobile_release_manifest_sha256": _sha256(manifest_path),
             "mobile_release_readiness_sha256": _sha256(readiness_path),
             "mobile_release_notes_sha256": _sha256(notes_path),
+            "mobile_dependency_review_sha256": _sha256(dependency_review_path),
             "mobile_device_smoke_template_summary_sha256": _sha256(
                 smoke_template_summary_path
             ),
@@ -147,6 +172,7 @@ def _valid_bundle(tmp_path: Path) -> dict[str, Path]:
         "manifest": manifest_path,
         "readiness": readiness_path,
         "notes": notes_path,
+        "dependency_review": dependency_review_path,
         "smoke_template_summary": smoke_template_summary_path,
         "handoff": handoff_path,
         "handoff_summary": handoff_summary_path,
@@ -169,6 +195,8 @@ def _run_verifier(
         str(paths["readiness"]),
         "--release-notes",
         str(paths["notes"]),
+        "--dependency-review-json",
+        str(paths["dependency_review"]),
         "--smoke-template-summary-json",
         str(paths["smoke_template_summary"]),
         "--store-rollout-handoff-json",
@@ -199,6 +227,7 @@ def test_mobile_release_bundle_verifier_accepts_consistent_bundle(tmp_path: Path
         "android:play_internal_testing",
         "ios:testflight_internal",
     ]
+    assert "mobile_dependency_review" in summary["artifact_sha256"]
     assert "mobile_device_smoke_template_summary" in summary["artifact_sha256"]
     assert json.loads((tmp_path / "bundle-summary.json").read_text()) == summary
 
@@ -252,6 +281,76 @@ def test_mobile_release_bundle_verifier_rejects_smoke_template_digest_mismatch(
         "mobile_device_smoke_template_summary_sha256 mismatch" in error
         for error in summary["errors"]
     )
+
+
+def test_mobile_release_bundle_verifier_rejects_dependency_review_digest_mismatch(
+    tmp_path: Path,
+) -> None:
+    paths = _valid_bundle(tmp_path)
+    handoff = json.loads(paths["handoff"].read_text(encoding="utf-8"))
+    handoff["release"]["mobile_dependency_review_sha256"] = "0" * 64
+    _write_json(paths["handoff"], handoff)
+
+    result = _run_verifier(paths, check=False)
+    summary = json.loads(result.stdout)
+
+    assert result.returncode == 1
+    assert summary["status"] == "fail"
+    assert any(
+        "mobile_dependency_review_sha256 mismatch" in error
+        for error in summary["errors"]
+    )
+
+
+def test_mobile_release_bundle_verifier_rejects_failed_dependency_review(
+    tmp_path: Path,
+) -> None:
+    paths = _valid_bundle(tmp_path)
+    review_payload = json.loads(paths["dependency_review"].read_text(encoding="utf-8"))
+    review_payload["status"] = "fail"
+    review_payload["failed_checks"] = ["production_audit_no_known_vulnerabilities"]
+    review_payload["audit"]["status"] = "fail"
+    review_payload["audit"]["vulnerabilities"]["total"] = 1
+    _write_json(paths["dependency_review"], review_payload)
+    handoff = json.loads(paths["handoff"].read_text(encoding="utf-8"))
+    handoff["release"]["mobile_dependency_review_sha256"] = _sha256(
+        paths["dependency_review"]
+    )
+    _write_json(paths["handoff"], handoff)
+
+    result = _run_verifier(paths, check=False)
+    summary = json.loads(result.stdout)
+
+    assert result.returncode == 1
+    assert summary["status"] == "fail"
+    assert "mobile_dependency_review.status must be 'pass'" in summary["errors"]
+    assert "mobile_dependency_review.failed_checks must be empty" in summary["errors"]
+    assert "mobile_dependency_review.audit.status must be 'pass'" in summary["errors"]
+    assert (
+        "mobile_dependency_review.audit.vulnerabilities.total must be 0"
+        in summary["errors"]
+    )
+
+
+def test_mobile_release_bundle_verifier_rejects_missing_dependency_failed_checks(
+    tmp_path: Path,
+) -> None:
+    paths = _valid_bundle(tmp_path)
+    review_payload = json.loads(paths["dependency_review"].read_text(encoding="utf-8"))
+    del review_payload["failed_checks"]
+    _write_json(paths["dependency_review"], review_payload)
+    handoff = json.loads(paths["handoff"].read_text(encoding="utf-8"))
+    handoff["release"]["mobile_dependency_review_sha256"] = _sha256(
+        paths["dependency_review"]
+    )
+    _write_json(paths["handoff"], handoff)
+
+    result = _run_verifier(paths, check=False)
+    summary = json.loads(result.stdout)
+
+    assert result.returncode == 1
+    assert summary["status"] == "fail"
+    assert "mobile_dependency_review.failed_checks must be empty" in summary["errors"]
 
 
 def test_mobile_release_bundle_verifier_rejects_failed_smoke_template_summary(

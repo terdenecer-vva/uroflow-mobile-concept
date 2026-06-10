@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 TRACEABILITY_FIELDS = ("git_sha", "git_ref", "git_run_id", "workflow")
+DEPENDENCY_REVIEW_SCHEMA_VERSION = "mobile_dependency_review_v0.1"
 SMOKE_TEMPLATE_SUMMARY_SCHEMA_VERSION = "mobile_device_smoke_log_v0.1"
 READINESS_SUMMARY_FIELDS = (
     "status",
@@ -254,11 +255,46 @@ def _validate_smoke_template_summary(
     return _sha256_file(smoke_template_summary)
 
 
+def _validate_dependency_review(
+    dependency_review_json: Path, expected_traceability: dict[str, Any], errors: list[str]
+) -> str:
+    payload = _load_json(dependency_review_json)
+    if payload.get("schema_version") != DEPENDENCY_REVIEW_SCHEMA_VERSION:
+        errors.append(
+            "mobile_dependency_review.schema_version must be "
+            f"{DEPENDENCY_REVIEW_SCHEMA_VERSION!r}"
+        )
+    if payload.get("status") != "pass":
+        errors.append("mobile_dependency_review.status must be 'pass'")
+    if payload.get("failed_checks") != []:
+        errors.append("mobile_dependency_review.failed_checks must be empty")
+
+    dependency_traceability = _as_dict(payload.get("traceability"))
+    for field in TRACEABILITY_FIELDS:
+        _compare_field(
+            errors,
+            "mobile_dependency_review.traceability",
+            field,
+            dependency_traceability.get(field),
+            expected_traceability.get(field),
+        )
+
+    audit = _as_dict(payload.get("audit"))
+    if audit.get("status") != "pass":
+        errors.append("mobile_dependency_review.audit.status must be 'pass'")
+    vulnerabilities = _as_dict(audit.get("vulnerabilities"))
+    if vulnerabilities.get("total") != 0:
+        errors.append("mobile_dependency_review.audit.vulnerabilities.total must be 0")
+
+    return _sha256_file(dependency_review_json)
+
+
 def _validate_store_rollout_handoff(
     manifest: dict[str, Any],
     readiness: Path,
     manifest_path: Path,
     release_notes_sha: str,
+    dependency_review_sha: str,
     smoke_template_summary_sha: str,
     handoff: dict[str, Any],
     handoff_summary: dict[str, Any],
@@ -304,6 +340,13 @@ def _validate_store_rollout_handoff(
     _compare_field(
         errors,
         "store_rollout_handoff.release",
+        "mobile_dependency_review_sha256",
+        handoff_release.get("mobile_dependency_review_sha256"),
+        dependency_review_sha,
+    )
+    _compare_field(
+        errors,
+        "store_rollout_handoff.release",
         "mobile_device_smoke_template_summary_sha256",
         handoff_release.get("mobile_device_smoke_template_summary_sha256"),
         smoke_template_summary_sha,
@@ -323,6 +366,7 @@ def verify_release_bundle(
     manifest_json: Path,
     readiness_json: Path,
     release_notes: Path,
+    dependency_review_json: Path,
     smoke_template_summary_json: Path,
     store_rollout_handoff_json: Path,
     store_rollout_summary_json: Path,
@@ -345,6 +389,9 @@ def verify_release_bundle(
     )
     _validate_manifest_readiness_summary(manifest, readiness, errors)
     release_notes_sha = _validate_release_notes(manifest, release_notes, errors)
+    dependency_review_sha = _validate_dependency_review(
+        dependency_review_json, traceability, errors
+    )
     smoke_template_summary_sha = _validate_smoke_template_summary(
         smoke_template_summary_json, errors
     )
@@ -353,6 +400,7 @@ def verify_release_bundle(
         readiness_json,
         manifest_json,
         release_notes_sha,
+        dependency_review_sha,
         smoke_template_summary_sha,
         handoff,
         handoff_summary,
@@ -371,6 +419,7 @@ def verify_release_bundle(
             "mobile_release_manifest": _sha256_file(manifest_json),
             "mobile_release_readiness": _sha256_file(readiness_json),
             "mobile_release_notes": release_notes_sha,
+            "mobile_dependency_review": dependency_review_sha,
             "mobile_device_smoke_template_summary": smoke_template_summary_sha,
             "mobile_store_rollout_handoff": _sha256_file(store_rollout_handoff_json),
             "mobile_store_rollout_handoff_summary": _sha256_file(
@@ -388,6 +437,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--manifest-json", type=Path, required=True)
     parser.add_argument("--readiness-json", type=Path, required=True)
     parser.add_argument("--release-notes", type=Path, required=True)
+    parser.add_argument("--dependency-review-json", type=Path, required=True)
     parser.add_argument("--smoke-template-summary-json", type=Path, required=True)
     parser.add_argument("--store-rollout-handoff-json", type=Path, required=True)
     parser.add_argument("--store-rollout-summary-json", type=Path, required=True)
@@ -403,6 +453,7 @@ def main() -> int:
         manifest_json=args.manifest_json,
         readiness_json=args.readiness_json,
         release_notes=args.release_notes,
+        dependency_review_json=args.dependency_review_json,
         smoke_template_summary_json=args.smoke_template_summary_json,
         store_rollout_handoff_json=args.store_rollout_handoff_json,
         store_rollout_summary_json=args.store_rollout_summary_json,

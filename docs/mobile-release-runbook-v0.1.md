@@ -127,16 +127,16 @@ Workflow also generates artifact `mobile-device-smoke-template-validation` conta
 - validator exit code for diagnosis if the template contract breaks.
 
 Workflow also generates artifact `mobile-store-rollout-handoff` containing:
-- per-run git SHA, app version, build profile/channel, and SHA-256 digests for `mobile-release-manifest`, `mobile-release-readiness`, `mobile-release-notes`, and `mobile-device-smoke-template-validation` summary,
+- per-run git SHA, app version, build profile/channel, and SHA-256 digests for `mobile-release-manifest`, `mobile-release-readiness`, `mobile-release-notes`, `mobile-dependency-review`, and `mobile-device-smoke-template-validation` summary,
 - iOS TestFlight internal handoff checklist and current external blockers,
 - Android Play Internal Testing handoff checklist and current external blockers,
 - validation summary from `scripts/validate_mobile_store_rollout_handoff.py`.
 
 Workflow also generates artifact `mobile-release-bundle-verification` containing:
 - git/run traceability shared by manifest, readiness, and store rollout handoff,
-- SHA-256 fingerprints for manifest, readiness, release notes, smoke-template validation summary, store rollout handoff, and store rollout summary,
+- SHA-256 fingerprints for manifest, readiness, release notes, dependency review, smoke-template validation summary, store rollout handoff, and store rollout summary,
 - consistency checks proving the manifest readiness summary matches raw readiness JSON,
-- digest checks proving the store rollout handoff references the exact manifest/readiness/notes/smoke-template summary files from the same run.
+- digest checks proving the store rollout handoff references the exact manifest/readiness/notes/dependency-review/smoke-template summary files from the same run.
 
 Manifest script:
 
@@ -186,6 +186,7 @@ python3 scripts/verify_mobile_release_bundle.py \
   --manifest-json /tmp/mobile-release-manifest.json \
   --readiness-json /tmp/mobile-release-readiness.json \
   --release-notes /tmp/mobile-release-notes.md \
+  --dependency-review-json /tmp/mobile-dependency-review.json \
   --smoke-template-summary-json /tmp/mobile-device-smoke-template-summary.json \
   --store-rollout-handoff-json /tmp/mobile-store-rollout-handoff.json \
   --store-rollout-summary-json /tmp/mobile-store-rollout-summary.json \

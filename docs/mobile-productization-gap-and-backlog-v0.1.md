@@ -55,7 +55,8 @@ Implemented now:
 - Store rollout handoff JSON template, validator, and Mobile Build artifact for TestFlight/Play Internal traceability.
 - Mobile release bundle verifier for manifest/readiness/notes/store-handoff artifact consistency.
 - Mobile dependency review artifact for direct dependency lockfile integrity, production
-  `npm audit` summary, native sensitive dependency surface review, and SEC-003 remediation hints.
+  `npm audit` summary, native sensitive dependency surface review, SEC-003 remediation
+  hints, and release bundle SHA-256 traceability.
 - In-app Release Identity panel for app/model/schema/runtime/privacy/data-residency evidence on device.
 - Runtime release guard blocks capture/API/submit/sync actions when app/model/schema/runtime
   config, endpoint set, privacy, data-residency, or debug gates are incompatible.
