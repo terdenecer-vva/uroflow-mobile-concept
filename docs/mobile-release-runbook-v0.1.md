@@ -145,7 +145,8 @@ Workflow also generates artifact `mobile-release-bundle-verification` containing
 - git/run traceability shared by manifest, readiness, and store rollout handoff,
 - SHA-256 fingerprints for manifest, readiness, release notes, dependency review, external readiness packet, smoke-template validation summary, store rollout handoff, and store rollout summary,
 - consistency checks proving the manifest readiness summary matches raw readiness JSON,
-- digest checks proving the store rollout handoff references the exact manifest/readiness/notes/dependency-review/external-readiness-packet/smoke-template summary files from the same run.
+- digest checks proving the store rollout handoff references the exact manifest/readiness/notes/dependency-review/external-readiness-packet/smoke-template summary files from the same run,
+- `device_smoke_evidence_status` copied from the validated store rollout summary, proving the bundle records whether physical iPhone/Android smoke evidence is still externally blocked or linked.
 
 Manifest script:
 

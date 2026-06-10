@@ -229,7 +229,19 @@ def _valid_bundle(tmp_path: Path) -> dict[str, Path]:
             "mobile_device_smoke_template_summary_sha256": _sha256(
                 smoke_template_summary_path
             ),
-        }
+        },
+        "device_smoke_evidence": {
+            "status": "blocked_external",
+            "mobile_device_smoke_log_sha256": "",
+            "mobile_device_smoke_summary_sha256": "",
+            "summary_url": "",
+            "validated_at_utc": "",
+            "validator_summary_status": "blocked_external",
+            "platforms_seen": [],
+            "blockers": [
+                "Validated iOS and Android physical-device smoke evidence is not available."
+            ],
+        },
     }
     handoff_path = tmp_path / "mobile-store-rollout-handoff.json"
     _write_json(handoff_path, handoff)
@@ -241,6 +253,7 @@ def _valid_bundle(tmp_path: Path) -> dict[str, Path]:
             "android:play_internal_testing",
             "ios:testflight_internal",
         ],
+        "device_smoke_evidence_status": "blocked_external",
         "required_channels": [
             "android:play_internal_testing",
             "ios:testflight_internal",
@@ -311,6 +324,7 @@ def test_mobile_release_bundle_verifier_accepts_consistent_bundle(tmp_path: Path
         "android:play_internal_testing",
         "ios:testflight_internal",
     ]
+    assert summary["device_smoke_evidence_status"] == "blocked_external"
     assert "mobile_dependency_review" in summary["artifact_sha256"]
     assert "mobile_external_readiness_packet" in summary["artifact_sha256"]
     assert "mobile_device_smoke_template_summary" in summary["artifact_sha256"]
@@ -426,6 +440,25 @@ def test_mobile_release_bundle_verifier_rejects_external_readiness_packet_status
     assert summary["status"] == "fail"
     assert any(
         "mobile_external_readiness_packet.readiness_status mismatch" in error
+        for error in summary["errors"]
+    )
+
+
+def test_mobile_release_bundle_verifier_rejects_device_smoke_evidence_status_mismatch(
+    tmp_path: Path,
+) -> None:
+    paths = _valid_bundle(tmp_path)
+    handoff_summary = json.loads(paths["handoff_summary"].read_text(encoding="utf-8"))
+    handoff_summary["device_smoke_evidence_status"] = "pass"
+    _write_json(paths["handoff_summary"], handoff_summary)
+
+    result = _run_verifier(paths, check=False)
+    summary = json.loads(result.stdout)
+
+    assert result.returncode == 1
+    assert summary["status"] == "fail"
+    assert any(
+        "store_rollout_handoff.summary.device_smoke_evidence_status mismatch" in error
         for error in summary["errors"]
     )
 

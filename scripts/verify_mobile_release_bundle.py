@@ -490,6 +490,18 @@ def _validate_store_rollout_handoff(
     ]:
         errors.append("store_rollout_handoff.summary.required_channels mismatch")
 
+    device_smoke_evidence = _as_dict(handoff.get("device_smoke_evidence"))
+    device_smoke_evidence_status = device_smoke_evidence.get("status")
+    if not isinstance(device_smoke_evidence_status, str) or not device_smoke_evidence_status:
+        errors.append("store_rollout_handoff.device_smoke_evidence.status is required")
+    _compare_field(
+        errors,
+        "store_rollout_handoff.summary",
+        "device_smoke_evidence_status",
+        handoff_summary.get("device_smoke_evidence_status"),
+        device_smoke_evidence_status,
+    )
+
 
 def verify_release_bundle(
     *,
@@ -550,6 +562,9 @@ def verify_release_bundle(
         "external_readiness_status": readiness.get("external_readiness_status"),
         "store_rollout_status": handoff_summary.get("rollout_status"),
         "store_rollout_blocked_channels": handoff_summary.get("blocked_channels", []),
+        "device_smoke_evidence_status": handoff_summary.get(
+            "device_smoke_evidence_status"
+        ),
         "artifact_sha256": {
             "mobile_release_manifest": _sha256_file(manifest_json),
             "mobile_release_readiness": _sha256_file(readiness_json),
