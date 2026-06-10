@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
 import subprocess
 import sys
@@ -12,6 +13,10 @@ TEMPLATE = Path("docs/mobile-device-smoke-log-template-v0.1.json")
 
 def _valid_payload() -> dict:
     return json.loads(TEMPLATE.read_text(encoding="utf-8"))
+
+
+def _sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def _run_validator(
@@ -42,6 +47,7 @@ def test_mobile_device_smoke_log_template_validates(tmp_path: Path) -> None:
     summary = json.loads(result.stdout)
 
     assert summary["status"] == "pass"
+    assert summary["smoke_log_sha256"] == _sha256(tmp_path / "smoke-log.json")
     assert summary["device_count"] == 2
     assert summary["platforms_seen"] == ["android", "ios"]
     assert "connectivity_restore_sync" in summary["required_check_ids"]

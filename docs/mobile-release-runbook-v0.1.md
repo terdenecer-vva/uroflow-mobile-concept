@@ -131,10 +131,12 @@ Workflow also generates artifact `mobile-device-smoke-template-validation` conta
 - validator summary JSON proving the template currently satisfies
   `mobile_device_smoke_log_v0.1` before clinic operators replace placeholder values with
   real iPhone/Android smoke evidence,
+- `smoke_log_sha256` in the validator summary when a filled smoke log is validated,
 - validator exit code for diagnosis if the template contract breaks.
 
 Workflow also generates artifact `mobile-store-rollout-handoff` containing:
 - per-run git SHA, app version, build profile/channel, and SHA-256 digests for `mobile-release-manifest`, `mobile-release-readiness`, `mobile-release-notes`, `mobile-dependency-review`, `mobile-external-readiness-packet`, and `mobile-device-smoke-template-validation` summary,
+- `device_smoke_evidence`, which stays `blocked_external` until a filled physical-device smoke log and validator summary SHA are linked,
 - iOS TestFlight internal handoff checklist and current external blockers,
 - Android Play Internal Testing handoff checklist and current external blockers,
 - validation summary from `scripts/validate_mobile_store_rollout_handoff.py`.
@@ -180,7 +182,8 @@ Store rollout handoff validation:
 
 ```bash
 cp docs/mobile-store-rollout-handoff-template-v0.1.json /tmp/mobile-store-rollout-handoff.json
-# Fill in per-run manifest/readiness/notes SHA values and TestFlight/Play evidence.
+# Fill in per-run manifest/readiness/notes SHA values, TestFlight/Play evidence,
+# and device_smoke_evidence after real iPhone + Android smoke validation.
 python3 scripts/validate_mobile_store_rollout_handoff.py \
   /tmp/mobile-store-rollout-handoff.json \
   --output /tmp/mobile-store-rollout-summary.json
@@ -290,6 +293,13 @@ python3 scripts/validate_mobile_store_rollout_handoff.py \
 7. Build links (iOS + Android).
 8. Smoke test log with device model and OS version.
 9. Validated real-device smoke summary JSON from `scripts/validate_mobile_device_smoke_log.py`.
+   - Copy the filled smoke log SHA from `smoke_log_sha256` into
+     `mobile-store-rollout-handoff.json.device_smoke_evidence.mobile_device_smoke_log_sha256`.
+   - Archive the validator summary JSON and copy its file SHA into
+     `device_smoke_evidence.mobile_device_smoke_summary_sha256`.
+   - Set `device_smoke_evidence.summary_url` to the archived summary URL,
+     `validator_summary_status` to `pass`, and `platforms_seen` to include both `ios` and
+     `android`; otherwise keep `device_smoke_evidence.status` as `blocked_external`.
    - The smoke log must include per-device `runtime_timeline` evidence copied from
      `capture_payload.analysis.runtime_timeline`, with `gap_warning=false`.
    - The smoke log must include per-device `runtime_alignment` evidence copied from

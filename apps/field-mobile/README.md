@@ -168,7 +168,7 @@ CI:
   - `mobile-release-notes` (operator-facing release notes and required evidence reminders)
   - `mobile-dependency-review` (direct mobile dependency lockfile review, production `npm audit` summary, native sensitive dependency surface, and SEC-003 remediation hints)
   - `mobile-release-bundle-verification` (manifest/readiness/notes/external-readiness/store-handoff digest and traceability consistency summary)
-  - `mobile-store-rollout-handoff` (per-run TestFlight/Play Internal handoff template + validation summary with current external blockers)
+  - `mobile-store-rollout-handoff` (per-run TestFlight/Play Internal handoff template + validation summary with current external blockers and physical-device smoke evidence digest placeholders)
   - `mobile-eas-build-result-<run_id>` (raw EAS JSON response for build IDs/URLs)
   - `mobile-eas-submit-result-<run_id>` (raw EAS submit log + exit code when `submit_to_store=true`)
 - Workflow summary includes release readiness status and direct EAS build links for operator/release use.
@@ -190,7 +190,7 @@ secret blockers. The artifact has separate machine-readable gates:
   in-app release identity evidence,
   runtime capture preflight guard, runtime motion quality gates, raw audio temp-file cleanup,
   derivatives-only feature/media manifest gates, pending sync connectivity-restore trigger,
-  device-smoke evidence template/validator,
+  device-smoke evidence template/validator and store-handoff digest placeholders,
   store rollout handoff template/validator, dependency review artifact builder, release bundle verifier,
   API response + submit exception + runtime exception PHI redaction, and non-localhost API URL defaults,
   store privacy declarations,

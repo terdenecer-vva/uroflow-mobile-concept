@@ -23,6 +23,7 @@ REQUIRED_HANDOFF_CHECK_IDS = (
     "device_smoke_evidence_linked",
     "no_secrets_in_handoff",
 )
+REQUIRED_SMOKE_EVIDENCE_PLATFORMS = ("android", "ios")
 REQUIRED_CHANNELS: dict[tuple[str, str], tuple[str, ...]] = {
     (
         "ios",
@@ -81,6 +82,10 @@ def _is_sha256(value: str) -> bool:
 
 def _is_https_url(value: str) -> bool:
     return HTTPS_RE.fullmatch(value) is not None
+
+
+def _string_list(values: Any) -> list[str]:
+    return [_read_text(value) for value in _as_list(values) if _read_text(value)]
 
 
 def _check_map(checks: list[Any]) -> dict[str, dict[str, Any]]:
@@ -142,6 +147,83 @@ def _validate_handoff_checks(
             errors.append(f"handoff_checks[{check_id}].status must be 'pass'")
         if not _read_text(check.get("evidence")):
             errors.append(f"handoff_checks[{check_id}].evidence is required")
+
+
+def _validate_device_smoke_evidence(
+    evidence: dict[str, Any],
+    handoff_checks: list[Any],
+    rollout_status: str,
+    errors: list[str],
+) -> str:
+    status = _read_text(evidence.get("status")).lower()
+    if status not in ALLOWED_CHECK_STATUSES:
+        errors.append(
+            "device_smoke_evidence.status must be one of "
+            f"{sorted(ALLOWED_CHECK_STATUSES)!r}"
+        )
+
+    checks = _check_map(handoff_checks)
+    linked_check_status = _read_text(
+        _as_dict(checks.get("device_smoke_evidence_linked")).get("status")
+    ).lower()
+    if status and linked_check_status and status != linked_check_status:
+        errors.append(
+            "device_smoke_evidence.status must match "
+            "handoff_checks[device_smoke_evidence_linked].status"
+        )
+
+    if rollout_status != BLOCKED_STATUS and status != "pass":
+        errors.append("device_smoke_evidence.status must be 'pass' for distributable rollout")
+
+    for field in (
+        "mobile_device_smoke_log_sha256",
+        "mobile_device_smoke_summary_sha256",
+    ):
+        digest = _read_text(evidence.get(field))
+        if status == "pass" and not digest:
+            errors.append(f"device_smoke_evidence.{field} is required")
+        if digest and not _is_sha256(digest):
+            errors.append(
+                f"device_smoke_evidence.{field} must be a lowercase SHA-256 hex digest"
+            )
+
+    summary_url = _read_text(evidence.get("summary_url"))
+    if status == "pass" and not summary_url:
+        errors.append("device_smoke_evidence.summary_url is required")
+    if summary_url and not _is_https_url(summary_url):
+        errors.append("device_smoke_evidence.summary_url must be an https URL")
+
+    validated_at_utc = _read_text(evidence.get("validated_at_utc"))
+    if status == "pass" and not validated_at_utc:
+        errors.append("device_smoke_evidence.validated_at_utc is required")
+    if validated_at_utc and not _is_iso_timestamp(validated_at_utc):
+        errors.append("device_smoke_evidence.validated_at_utc must be ISO-8601")
+
+    platforms_seen = sorted(
+        {
+            platform.lower()
+            for platform in _string_list(evidence.get("platforms_seen"))
+        }
+    )
+    if status == "pass":
+        for platform in REQUIRED_SMOKE_EVIDENCE_PLATFORMS:
+            if platform not in platforms_seen:
+                errors.append(f"device_smoke_evidence.platforms_seen must include {platform}")
+
+    validator_summary_status = _read_text(evidence.get("validator_summary_status")).lower()
+    if status == "pass" and validator_summary_status != "pass":
+        errors.append("device_smoke_evidence.validator_summary_status must be 'pass'")
+    if validator_summary_status and validator_summary_status not in ALLOWED_CHECK_STATUSES:
+        errors.append(
+            "device_smoke_evidence.validator_summary_status must be one of "
+            f"{sorted(ALLOWED_CHECK_STATUSES)!r}"
+        )
+
+    blockers = _string_list(evidence.get("blockers"))
+    if status == BLOCKED_STATUS and not blockers:
+        errors.append("device_smoke_evidence.blockers must explain external blockers")
+
+    return status or "missing"
 
 
 def _validate_ready_channel_fields(
@@ -244,8 +326,15 @@ def validate_rollout_handoff(payload: dict[str, Any]) -> dict[str, Any]:
     if rollout_status not in ALLOWED_CHANNEL_STATUSES:
         errors.append(f"rollout_status must be one of {sorted(ALLOWED_CHANNEL_STATUSES)!r}")
 
+    handoff_checks = _as_list(payload.get("handoff_checks"))
     _validate_release(_as_dict(payload.get("release")), errors)
-    _validate_handoff_checks(_as_list(payload.get("handoff_checks")), rollout_status, errors)
+    _validate_handoff_checks(handoff_checks, rollout_status, errors)
+    device_smoke_evidence_status = _validate_device_smoke_evidence(
+        _as_dict(payload.get("device_smoke_evidence")),
+        handoff_checks,
+        rollout_status,
+        errors,
+    )
 
     channels = [_as_dict(channel) for channel in _as_list(payload.get("channels"))]
     if not channels:
@@ -275,6 +364,7 @@ def validate_rollout_handoff(payload: dict[str, Any]) -> dict[str, Any]:
         "rollout_status": rollout_status,
         "channels_seen": sorted(f"{platform}:{channel}" for platform, channel in channels_seen),
         "blocked_channels": sorted(blocked_channels),
+        "device_smoke_evidence_status": device_smoke_evidence_status,
         "required_channels": sorted(
             f"{platform}:{channel}" for platform, channel in REQUIRED_CHANNELS
         ),

@@ -50,6 +50,9 @@ Implemented now:
 - Mobile Build publishes a smoke-template validation artifact with the current template and
   validator summary before real-device smoke evidence is filled in, and store rollout
   handoff/bundle verification trace its SHA-256 digest.
+- Store rollout handoff separates real physical-device smoke evidence as its own
+  `device_smoke_evidence` object with blocked status until the filled smoke log SHA, validator
+  summary SHA, summary URL, and iOS+Android platform evidence are archived.
 - Physical-device smoke evidence requires per-device runtime timeline integrity metadata
   with `gap_warning=false`.
 - Store rollout handoff JSON template, validator, and Mobile Build artifact for TestFlight/Play Internal traceability.
@@ -113,7 +116,7 @@ Not yet implemented:
   training evidence still need real operator execution.
 - Paired submission contract guard is unit-tested and release-gated locally; formal
   data-management QC remains part of pilot operations.
-- Deterministic replay tests cover capture contract generation and queued paired+capture sync; physical-device evidence now has a validator/template but still needs real-device execution.
+- Deterministic replay tests cover capture contract generation and queued paired+capture sync; physical-device evidence now has a validator/template and store-handoff digest slots but still needs real-device execution.
 - Device-matrix smoke evidence requires at least one iPhone and one Android run in
   `mobile_device_smoke_log_v0.1`, including runtime timeline evidence from
   `capture_payload.analysis.runtime_timeline` and operator SOP checklist gate evidence.
@@ -165,7 +168,7 @@ DoD:
 
 ## B4: Quality and validation readiness
 1. Add unit tests for capture payload generation and local validation. Status: implemented for paired payload, capture package payload, capture contract generation, ROI signal, runtime metrics, and backend capture contract validation.
-2. Add E2E mobile smoke tests (session create -> submit -> queue -> sync). Status: implemented as deterministic repository-level paired+capture queue replay after network restore, plus a validated iOS+Android physical-device smoke log schema/template; real physical-device/live Clinical Hub smoke evidence still required.
+2. Add E2E mobile smoke tests (session create -> submit -> queue -> sync). Status: implemented as deterministic repository-level paired+capture queue replay after network restore, plus a validated iOS+Android physical-device smoke log schema/template and handoff digest contract; real physical-device/live Clinical Hub smoke evidence still required.
 3. Export nightly comparison summary and gate snapshot to Clinical Hub. Status: implemented
    as an offline snapshot builder with SHA-256 manifest, a first-class
    `method_comparison_summary` Clinical Hub report type, and optional CI upload when live

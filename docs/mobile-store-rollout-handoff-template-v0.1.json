@@ -48,7 +48,7 @@
     {
       "id": "device_smoke_evidence_linked",
       "status": "blocked_external",
-      "evidence": "Fill with validated mobile_device_smoke_log_v0.1 summary link after iOS and Android device runs."
+      "evidence": "Fill device_smoke_evidence with validated mobile_device_smoke_log_v0.1 log and summary SHA-256 digests plus summary link after iOS and Android device runs."
     },
     {
       "id": "no_secrets_in_handoff",
@@ -56,6 +56,18 @@
       "evidence": "Handoff contains artifact links and IDs only; no API keys, tokens, or patient identifiers."
     }
   ],
+  "device_smoke_evidence": {
+    "status": "blocked_external",
+    "mobile_device_smoke_log_sha256": "",
+    "mobile_device_smoke_summary_sha256": "",
+    "summary_url": "",
+    "validated_at_utc": "",
+    "validator_summary_status": "blocked_external",
+    "platforms_seen": [],
+    "blockers": [
+      "Validated iOS and Android physical-device smoke evidence is not available until installable TestFlight/Play Internal or EAS preview builds are run on real devices."
+    ]
+  },
   "channels": [
     {
       "platform": "ios",

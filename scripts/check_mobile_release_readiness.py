@@ -1970,6 +1970,8 @@ def build_readiness_report(
         in mobile_device_smoke_validator_source,
         "sha256_traceability": "mobile_release_manifest_sha256"
         in mobile_device_smoke_validator_source,
+        "smoke_log_sha256_output": "smoke_log_sha256"
+        in mobile_device_smoke_validator_source,
         "no_phi_log_review": "device_logs_reviewed_no_phi"
         in mobile_device_smoke_validator_source,
         "raw_media_temp_cleanup_required": "raw_media_temp_files_absent"
@@ -1987,6 +1989,8 @@ def build_readiness_report(
     )
     mobile_device_smoke_validator_test_requirements = {
         "valid_template_test": "test_mobile_device_smoke_log_template_validates"
+        in mobile_device_smoke_validator_tests_source,
+        "smoke_log_sha256_test": "smoke_log_sha256"
         in mobile_device_smoke_validator_tests_source,
         "ios_android_matrix_test": "requires_ios_and_android"
         in mobile_device_smoke_validator_tests_source,
@@ -2050,6 +2054,12 @@ def build_readiness_report(
         ),
         "smoke_template_traceability": "mobile_device_smoke_template_summary_sha256"
         in mobile_store_rollout_template_source,
+        "device_smoke_evidence_handoff": "device_smoke_evidence"
+        in mobile_store_rollout_template_source,
+        "device_smoke_evidence_log_sha": "mobile_device_smoke_log_sha256"
+        in mobile_store_rollout_template_source,
+        "device_smoke_evidence_summary_sha": "mobile_device_smoke_summary_sha256"
+        in mobile_store_rollout_template_source,
     }
     _check(
         checks,
@@ -2080,6 +2090,14 @@ def build_readiness_report(
             "mobile_device_smoke_template_validation_archived"
             in mobile_store_rollout_validator_source
         ),
+        "device_smoke_evidence_validator": "_validate_device_smoke_evidence"
+        in mobile_store_rollout_validator_source,
+        "device_smoke_evidence_required_platforms": (
+            "REQUIRED_SMOKE_EVIDENCE_PLATFORMS"
+            in mobile_store_rollout_validator_source
+        ),
+        "device_smoke_evidence_summary": "device_smoke_evidence_status"
+        in mobile_store_rollout_validator_source,
         "blocked_external_support": "BLOCKED_STATUS" in mobile_store_rollout_validator_source,
     }
     _check(
@@ -2101,6 +2119,18 @@ def build_readiness_report(
         in mobile_store_rollout_validator_tests_source,
         "external_readiness_packet_sha_test": (
             "rejects_invalid_external_readiness_packet_sha"
+            in mobile_store_rollout_validator_tests_source
+        ),
+        "device_smoke_evidence_pass_test": (
+            "accepts_linked_device_smoke_evidence"
+            in mobile_store_rollout_validator_tests_source
+        ),
+        "device_smoke_evidence_required_test": (
+            "requires_device_smoke_evidence_for_distribution"
+            in mobile_store_rollout_validator_tests_source
+        ),
+        "device_smoke_evidence_sha_test": (
+            "rejects_invalid_device_smoke_evidence_sha"
             in mobile_store_rollout_validator_tests_source
         ),
         "smoke_template_sha_test": "rejects_invalid_smoke_template_sha"
