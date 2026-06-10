@@ -10,6 +10,7 @@ from typing import Any
 
 TRACEABILITY_FIELDS = ("git_sha", "git_ref", "git_run_id", "workflow")
 DEPENDENCY_REVIEW_SCHEMA_VERSION = "mobile_dependency_review_v0.1"
+EXTERNAL_READINESS_PACKET_SCHEMA_VERSION = "mobile_external_readiness_packet_v0.1"
 SMOKE_TEMPLATE_SUMMARY_SCHEMA_VERSION = "mobile_device_smoke_log_v0.1"
 READINESS_SUMMARY_FIELDS = (
     "status",
@@ -33,6 +34,10 @@ def _as_dict(value: Any) -> dict[str, Any]:
 
 def _as_list(value: Any) -> list[Any]:
     return value if isinstance(value, list) else []
+
+
+def _string_list(value: Any) -> list[str]:
+    return [item for item in _as_list(value) if isinstance(item, str)]
 
 
 def _sha256_file(path: Path) -> str:
@@ -289,12 +294,130 @@ def _validate_dependency_review(
     return _sha256_file(dependency_review_json)
 
 
+def _expected_external_readiness_packet_status(
+    readiness: dict[str, Any], required_actions: list[dict[str, Any]]
+) -> str:
+    if readiness.get("local_checks_status") != "pass":
+        return "not_ready"
+    if required_actions:
+        return "blocked_external"
+    if readiness.get("external_readiness_status") == "pass":
+        return "ready"
+    return "blocked_external"
+
+
+def _required_action_values(
+    required_actions: list[dict[str, Any]], field: str
+) -> list[str]:
+    return sorted(
+        {
+            item
+            for action in required_actions
+            for item in _string_list(action.get(field))
+        }
+    )
+
+
+def _validate_external_readiness_packet(
+    external_readiness_packet_json: Path,
+    readiness: dict[str, Any],
+    expected_traceability: dict[str, Any],
+    errors: list[str],
+) -> str:
+    packet = _load_json(external_readiness_packet_json)
+    if packet.get("schema_version") != EXTERNAL_READINESS_PACKET_SCHEMA_VERSION:
+        errors.append(
+            "mobile_external_readiness_packet.schema_version must be "
+            f"{EXTERNAL_READINESS_PACKET_SCHEMA_VERSION!r}"
+        )
+
+    packet_traceability = _as_dict(packet.get("traceability"))
+    for field in TRACEABILITY_FIELDS:
+        _compare_field(
+            errors,
+            "mobile_external_readiness_packet.traceability",
+            field,
+            packet_traceability.get(field),
+            expected_traceability.get(field),
+        )
+
+    for field in READINESS_SUMMARY_FIELDS:
+        packet_field = "readiness_status" if field == "status" else field
+        _compare_field(
+            errors,
+            "mobile_external_readiness_packet",
+            packet_field,
+            packet.get(packet_field),
+            readiness.get(field),
+        )
+    _compare_field(
+        errors,
+        "mobile_external_readiness_packet",
+        "authenticated_eas_blockers",
+        packet.get("authenticated_eas_blockers"),
+        readiness.get("authenticated_eas_blockers", []),
+    )
+
+    required_actions = [
+        action for action in _as_list(packet.get("required_actions")) if isinstance(action, dict)
+    ]
+    _compare_field(
+        errors,
+        "mobile_external_readiness_packet",
+        "status",
+        packet.get("status"),
+        _expected_external_readiness_packet_status(readiness, required_actions),
+    )
+
+    summary = _as_dict(packet.get("summary"))
+    external_items = [
+        item for item in _as_list(packet.get("external_items")) if isinstance(item, dict)
+    ]
+    manual_external_items = [
+        item
+        for item in _as_list(packet.get("manual_external_items"))
+        if isinstance(item, dict)
+    ]
+    _compare_field(
+        errors,
+        "mobile_external_readiness_packet.summary",
+        "external_item_count",
+        summary.get("external_item_count"),
+        len(external_items),
+    )
+    _compare_field(
+        errors,
+        "mobile_external_readiness_packet.summary",
+        "manual_external_item_count",
+        summary.get("manual_external_item_count"),
+        len(manual_external_items),
+    )
+    _compare_field(
+        errors,
+        "mobile_external_readiness_packet.summary",
+        "required_action_count",
+        summary.get("required_action_count"),
+        len(required_actions),
+    )
+    for field in ("secret_names", "variable_names", "file_paths"):
+        _compare_field(
+            errors,
+            "mobile_external_readiness_packet.summary",
+            field,
+            summary.get(field),
+            _required_action_values(required_actions, field),
+        )
+
+    return _sha256_file(external_readiness_packet_json)
+
+
 def _validate_store_rollout_handoff(
     manifest: dict[str, Any],
     readiness: Path,
     manifest_path: Path,
     release_notes_sha: str,
     dependency_review_sha: str,
+    external_readiness_packet_sha: str,
     smoke_template_summary_sha: str,
     handoff: dict[str, Any],
     handoff_summary: dict[str, Any],
@@ -347,6 +470,13 @@ def _validate_store_rollout_handoff(
     _compare_field(
         errors,
         "store_rollout_handoff.release",
+        "mobile_external_readiness_packet_sha256",
+        handoff_release.get("mobile_external_readiness_packet_sha256"),
+        external_readiness_packet_sha,
+    )
+    _compare_field(
+        errors,
+        "store_rollout_handoff.release",
         "mobile_device_smoke_template_summary_sha256",
         handoff_release.get("mobile_device_smoke_template_summary_sha256"),
         smoke_template_summary_sha,
@@ -367,6 +497,7 @@ def verify_release_bundle(
     readiness_json: Path,
     release_notes: Path,
     dependency_review_json: Path,
+    external_readiness_packet_json: Path,
     smoke_template_summary_json: Path,
     store_rollout_handoff_json: Path,
     store_rollout_summary_json: Path,
@@ -392,6 +523,9 @@ def verify_release_bundle(
     dependency_review_sha = _validate_dependency_review(
         dependency_review_json, traceability, errors
     )
+    external_readiness_packet_sha = _validate_external_readiness_packet(
+        external_readiness_packet_json, readiness, traceability, errors
+    )
     smoke_template_summary_sha = _validate_smoke_template_summary(
         smoke_template_summary_json, errors
     )
@@ -401,6 +535,7 @@ def verify_release_bundle(
         manifest_json,
         release_notes_sha,
         dependency_review_sha,
+        external_readiness_packet_sha,
         smoke_template_summary_sha,
         handoff,
         handoff_summary,
@@ -420,6 +555,7 @@ def verify_release_bundle(
             "mobile_release_readiness": _sha256_file(readiness_json),
             "mobile_release_notes": release_notes_sha,
             "mobile_dependency_review": dependency_review_sha,
+            "mobile_external_readiness_packet": external_readiness_packet_sha,
             "mobile_device_smoke_template_summary": smoke_template_summary_sha,
             "mobile_store_rollout_handoff": _sha256_file(store_rollout_handoff_json),
             "mobile_store_rollout_handoff_summary": _sha256_file(
@@ -438,6 +574,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--readiness-json", type=Path, required=True)
     parser.add_argument("--release-notes", type=Path, required=True)
     parser.add_argument("--dependency-review-json", type=Path, required=True)
+    parser.add_argument("--external-readiness-packet-json", type=Path, required=True)
     parser.add_argument("--smoke-template-summary-json", type=Path, required=True)
     parser.add_argument("--store-rollout-handoff-json", type=Path, required=True)
     parser.add_argument("--store-rollout-summary-json", type=Path, required=True)
@@ -454,6 +591,7 @@ def main() -> int:
         readiness_json=args.readiness_json,
         release_notes=args.release_notes,
         dependency_review_json=args.dependency_review_json,
+        external_readiness_packet_json=args.external_readiness_packet_json,
         smoke_template_summary_json=args.smoke_template_summary_json,
         store_rollout_handoff_json=args.store_rollout_handoff_json,
         store_rollout_summary_json=args.store_rollout_summary_json,

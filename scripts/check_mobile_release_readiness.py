@@ -2044,6 +2044,10 @@ def build_readiness_report(
         in mobile_store_rollout_template_source,
         "dependency_review_traceability": "mobile_dependency_review_sha256"
         in mobile_store_rollout_template_source,
+        "external_readiness_packet_traceability": (
+            "mobile_external_readiness_packet_sha256"
+            in mobile_store_rollout_template_source
+        ),
         "smoke_template_traceability": "mobile_device_smoke_template_summary_sha256"
         in mobile_store_rollout_template_source,
     }
@@ -2064,6 +2068,12 @@ def build_readiness_report(
         in mobile_store_rollout_validator_source,
         "dependency_review_handoff_check": "mobile_dependency_review_archived"
         in mobile_store_rollout_validator_source,
+        "external_readiness_packet_sha": "mobile_external_readiness_packet_sha256"
+        in mobile_store_rollout_validator_source,
+        "external_readiness_packet_handoff_check": (
+            "mobile_external_readiness_packet_archived"
+            in mobile_store_rollout_validator_source
+        ),
         "smoke_template_sha": "mobile_device_smoke_template_summary_sha256"
         in mobile_store_rollout_validator_source,
         "smoke_template_handoff_check": (
@@ -2089,6 +2099,10 @@ def build_readiness_report(
         in mobile_store_rollout_validator_tests_source,
         "dependency_review_sha_test": "rejects_invalid_dependency_review_sha"
         in mobile_store_rollout_validator_tests_source,
+        "external_readiness_packet_sha_test": (
+            "rejects_invalid_external_readiness_packet_sha"
+            in mobile_store_rollout_validator_tests_source
+        ),
         "smoke_template_sha_test": "rejects_invalid_smoke_template_sha"
         in mobile_store_rollout_validator_tests_source,
     }
@@ -2109,6 +2123,12 @@ def build_readiness_report(
         "dependency_review_digest_validation": "mobile_dependency_review_sha256"
         in mobile_release_bundle_verifier_source,
         "dependency_review_input": "dependency_review_json"
+        in mobile_release_bundle_verifier_source,
+        "external_readiness_packet_digest_validation": (
+            "mobile_external_readiness_packet_sha256"
+            in mobile_release_bundle_verifier_source
+        ),
+        "external_readiness_packet_input": "external_readiness_packet_json"
         in mobile_release_bundle_verifier_source,
         "smoke_template_summary_digest_validation": (
             "mobile_device_smoke_template_summary_sha256"
@@ -2139,6 +2159,14 @@ def build_readiness_report(
         ),
         "dependency_review_digest_mismatch_test": (
             "rejects_dependency_review_digest_mismatch"
+            in mobile_release_bundle_verifier_tests_source
+        ),
+        "external_readiness_packet_digest_mismatch_test": (
+            "rejects_external_readiness_packet_digest_mismatch"
+            in mobile_release_bundle_verifier_tests_source
+        ),
+        "external_readiness_packet_status_mismatch_test": (
+            "rejects_external_readiness_packet_status_mismatch"
             in mobile_release_bundle_verifier_tests_source
         ),
         "failed_dependency_review_test": (

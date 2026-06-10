@@ -139,9 +139,15 @@ def test_mobile_build_workflow_traces_smoke_template_summary_digest() -> None:
 
     assert "mobile_device_smoke_template_summary_sha256" in handoff_step["run"]
     assert "mobile_dependency_review_sha256" in handoff_step["run"]
+    assert "mobile_external_readiness_packet_sha256" in handoff_step["run"]
     assert "/tmp/mobile-dependency-review.json" in handoff_step["run"]
+    assert "/tmp/mobile-external-readiness-packet.json" in handoff_step["run"]
     assert "/tmp/mobile-device-smoke-template-summary.json" in handoff_step["run"]
     assert "--dependency-review-json /tmp/mobile-dependency-review.json" in verifier_step["run"]
+    assert (
+        "--external-readiness-packet-json /tmp/mobile-external-readiness-packet.json"
+        in verifier_step["run"]
+    )
     assert (
         "--smoke-template-summary-json /tmp/mobile-device-smoke-template-summary.json"
         in verifier_step["run"]

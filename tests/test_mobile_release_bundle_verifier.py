@@ -92,8 +92,51 @@ def _valid_bundle(tmp_path: Path) -> dict[str, Path]:
             {"id": "google_play_account", "status": "manual_required"},
         ],
         "next_actions": [
-            {"id": "configure_expo_token"},
-            {"id": "configure_eas_project_identity"},
+            {
+                "id": "configure_expo_token",
+                "blocked_item": "expo_token",
+                "status": "required",
+                "secret_names": ["EXPO_TOKEN"],
+                "variable_names": [],
+                "file_paths": [],
+                "doc": "docs/mobile-release-runbook-v0.1.md",
+            },
+            {
+                "id": "configure_eas_project_identity",
+                "blocked_item": "eas_project_identity",
+                "status": "required",
+                "secret_names": [],
+                "variable_names": ["EAS_PROJECT_ID"],
+                "file_paths": ["apps/field-mobile/app.json"],
+                "doc": "docs/mobile-release-runbook-v0.1.md",
+            },
+            {
+                "id": "configure_clinical_hub_live_api",
+                "blocked_item": "clinical_hub_live_api",
+                "status": "required",
+                "secret_names": ["CLINICAL_HUB_URL", "CLINICAL_HUB_API_KEY"],
+                "variable_names": [],
+                "file_paths": [],
+                "doc": "docs/mobile-release-runbook-v0.1.md",
+            },
+            {
+                "id": "provision_apple_developer_account",
+                "blocked_item": "apple_developer_account",
+                "status": "manual_required",
+                "secret_names": [],
+                "variable_names": [],
+                "file_paths": [],
+                "doc": "docs/mobile-release-runbook-v0.1.md",
+            },
+            {
+                "id": "provision_google_play_account",
+                "blocked_item": "google_play_account",
+                "status": "manual_required",
+                "secret_names": ["GOOGLE_SERVICE_ACCOUNT"],
+                "variable_names": [],
+                "file_paths": [],
+                "doc": "docs/mobile-release-runbook-v0.1.md",
+            },
         ],
     }
     readiness_path = tmp_path / "mobile-release-readiness.json"
@@ -124,6 +167,9 @@ def _valid_bundle(tmp_path: Path) -> dict[str, Path]:
             "next_action_ids": [
                 "configure_expo_token",
                 "configure_eas_project_identity",
+                "configure_clinical_hub_live_api",
+                "provision_apple_developer_account",
+                "provision_google_play_account",
             ],
         },
         "release_notes": {
@@ -136,6 +182,38 @@ def _valid_bundle(tmp_path: Path) -> dict[str, Path]:
     manifest_path = tmp_path / "mobile-release-manifest.json"
     _write_json(manifest_path, manifest)
 
+    external_readiness_packet = {
+        "schema_version": "mobile_external_readiness_packet_v0.1",
+        "generated_at_utc": "2026-06-05T20:00:00Z",
+        "status": "blocked_external",
+        "traceability": copy.deepcopy(readiness["traceability"]),
+        "readiness_status": readiness["status"],
+        "local_checks_status": readiness["local_checks_status"],
+        "external_readiness_status": readiness["external_readiness_status"],
+        "authenticated_eas_status": readiness["authenticated_eas_status"],
+        "authenticated_eas_blockers": readiness["authenticated_eas_blockers"],
+        "clinical_hub_live_api_status": readiness["clinical_hub_live_api_status"],
+        "summary": {
+            "external_item_count": 3,
+            "manual_external_item_count": 2,
+            "required_action_count": 5,
+            "secret_names": [
+                "CLINICAL_HUB_API_KEY",
+                "CLINICAL_HUB_URL",
+                "EXPO_TOKEN",
+                "GOOGLE_SERVICE_ACCOUNT",
+            ],
+            "variable_names": ["EAS_PROJECT_ID"],
+            "file_paths": ["apps/field-mobile/app.json"],
+            "docs": ["docs/mobile-release-runbook-v0.1.md"],
+        },
+        "external_items": copy.deepcopy(readiness["external_items"]),
+        "manual_external_items": copy.deepcopy(readiness["manual_external_items"]),
+        "required_actions": copy.deepcopy(readiness["next_actions"]),
+    }
+    external_readiness_packet_path = tmp_path / "mobile-external-readiness-packet.json"
+    _write_json(external_readiness_packet_path, external_readiness_packet)
+
     handoff = {
         "release": {
             "git_sha": GIT_SHA,
@@ -145,6 +223,9 @@ def _valid_bundle(tmp_path: Path) -> dict[str, Path]:
             "mobile_release_readiness_sha256": _sha256(readiness_path),
             "mobile_release_notes_sha256": _sha256(notes_path),
             "mobile_dependency_review_sha256": _sha256(dependency_review_path),
+            "mobile_external_readiness_packet_sha256": _sha256(
+                external_readiness_packet_path
+            ),
             "mobile_device_smoke_template_summary_sha256": _sha256(
                 smoke_template_summary_path
             ),
@@ -173,6 +254,7 @@ def _valid_bundle(tmp_path: Path) -> dict[str, Path]:
         "readiness": readiness_path,
         "notes": notes_path,
         "dependency_review": dependency_review_path,
+        "external_readiness_packet": external_readiness_packet_path,
         "smoke_template_summary": smoke_template_summary_path,
         "handoff": handoff_path,
         "handoff_summary": handoff_summary_path,
@@ -197,6 +279,8 @@ def _run_verifier(
         str(paths["notes"]),
         "--dependency-review-json",
         str(paths["dependency_review"]),
+        "--external-readiness-packet-json",
+        str(paths["external_readiness_packet"]),
         "--smoke-template-summary-json",
         str(paths["smoke_template_summary"]),
         "--store-rollout-handoff-json",
@@ -228,6 +312,7 @@ def test_mobile_release_bundle_verifier_accepts_consistent_bundle(tmp_path: Path
         "ios:testflight_internal",
     ]
     assert "mobile_dependency_review" in summary["artifact_sha256"]
+    assert "mobile_external_readiness_packet" in summary["artifact_sha256"]
     assert "mobile_device_smoke_template_summary" in summary["artifact_sha256"]
     assert json.loads((tmp_path / "bundle-summary.json").read_text()) == summary
 
@@ -298,6 +383,49 @@ def test_mobile_release_bundle_verifier_rejects_dependency_review_digest_mismatc
     assert summary["status"] == "fail"
     assert any(
         "mobile_dependency_review_sha256 mismatch" in error
+        for error in summary["errors"]
+    )
+
+
+def test_mobile_release_bundle_verifier_rejects_external_readiness_packet_digest_mismatch(
+    tmp_path: Path,
+) -> None:
+    paths = _valid_bundle(tmp_path)
+    handoff = json.loads(paths["handoff"].read_text(encoding="utf-8"))
+    handoff["release"]["mobile_external_readiness_packet_sha256"] = "0" * 64
+    _write_json(paths["handoff"], handoff)
+
+    result = _run_verifier(paths, check=False)
+    summary = json.loads(result.stdout)
+
+    assert result.returncode == 1
+    assert summary["status"] == "fail"
+    assert any(
+        "mobile_external_readiness_packet_sha256 mismatch" in error
+        for error in summary["errors"]
+    )
+
+
+def test_mobile_release_bundle_verifier_rejects_external_readiness_packet_status_mismatch(
+    tmp_path: Path,
+) -> None:
+    paths = _valid_bundle(tmp_path)
+    packet = json.loads(paths["external_readiness_packet"].read_text(encoding="utf-8"))
+    packet["readiness_status"] = "stale"
+    _write_json(paths["external_readiness_packet"], packet)
+    handoff = json.loads(paths["handoff"].read_text(encoding="utf-8"))
+    handoff["release"]["mobile_external_readiness_packet_sha256"] = _sha256(
+        paths["external_readiness_packet"]
+    )
+    _write_json(paths["handoff"], handoff)
+
+    result = _run_verifier(paths, check=False)
+    summary = json.loads(result.stdout)
+
+    assert result.returncode == 1
+    assert summary["status"] == "fail"
+    assert any(
+        "mobile_external_readiness_packet.readiness_status mismatch" in error
         for error in summary["errors"]
     )
 

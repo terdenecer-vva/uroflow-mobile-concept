@@ -18,6 +18,7 @@ REQUIRED_HANDOFF_CHECK_IDS = (
     "mobile_release_readiness_archived",
     "mobile_release_notes_archived",
     "mobile_dependency_review_archived",
+    "mobile_external_readiness_packet_archived",
     "mobile_device_smoke_template_validation_archived",
     "device_smoke_evidence_linked",
     "no_secrets_in_handoff",
@@ -102,6 +103,7 @@ def _validate_release(release: dict[str, Any], errors: list[str]) -> None:
         "mobile_release_readiness_sha256",
         "mobile_release_notes_sha256",
         "mobile_dependency_review_sha256",
+        "mobile_external_readiness_packet_sha256",
         "mobile_device_smoke_template_summary_sha256",
     )
     for field in required_text_fields:
@@ -113,6 +115,7 @@ def _validate_release(release: dict[str, Any], errors: list[str]) -> None:
         "mobile_release_readiness_sha256",
         "mobile_release_notes_sha256",
         "mobile_dependency_review_sha256",
+        "mobile_external_readiness_packet_sha256",
         "mobile_device_smoke_template_summary_sha256",
     ):
         digest = _read_text(release.get(field))

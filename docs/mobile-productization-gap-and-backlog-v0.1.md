@@ -58,7 +58,8 @@ Implemented now:
   `npm audit` summary, native sensitive dependency surface review, SEC-003 remediation
   hints, and release bundle SHA-256 traceability.
 - Mobile external readiness packet artifact for sanitized Expo/EAS/Clinical Hub/Apple/Google
-  credential handoff, including placeholder commands without secret values.
+  credential handoff, including placeholder commands without secret values and release bundle
+  SHA-256 traceability.
 - In-app Release Identity panel for app/model/schema/runtime/privacy/data-residency evidence on device.
 - Runtime release guard blocks capture/API/submit/sync actions when app/model/schema/runtime
   config, endpoint set, privacy, data-residency, or debug gates are incompatible.
@@ -152,7 +153,7 @@ DoD:
 
 ## B3: Release and tester delivery
 1. Configure Expo project credentials and EAS secrets.
-2. Wire CI dispatch for preview builds with release notes. Status: release notes input/artifact, manifest digest traceability, and external readiness packet handoff implemented; authenticated EAS trigger still waits for Expo/EAS credentials.
+2. Wire CI dispatch for preview builds with release notes. Status: release notes input/artifact, manifest digest traceability, and external readiness packet handoff with bundle digest traceability implemented; authenticated EAS trigger still waits for Expo/EAS credentials.
 3. Set distribution channels:
 - iOS TestFlight (internal group). Status: SOP/handoff format implemented; actual channel setup remains external to repository automation.
 - Android Internal Testing (Play). Status: SOP/handoff format implemented; actual channel setup remains external to repository automation.

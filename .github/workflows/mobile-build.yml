@@ -487,6 +487,9 @@ jobs:
                   "mobile_dependency_review_sha256": sha256_file(
                       Path("/tmp/mobile-dependency-review.json")
                   ),
+                  "mobile_external_readiness_packet_sha256": sha256_file(
+                      Path("/tmp/mobile-external-readiness-packet.json")
+                  ),
                   "mobile_device_smoke_template_summary_sha256": sha256_file(
                       Path("/tmp/mobile-device-smoke-template-summary.json")
                   ),
@@ -510,6 +513,7 @@ jobs:
             --readiness-json /tmp/mobile-release-readiness.json \
             --release-notes /tmp/mobile-release-notes.md \
             --dependency-review-json /tmp/mobile-dependency-review.json \
+            --external-readiness-packet-json /tmp/mobile-external-readiness-packet.json \
             --smoke-template-summary-json /tmp/mobile-device-smoke-template-summary.json \
             --store-rollout-handoff-json /tmp/mobile-store-rollout-handoff.json \
             --store-rollout-summary-json /tmp/mobile-store-rollout-handoff-summary.json \
