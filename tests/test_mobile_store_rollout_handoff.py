@@ -53,6 +53,7 @@ def test_mobile_store_rollout_handoff_template_validates(tmp_path: Path) -> None
         "ios:testflight_internal",
     ]
     assert "mobile_release_manifest_archived" in summary["required_handoff_check_ids"]
+    assert "mobile_dependency_review_archived" in summary["required_handoff_check_ids"]
     assert (
         "mobile_device_smoke_template_validation_archived"
         in summary["required_handoff_check_ids"]
@@ -141,5 +142,22 @@ def test_mobile_store_rollout_handoff_rejects_invalid_smoke_template_sha(
     assert summary["status"] == "fail"
     assert (
         "release.mobile_device_smoke_template_summary_sha256 must be a lowercase "
+        "SHA-256 hex digest"
+    ) in summary["errors"]
+
+
+def test_mobile_store_rollout_handoff_rejects_invalid_dependency_review_sha(
+    tmp_path: Path,
+) -> None:
+    payload = _valid_payload()
+    payload["release"]["mobile_dependency_review_sha256"] = "A" * 64
+
+    result = _run_validator(tmp_path, payload, check=False)
+    summary = json.loads(result.stdout)
+
+    assert result.returncode == 1
+    assert summary["status"] == "fail"
+    assert (
+        "release.mobile_dependency_review_sha256 must be a lowercase "
         "SHA-256 hex digest"
     ) in summary["errors"]
