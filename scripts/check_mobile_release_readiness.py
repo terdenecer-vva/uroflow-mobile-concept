@@ -2166,6 +2166,14 @@ def build_readiness_report(
         ),
         "smoke_template_summary_input": "smoke_template_summary_json"
         in mobile_release_bundle_verifier_source,
+        "device_smoke_evidence_summary_validation": (
+            "device_smoke_evidence_status"
+            in mobile_release_bundle_verifier_source
+        ),
+        "device_smoke_evidence_handoff_validation": (
+            "device_smoke_evidence.status is required"
+            in mobile_release_bundle_verifier_source
+        ),
         "expected_run_validation": "expect_run_id" in mobile_release_bundle_verifier_source,
     }
     _check(
@@ -2197,6 +2205,10 @@ def build_readiness_report(
         ),
         "external_readiness_packet_status_mismatch_test": (
             "rejects_external_readiness_packet_status_mismatch"
+            in mobile_release_bundle_verifier_tests_source
+        ),
+        "device_smoke_evidence_status_mismatch_test": (
+            "rejects_device_smoke_evidence_status_mismatch"
             in mobile_release_bundle_verifier_tests_source
         ),
         "failed_dependency_review_test": (
