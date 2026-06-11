@@ -877,6 +877,12 @@ def build_readiness_report(
     mobile_store_rollout_validator_tests_path = (
         repo_root / "tests" / "test_mobile_store_rollout_handoff.py"
     )
+    mobile_device_smoke_evidence_bundle_verifier_path = (
+        repo_root / "scripts" / "verify_mobile_device_smoke_evidence_bundle.py"
+    )
+    mobile_device_smoke_evidence_bundle_verifier_tests_path = (
+        repo_root / "tests" / "test_mobile_device_smoke_evidence_bundle.py"
+    )
     mobile_release_bundle_verifier_path = (
         repo_root / "scripts" / "verify_mobile_release_bundle.py"
     )
@@ -994,6 +1000,12 @@ def build_readiness_report(
     )
     mobile_store_rollout_validator_tests_source = _read_file_text(
         mobile_store_rollout_validator_tests_path
+    )
+    mobile_device_smoke_evidence_bundle_verifier_source = _read_file_text(
+        mobile_device_smoke_evidence_bundle_verifier_path
+    )
+    mobile_device_smoke_evidence_bundle_verifier_tests_source = _read_file_text(
+        mobile_device_smoke_evidence_bundle_verifier_tests_path
     )
     mobile_release_bundle_verifier_source = _read_file_text(
         mobile_release_bundle_verifier_path
@@ -2155,6 +2167,63 @@ def build_readiness_report(
         "mobile_store_rollout_handoff_validator_unit_tests_present",
         all(mobile_store_rollout_validator_test_requirements.values()),
         f"requirements={mobile_store_rollout_validator_test_requirements!r}",
+    )
+    mobile_device_smoke_evidence_bundle_verifier_requirements = {
+        "verifier_file": mobile_device_smoke_evidence_bundle_verifier_path.is_file(),
+        "schema_version": "mobile_device_smoke_evidence_bundle_v0.1"
+        in mobile_device_smoke_evidence_bundle_verifier_source,
+        "smoke_log_input": "device_smoke_log_json"
+        in mobile_device_smoke_evidence_bundle_verifier_source,
+        "smoke_summary_input": "device_smoke_summary_json"
+        in mobile_device_smoke_evidence_bundle_verifier_source,
+        "store_handoff_input": "store_rollout_handoff_json"
+        in mobile_device_smoke_evidence_bundle_verifier_source,
+        "store_handoff_summary_input": "store_rollout_summary_json"
+        in mobile_device_smoke_evidence_bundle_verifier_source,
+        "smoke_log_sha_validation": "mobile_device_smoke_log_sha256"
+        in mobile_device_smoke_evidence_bundle_verifier_source
+        and "smoke_log_sha256"
+        in mobile_device_smoke_evidence_bundle_verifier_source,
+        "smoke_summary_sha_validation": "mobile_device_smoke_summary_sha256"
+        in mobile_device_smoke_evidence_bundle_verifier_source
+        and "smoke_summary_sha256"
+        in mobile_device_smoke_evidence_bundle_verifier_source,
+        "platform_receipt_validation": "device_smoke_evidence_platforms_seen"
+        in mobile_device_smoke_evidence_bundle_verifier_source,
+        "validator_status_validation": (
+            "device_smoke_evidence_validator_summary_status"
+            in mobile_device_smoke_evidence_bundle_verifier_source
+        ),
+    }
+    _check(
+        checks,
+        "mobile_device_smoke_evidence_bundle_verifier_sources",
+        all(mobile_device_smoke_evidence_bundle_verifier_requirements.values()),
+        f"requirements={mobile_device_smoke_evidence_bundle_verifier_requirements!r}",
+    )
+    mobile_device_smoke_evidence_bundle_verifier_test_requirements = {
+        "valid_bundle_test": (
+            "accepts_linked_evidence"
+            in mobile_device_smoke_evidence_bundle_verifier_tests_source
+        ),
+        "stale_log_digest_test": (
+            "rejects_stale_log_digest"
+            in mobile_device_smoke_evidence_bundle_verifier_tests_source
+        ),
+        "stale_handoff_summary_test": (
+            "rejects_stale_handoff_summary"
+            in mobile_device_smoke_evidence_bundle_verifier_tests_source
+        ),
+        "failed_smoke_summary_test": (
+            "rejects_failed_smoke_summary"
+            in mobile_device_smoke_evidence_bundle_verifier_tests_source
+        ),
+    }
+    _check(
+        checks,
+        "mobile_device_smoke_evidence_bundle_verifier_unit_tests_present",
+        all(mobile_device_smoke_evidence_bundle_verifier_test_requirements.values()),
+        f"requirements={mobile_device_smoke_evidence_bundle_verifier_test_requirements!r}",
     )
     mobile_release_bundle_verifier_requirements = {
         "verifier_file": mobile_release_bundle_verifier_path.is_file(),

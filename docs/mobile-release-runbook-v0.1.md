@@ -190,6 +190,17 @@ python3 scripts/validate_mobile_store_rollout_handoff.py \
   --output /tmp/mobile-store-rollout-summary.json
 ```
 
+Physical-device smoke evidence bundle verification:
+
+```bash
+python3 scripts/verify_mobile_device_smoke_evidence_bundle.py \
+  --device-smoke-log-json /tmp/mobile-device-smoke-log.json \
+  --device-smoke-summary-json /tmp/mobile-device-smoke-summary.json \
+  --store-rollout-handoff-json /tmp/mobile-store-rollout-handoff.json \
+  --store-rollout-summary-json /tmp/mobile-store-rollout-summary.json \
+  --output /tmp/mobile-device-smoke-evidence-bundle.json
+```
+
 Release bundle verification:
 
 ```bash
@@ -311,7 +322,11 @@ python3 scripts/validate_mobile_store_rollout_handoff.py \
      artifacts remain after stop/reset.
    - The smoke log must include per-device `operator_sop_checklist_gate` evidence proving
      `Start Capture` stayed blocked until all operator SOP confirmations were checked.
-10. Clinical Hub sample export (paired + capture package rows).
+10. Mobile device smoke evidence bundle verification JSON from
+    `scripts/verify_mobile_device_smoke_evidence_bundle.py`, proving the filled handoff,
+    handoff summary, smoke log, and smoke validator summary use matching SHA-256 digests,
+    platform receipt fields, and `pass` validator status.
+11. Clinical Hub sample export (paired + capture package rows).
    - For `capture-packages`, archive `capture_payload.feature_manifest` and confirm `derivatives_only=true`, `raw_media.store_raw_video=false`, `raw_media.store_raw_audio=false`, `raw_media.upload_raw_video=false`, and `raw_media.upload_raw_audio=false`.
    - Archive `capture_payload_sha256` from Clinical Hub detail/list/CSV exports and verify
      it stays stable across idempotent replay.
@@ -319,4 +334,4 @@ python3 scripts/validate_mobile_store_rollout_handoff.py \
      `gap_warning=true` or unexpectedly large `max_sample_gap_s`.
    - Archive `capture_payload.analysis.runtime_alignment` and reject runs with
      `drift_warning=true` or `max_stream_drift_ms > 50`.
-11. Go/No-Go note for pilot usage.
+12. Go/No-Go note for pilot usage.

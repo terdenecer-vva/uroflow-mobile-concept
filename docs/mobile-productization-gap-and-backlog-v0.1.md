@@ -53,6 +53,9 @@ Implemented now:
 - Store rollout handoff separates real physical-device smoke evidence as its own
   `device_smoke_evidence` object with blocked status until the filled smoke log SHA, validator
   summary SHA, summary URL, and iOS+Android platform evidence are archived.
+- Physical-device smoke evidence bundle verifier checks that the filled store rollout
+  handoff, handoff summary, smoke log, and smoke validator summary all agree on SHA-256
+  digests, validator status, and iOS+Android platform receipt fields.
 - Physical-device smoke evidence requires per-device runtime timeline integrity metadata
   with `gap_warning=false`.
 - Store rollout handoff JSON template, validator, and Mobile Build artifact for TestFlight/Play Internal traceability.
