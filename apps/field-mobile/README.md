@@ -190,8 +190,9 @@ secret blockers. The artifact has separate machine-readable gates:
   in-app release identity evidence,
   runtime capture preflight guard, runtime motion quality gates, raw audio temp-file cleanup,
   derivatives-only feature/media manifest gates, pending sync connectivity-restore trigger,
-  device-smoke evidence template/validator and store-handoff digest placeholders,
-  store rollout handoff template/validator, dependency review artifact builder, release bundle verifier,
+  device-smoke evidence template/validator, store-handoff digest placeholders,
+  device-smoke evidence bundle verifier, store rollout handoff template/validator,
+  dependency review artifact builder, release bundle verifier,
   API response + submit exception + runtime exception PHI redaction, and non-localhost API URL defaults,
   store privacy declarations,
   launch/icon assets, dependency lock alignment, and unit-test evidence that can be verified

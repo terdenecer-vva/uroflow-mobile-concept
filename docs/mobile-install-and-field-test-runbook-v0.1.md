@@ -132,6 +132,19 @@ The validator requires all mandatory smoke checks to pass on both platforms, inc
 operator SOP checklist gating, offline queue retention, connectivity-restore sync, raw
 media disabled, and device-log review for PHI/secret leakage.
 
+After filling `mobile-store-rollout-handoff.json` with the smoke log SHA, smoke summary
+SHA, archived summary URL, validator status, and platforms seen, verify the linked
+evidence bundle:
+
+```bash
+python3 scripts/verify_mobile_device_smoke_evidence_bundle.py \
+  --device-smoke-log-json /tmp/mobile-device-smoke-log.json \
+  --device-smoke-summary-json /tmp/mobile-device-smoke-summary.json \
+  --store-rollout-handoff-json /tmp/mobile-store-rollout-handoff.json \
+  --store-rollout-summary-json /tmp/mobile-store-rollout-summary.json \
+  --output /tmp/mobile-device-smoke-evidence-bundle.json
+```
+
 ## 6. Daily Export For Analysis
 
 Paired records:
